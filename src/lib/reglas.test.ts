@@ -78,6 +78,15 @@ describe('R2 — el collar se exige solo en partos múltiples', () => {
     const muerto = cordero({ condicion: 'muerto' });
     expect(corderosQueRequierenCollar([vivo, muerto])).toEqual([]);
   });
+
+  test('el sobreviviente de un parto múltiple lleva collar igual', () => {
+    // Confirmado con el equipo: en mellizos se asigna collar siempre, sin
+    // importar que uno haya nacido muerto. El parto sigue siendo múltiple y el
+    // cordero tiene que quedar identificado hasta la señalada.
+    const vivo = cordero();
+    const muerto = cordero({ condicion: 'muerto' });
+    expect(corderosQueRequierenCollar([vivo, muerto]).map((c) => c.id)).toEqual([vivo.id]);
+  });
 });
 
 // ---------------------------------------------------------------------------

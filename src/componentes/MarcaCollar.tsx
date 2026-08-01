@@ -14,31 +14,41 @@ export const MARCAS: readonly { valor: Marca; etiqueta: string }[] = [
  * obliga a traducir del objeto a la palabra y de vuelta, con el collar en una
  * mano y el teléfono en la otra. Dibujarlo elimina esa traducción.
  */
-export function DibujoMarca({ marca, tamano = 1 }: { marca: Marca; tamano?: number }) {
+export function DibujoMarca({
+  marca,
+  tamano = 1,
+  apagado = false,
+}: {
+  marca: Marca;
+  tamano?: number;
+  apagado?: boolean;
+}) {
+  const color = apagado ? 'var(--tinta-tenue)' : 'var(--marca)';
+
   return (
     <svg
-      width={44 * tamano}
-      height={68 * tamano}
-      viewBox="0 0 44 68"
+      width={30 * tamano}
+      height={48 * tamano}
+      viewBox="0 0 30 48"
       role="img"
       aria-label={MARCAS.find((m) => m.valor === marca)?.etiqueta ?? marca}
     >
       <rect
-        x="7"
-        y="3"
-        width="30"
-        height="62"
+        x="4"
+        y="2"
+        width="22"
+        height="44"
         rx="7"
-        fill="var(--surface)"
-        stroke="var(--ink)"
-        strokeWidth="2.5"
+        fill="none"
+        stroke={color}
+        strokeWidth="1.8"
       />
-      {marca === 'punto_arriba' && <circle cx="22" cy="16" r="6.5" fill="var(--ink)" />}
-      {marca === 'punto_abajo' && <circle cx="22" cy="52" r="6.5" fill="var(--ink)" />}
+      {marca === 'punto_arriba' && <circle cx="15" cy="12" r="4.8" fill={color} />}
+      {marca === 'punto_abajo' && <circle cx="15" cy="36" r="4.8" fill={color} />}
       {marca === 'cruz_al_medio' && (
-        <g stroke="var(--ink)" strokeWidth="4.5" strokeLinecap="round">
-          <line x1="14" y1="27" x2="30" y2="41" />
-          <line x1="30" y1="27" x2="14" y2="41" />
+        <g stroke={color} strokeWidth="3.2" strokeLinecap="round">
+          <line x1="9" y1="19" x2="21" y2="29" />
+          <line x1="21" y1="19" x2="9" y2="29" />
         </g>
       )}
     </svg>
@@ -54,18 +64,21 @@ export function SelectorMarcaCollar({
 }) {
   return (
     <div className="collar-opciones">
-      {MARCAS.map((marca) => (
-        <button
-          key={marca.valor}
-          type="button"
-          className="collar-opcion"
-          aria-pressed={valor === marca.valor}
-          onClick={() => onChange(marca.valor)}
-        >
-          <DibujoMarca marca={marca.valor} />
-          <span>{marca.etiqueta}</span>
-        </button>
-      ))}
+      {MARCAS.map((marca) => {
+        const elegida = valor === marca.valor;
+        return (
+          <button
+            key={marca.valor}
+            type="button"
+            className="collar-opcion"
+            aria-pressed={elegida}
+            onClick={() => onChange(marca.valor)}
+          >
+            <DibujoMarca marca={marca.valor} apagado={!elegida} />
+            <span>{marca.etiqueta}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }

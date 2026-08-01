@@ -11,12 +11,19 @@ export default defineConfig({
       // El .wasm de SQLite pesa >2 MB: sin subir el límite Workbox lo excluye en
       // silencio y la app queda rota justo cuando no hay red para ir a buscarlo.
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,wasm}'],
-        // Los builds `mc-` de wa-sqlite son la variante con cifrado
-        // (multi-cipher) y solo se cargan si se define `encryptionKey`, cosa
-        // que no hacemos. Precachearlos serían 3,6 MB extra en la primera
-        // instalación, que en el campo se baja con la señal que haya.
-        globIgnores: ['**/mc-wa-sqlite*.wasm'],
+        // woff2 incluido a propósito: sin precachear las tipografías, la app
+        // sin señal cae a la fuente del sistema y se desarma entera.
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,wasm,woff2}'],
+        globIgnores: [
+          // Los builds `mc-` de wa-sqlite son la variante con cifrado
+          // (multi-cipher) y solo se cargan si se define `encryptionKey`, cosa
+          // que no hacemos. Serían 3,6 MB extra en la primera instalación.
+          '**/mc-wa-sqlite*.wasm',
+          // Subconjuntos de las tipografías que el español nunca pide.
+          '**/*-cyrillic*-wght-normal*.woff2',
+          '**/*-greek*-wght-normal*.woff2',
+          '**/*-vietnamese-wght-normal*.woff2',
+        ],
         maximumFileSizeToCacheInBytes: 12 * 1024 * 1024,
         cleanupOutdatedCaches: true,
       },

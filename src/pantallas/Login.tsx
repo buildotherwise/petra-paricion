@@ -37,7 +37,7 @@ export function Login() {
       <img src="/icono-512.png" alt="Petra · Merino Australiano" />
 
       <h1 className="titulo">Parición</h1>
-      <p className="subtitulo">Entrá una vez con señal. Después la app funciona sin conexión.</p>
+      <p className="subtitulo">Entrá una vez con señal. Después funciona sin conexión.</p>
 
       {error !== null && (
         <p className="aviso aviso--error" role="alert">

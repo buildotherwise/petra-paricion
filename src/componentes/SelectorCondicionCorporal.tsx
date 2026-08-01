@@ -1,3 +1,5 @@
+import type { CSSProperties } from 'react';
+
 const ENTEROS = [
   { valor: 1, descripcion: 'muy flaca' },
   { valor: 2, descripcion: 'flaca' },
@@ -28,7 +30,7 @@ export function SelectorCondicionCorporal({
 
   return (
     <div>
-      <div className="opciones" style={{ '--columnas': 5 } as React.CSSProperties}>
+      <div className="opciones" style={{ '--columnas': 5 } as CSSProperties}>
         {ENTEROS.map((opcion) => (
           <button
             key={opcion.valor}
@@ -46,7 +48,7 @@ export function SelectorCondicionCorporal({
       {entero !== null && (
         <div
           className="opciones"
-          style={{ '--columnas': 4, marginTop: 'var(--sp-2)' } as React.CSSProperties}
+          style={{ '--columnas': 4, marginTop: 'var(--sp-2)' } as CSSProperties}
         >
           {CUARTOS.map((fraccion) => (
             <button
@@ -60,19 +62,6 @@ export function SelectorCondicionCorporal({
             </button>
           ))}
         </div>
-      )}
-
-      {valor !== null && (
-        <p
-          style={{
-            marginTop: 'var(--sp-3)',
-            marginBottom: 0,
-            fontVariantNumeric: 'tabular-nums',
-            fontWeight: 700,
-          }}
-        >
-          Condición corporal: {formatearCondicion(valor)}
-        </p>
       )}
     </div>
   );

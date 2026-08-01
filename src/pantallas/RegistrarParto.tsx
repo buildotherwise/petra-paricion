@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import { useQuery } from '@powersync/react';
 import { Encabezado } from '../componentes/Encabezado';
 import { Caravana } from '../componentes/Caravana';
@@ -10,6 +10,7 @@ import {
 import { db } from '../lib/powersync/db';
 import { dispositivo, entorno } from '../lib/entorno';
 import { useUsuarioId } from '../lib/sesion';
+import { buscarCaravana, partirCoincidencia } from '../lib/busqueda';
 import {
   collarDisponible,
   corderosQueRequierenCollar,
@@ -28,12 +29,18 @@ interface BorradorCordero extends CorderoDelParto {
   peso_kg: number | null;
 }
 
+interface OvejaElegida {
+  id: string;
+  caravana: string;
+}
+
 const PASOS: Paso[] = ['madre', 'datos', 'corderos', 'resumen'];
+const NOMBRE_TIPO: Record<number, string> = { 1: 'Único', 2: 'Mellizos', 3: 'Trillizos' };
 
 export function RegistrarParto({ onSalir }: { onSalir: () => void }) {
   const usuarioId = useUsuarioId();
   const [paso, setPaso] = useState<Paso>('madre');
-  const [oveja, setOveja] = useState<{ id: string; caravana: string } | null>(null);
+  const [oveja, setOveja] = useState<OvejaElegida | null>(null);
   const [fecha, setFecha] = useState(hoyISO());
   const [condicion, setCondicion] = useState<number | null>(null);
   const [corderos, setCorderos] = useState<BorradorCordero[]>([]);
@@ -57,7 +64,9 @@ export function RegistrarParto({ onSalir }: { onSalir: () => void }) {
   function guardarCordero(cordero: BorradorCordero) {
     setCorderos((previos) => {
       const existe = previos.some((c) => c.id === cordero.id);
-      return existe ? previos.map((c) => (c.id === cordero.id ? cordero : c)) : [...previos, cordero];
+      return existe
+        ? previos.map((c) => (c.id === cordero.id ? cordero : c))
+        : [...previos, cordero];
     });
     setEditando(null);
     setPaso('corderos');
@@ -210,16 +219,18 @@ export function RegistrarParto({ onSalir }: { onSalir: () => void }) {
   );
 }
 
-// ---------------------------------------------------------------------------
+// ───────────────────────────────────────────────────────────────────────
 // Paso 1 — La madre
-// ---------------------------------------------------------------------------
+// ───────────────────────────────────────────────────────────────────────
 
-function PasoMadre({ onElegir }: { onElegir: (oveja: { id: string; caravana: string }) => void }) {
-  const usuarioId = useUsuarioId();
-  const [busqueda, setBusqueda] = useState('');
-  const [creando, setCreando] = useState(false);
+function PasoMadre({ onElegir }: { onElegir: (oveja: OvejaElegida) => void }) {
+  const [consulta, setConsulta] = useState('');
+  const [altaManual, setAltaManual] = useState(false);
 
-  const { data: resultados } = useQuery<{
+  // Se traen las ~500 madres de la temporada y se filtra en memoria. El costo
+  // es despreciable y a cambio la búsqueda puede llegar a las caravanas
+  // alfanuméricas (ver src/lib/busqueda.ts), cosa que un LIKE no logra.
+  const { data: ovejas } = useQuery<{
     id: string;
     caravana: string;
     parto_id: string | null;
@@ -227,92 +238,168 @@ function PasoMadre({ onElegir }: { onElegir: (oveja: { id: string; caravana: str
     `SELECT o.id, o.caravana, p.id AS parto_id
        FROM ovejas o
        LEFT JOIN partos p ON p.oveja_id = o.id
-      WHERE o.temporada = ? AND o.caravana LIKE ?
-      ORDER BY length(o.caravana), o.caravana
-      LIMIT 12`,
-    [entorno.temporada, `${busqueda}%`],
+      WHERE o.temporada = ?`,
+    [entorno.temporada],
   );
 
-  async function altaManual() {
-    const caravana = busqueda.trim();
-    if (caravana === '') return;
-    setCreando(true);
+  const resultados = useMemo(
+    () => buscarCaravana(ovejas, consulta).slice(0, 12),
+    [ovejas, consulta],
+  );
 
-    const id = crypto.randomUUID();
-    const ahora = new Date().toISOString();
-
-    // R9: queda marcada como no precargada y sale en el panel de revisión de
-    // la web, para verificar que la caravana se leyó bien.
-    await db.execute(
-      `INSERT INTO ovejas
-         (id, temporada, caravana, precargada, creado_en, actualizado_en, actualizado_por, dispositivo)
-       VALUES (?, ?, ?, 0, ?, ?, ?, ?)`,
-      [id, entorno.temporada, caravana, ahora, ahora, usuarioId, dispositivo()],
+  if (altaManual) {
+    return (
+      <AltaManual
+        inicial={consulta}
+        onCancelar={() => setAltaManual(false)}
+        onCreada={onElegir}
+      />
     );
-
-    onElegir({ id, caravana });
   }
 
   return (
     <>
       <h1 className="titulo">¿Qué oveja parió?</h1>
-      <p className="subtitulo">Escribí los primeros números de la caravana.</p>
+      <p className="subtitulo">Escribí los números de la caravana.</p>
 
       <div className="campo">
         <input
-          className="entrada entrada--numero"
+          className="entrada entrada--cifra"
           inputMode="numeric"
           autoFocus
           placeholder="0000"
-          value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
+          value={consulta}
+          onChange={(e) => setConsulta(e.target.value)}
           aria-label="Número de caravana"
         />
       </div>
 
       {resultados.length > 0 && (
         <ul className="lista">
-          {resultados.map((fila) => (
-            <li key={fila.id}>
-              <button
-                type="button"
-                onClick={() => onElegir({ id: fila.id, caravana: fila.caravana })}
-              >
-                <Caravana numero={fila.caravana} />
-                {fila.parto_id !== null && (
-                  <span className="lista-nota lista-nota--alerta">Ya tiene parto</span>
-                )}
-              </button>
-            </li>
-          ))}
+          {resultados.map((fila) => {
+            const [antes, coincide, despues] = partirCoincidencia(fila.caravana, consulta);
+            return (
+              <li key={fila.id}>
+                <button
+                  type="button"
+                  onClick={() => onElegir({ id: fila.id, caravana: fila.caravana })}
+                >
+                  <span className="numero">
+                    {antes}
+                    <mark>{coincide}</mark>
+                    {despues}
+                  </span>
+                  {fila.parto_id !== null && <span className="nota nota--alerta">Ya tiene parto</span>}
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
 
-      {busqueda.trim() !== '' && resultados.length === 0 && (
+      {consulta.trim() !== '' && resultados.length === 0 && (
         <div className="tarjeta">
-          <p style={{ marginTop: 0 }}>
-            No hay ninguna oveja <strong>{busqueda}</strong> en la lista de la temporada.
+          <p style={{ margin: '0 0 var(--sp-3)' }}>
+            Ninguna caravana de la temporada tiene <strong>{consulta}</strong>.
           </p>
           <button
             type="button"
             className="boton boton--secundario"
-            onClick={altaManual}
-            disabled={creando}
+            onClick={() => setAltaManual(true)}
           >
-            Agregar la {busqueda} a mano
+            No está en la lista
           </button>
-          <p className="lista-nota" style={{ marginBottom: 0, marginTop: 'var(--sp-2)' }}>
-            Queda marcada para revisar la caravana desde la web.
-          </p>
         </div>
       )}
     </>
   );
 }
 
-// ---------------------------------------------------------------------------
+/**
+ * Alta manual de una madre que no está en la lista (R9).
+ *
+ * Acá el teclado es común, no numérico: hay caravanas como 'PI 136' o
+ * 'T. 319 V' y con un teclado de números serían imposibles de escribir.
+ */
+function AltaManual({
+  inicial,
+  onCancelar,
+  onCreada,
+}: {
+  inicial: string;
+  onCancelar: () => void;
+  onCreada: (oveja: OvejaElegida) => void;
+}) {
+  const usuarioId = useUsuarioId();
+  const [caravana, setCaravana] = useState(inicial);
+  const [creando, setCreando] = useState(false);
+
+  async function crear() {
+    const limpia = caravana.trim();
+    if (limpia === '') return;
+    setCreando(true);
+
+    const id = crypto.randomUUID();
+    const ahora = new Date().toISOString();
+
+    await db.execute(
+      `INSERT INTO ovejas
+         (id, temporada, caravana, precargada, creado_en, actualizado_en, actualizado_por, dispositivo)
+       VALUES (?, ?, ?, 0, ?, ?, ?, ?)`,
+      [id, entorno.temporada, limpia, ahora, ahora, usuarioId, dispositivo()],
+    );
+
+    onCreada({ id, caravana: limpia });
+  }
+
+  return (
+    <>
+      <h1 className="titulo">Agregar una madre</h1>
+      <p className="subtitulo">Escribila tal cual figura en la caravana.</p>
+
+      <div className="campo">
+        <label className="etiqueta" htmlFor="caravana-nueva">
+          Caravana
+        </label>
+        <input
+          id="caravana-nueva"
+          className="entrada entrada--cifra"
+          type="text"
+          inputMode="text"
+          autoCapitalize="characters"
+          autoCorrect="off"
+          spellCheck={false}
+          autoFocus
+          placeholder="PI 136"
+          value={caravana}
+          onChange={(e) => setCaravana(e.target.value)}
+        />
+      </div>
+
+      <p className="aviso aviso--atencion">
+        Queda marcada para revisar la caravana desde la web antes de cerrar la temporada.
+      </p>
+
+      <div className="barra-accion">
+        <button type="button" className="boton boton--secundario" onClick={onCancelar}>
+          Cancelar
+        </button>
+        <button
+          type="button"
+          className="boton boton--principal"
+          onClick={crear}
+          disabled={creando || caravana.trim() === ''}
+        >
+          Agregar
+        </button>
+      </div>
+    </>
+  );
+}
+
+// ───────────────────────────────────────────────────────────────────────
 // Paso 2 — Fecha y condición corporal
-// ---------------------------------------------------------------------------
+// ───────────────────────────────────────────────────────────────────────
 
 function PasoDatos({
   oveja,
@@ -322,7 +409,7 @@ function PasoDatos({
   onCondicion,
   onSiguiente,
 }: {
-  oveja: { id: string; caravana: string };
+  oveja: OvejaElegida;
   fecha: string;
   condicion: number | null;
   onFecha: (fecha: string) => void;
@@ -333,10 +420,10 @@ function PasoDatos({
 
   return (
     <>
-      <h1 className="titulo">
-        <Caravana numero={oveja.caravana} />
-      </h1>
-      <p className="subtitulo">Datos del parto.</p>
+      <h1 className="titulo">Datos del parto</h1>
+      <p className="subtitulo">
+        Madre <Caravana numero={oveja.caravana} />
+      </p>
 
       <div className="campo">
         <label className="etiqueta" htmlFor="fecha">
@@ -358,7 +445,10 @@ function PasoDatos({
       </div>
 
       <div className="campo">
-        <span className="etiqueta">Condición corporal de la madre</span>
+        <span className="etiqueta">
+          Condición corporal de la madre
+          {condicion !== null && ` · ${formatearCondicion(condicion)}`}
+        </span>
         <SelectorCondicionCorporal valor={condicion} onChange={onCondicion} />
       </div>
 
@@ -376,11 +466,9 @@ function PasoDatos({
   );
 }
 
-// ---------------------------------------------------------------------------
+// ───────────────────────────────────────────────────────────────────────
 // Paso 3 — Los corderos
-// ---------------------------------------------------------------------------
-
-const NOMBRE_TIPO: Record<number, string> = { 1: 'Único', 2: 'Mellizos', 3: 'Trillizos' };
+// ───────────────────────────────────────────────────────────────────────
 
 function PasoCorderos({
   corderos,
@@ -411,8 +499,8 @@ function PasoCorderos({
 
       {faltanCollar.length > 0 && (
         <p className="aviso aviso--atencion">
-          En partos múltiples cada cordero vivo necesita collar para poder
-          distinguirlo hasta la señalada. Faltan {faltanCollar.length}.
+          En partos múltiples cada cordero vivo lleva collar para distinguirlo hasta la
+          señalada. {faltanCollar.length === 1 ? 'Falta uno.' : `Faltan ${faltanCollar.length}.`}
         </p>
       )}
 
@@ -457,17 +545,21 @@ function FilaCordero({
   onEditar?: (() => void) | undefined;
   onQuitar?: (() => void) | undefined;
 }) {
+  const peso =
+    cordero.peso_kg !== null ? `${cordero.peso_kg.toFixed(2).replace('.', ',')} kg` : 'sin pesar';
+
   return (
     <div className="cordero-fila">
-      {cordero.collar_marca !== null && <DibujoMarca marca={cordero.collar_marca} tamano={0.5} />}
+      {cordero.collar_marca !== null && <DibujoMarca marca={cordero.collar_marca} tamano={0.62} />}
       <div className="cordero-datos">
         <strong>
-          {cordero.sexo === 'macho' ? 'Macho' : 'Hembra'}
-          {cordero.condicion === 'muerto' ? ' · muerto' : ''}
-          {cordero.peso_kg !== null ? ` · ${cordero.peso_kg.toFixed(2).replace('.', ',')} kg` : ''}
+          {cordero.sexo === 'macho' ? 'Macho' : 'Hembra'} · {peso}
         </strong>
         <small>
-          {cordero.collar_numero !== null ? `Collar ${cordero.collar_numero}` : 'Sin collar'}
+          {cordero.condicion === 'muerto' ? 'Muerto al nacer' : null}
+          {cordero.condicion === 'muerto' && cordero.collar_numero !== null ? ' · ' : null}
+          {cordero.collar_numero !== null ? `Collar ${cordero.collar_numero}` : null}
+          {cordero.condicion === 'vivo' && cordero.collar_numero === null ? 'Sin collar' : null}
         </small>
       </div>
       {onEditar !== undefined && (
@@ -476,12 +568,7 @@ function FilaCordero({
         </button>
       )}
       {onQuitar !== undefined && (
-        <button
-          type="button"
-          className="boton--texto"
-          style={{ color: 'var(--red)' }}
-          onClick={onQuitar}
-        >
+        <button type="button" className="boton--texto boton--peligro" onClick={onQuitar}>
           Quitar
         </button>
       )}
@@ -489,9 +576,9 @@ function FilaCordero({
   );
 }
 
-// ---------------------------------------------------------------------------
+// ───────────────────────────────────────────────────────────────────────
 // Formulario de un cordero
-// ---------------------------------------------------------------------------
+// ───────────────────────────────────────────────────────────────────────
 
 function FormularioCordero({
   inicial,
@@ -508,8 +595,7 @@ function FormularioCordero({
 }) {
   const [sexo, setSexo] = useState<'macho' | 'hembra' | null>(inicial?.sexo ?? null);
   const [condicion, setCondicion] = useState<'vivo' | 'muerto'>(inicial?.condicion ?? 'vivo');
-  // Con coma, como se escribe y se lee en Uruguay. String(4.2) daría "4.2",
-  // que no es lo que el operador tipeó ni lo que muestra el resumen.
+  // Con coma, como se escribe y se lee en Uruguay.
   const [peso, setPeso] = useState(
     inicial?.peso_kg !== null && inicial?.peso_kg !== undefined
       ? inicial.peso_kg.toFixed(2).replace('.', ',')
@@ -528,12 +614,12 @@ function FormularioCordero({
 
   // El collar solo se pide en partos múltiples y solo para corderos vivos (R2).
   const pideCollar = esMultiple && condicion === 'vivo';
-  const puedeGuardar =
-    sexo !== null && validacionPeso.estado !== 'bloqueo' && collarLibre;
+  const puedeGuardar = sexo !== null && validacionPeso.estado !== 'bloqueo' && collarLibre;
 
   return (
     <>
       <h1 className="titulo">{inicial === null ? 'Nuevo cordero' : 'Editar cordero'}</h1>
+      <p className="subtitulo">{esMultiple ? 'Parto múltiple' : 'Primer cordero del parto'}</p>
 
       <div className="campo">
         <span className="etiqueta">Sexo</span>
@@ -581,11 +667,11 @@ function FormularioCordero({
 
       <div className="campo">
         <label className="etiqueta" htmlFor="peso">
-          Peso en kg {condicion === 'muerto' && '(opcional)'}
+          Peso en kg {condicion === 'muerto' && '· opcional'}
         </label>
         <input
           id="peso"
-          className="entrada entrada--numero"
+          className="entrada entrada--cifra"
           inputMode="decimal"
           placeholder="0,00"
           value={peso}
@@ -596,7 +682,7 @@ function FormularioCordero({
             className={
               validacionPeso.estado === 'bloqueo' ? 'aviso aviso--error' : 'aviso aviso--atencion'
             }
-            style={{ marginTop: 'var(--sp-2)' }}
+            style={{ marginTop: 'var(--sp-2)', marginBottom: 0 }}
           >
             {validacionPeso.mensaje}
           </p>
@@ -611,7 +697,7 @@ function FormularioCordero({
             </label>
             <input
               id="collar"
-              className="entrada entrada--numero"
+              className="entrada entrada--cifra"
               inputMode="numeric"
               placeholder="00"
               value={collarNumero}
@@ -622,14 +708,12 @@ function FormularioCordero({
           <div className="campo">
             <span className="etiqueta">Marca del collar</span>
             <SelectorMarcaCollar valor={collarMarca} onChange={setCollarMarca} />
+            {!collarLibre && (
+              <p className="aviso aviso--error" style={{ marginTop: 'var(--sp-3)', marginBottom: 0 }}>
+                Ese collar ya está puesto en otro cordero sin señalar. Elegí otro número o marca.
+              </p>
+            )}
           </div>
-
-          {!collarLibre && (
-            <p className="aviso aviso--error">
-              Ese collar ya está puesto en otro cordero sin señalar. Elegí otro número o
-              marca.
-            </p>
-          )}
         </>
       )}
 
@@ -660,9 +744,9 @@ function FormularioCordero({
   );
 }
 
-// ---------------------------------------------------------------------------
+// ───────────────────────────────────────────────────────────────────────
 // Paso 4 — Resumen
-// ---------------------------------------------------------------------------
+// ───────────────────────────────────────────────────────────────────────
 
 function PasoResumen({
   oveja,
@@ -673,7 +757,7 @@ function PasoResumen({
   guardando,
   onGuardar,
 }: {
-  oveja: { id: string; caravana: string };
+  oveja: OvejaElegida;
   fecha: string;
   condicion: number | null;
   corderos: BorradorCordero[];
@@ -686,11 +770,9 @@ function PasoResumen({
 
   return (
     <>
-      <h1 className="titulo">
-        <Caravana numero={oveja.caravana} />
-      </h1>
+      <h1 className="titulo">{NOMBRE_TIPO[tipo] ?? `${tipo} corderos`}</h1>
       <p className="subtitulo">
-        {NOMBRE_TIPO[tipo] ?? `${tipo} corderos`} · {vivos} vivo{vivos === 1 ? '' : 's'} ·{' '}
+        Madre <Caravana numero={oveja.caravana} /> · {vivos} vivo{vivos === 1 ? '' : 's'} ·{' '}
         {new Date(`${fecha}T12:00:00`).toLocaleDateString('es-UY')}
         {condicion !== null && ` · condición ${formatearCondicion(condicion)}`}
       </p>
@@ -700,6 +782,8 @@ function PasoResumen({
           <FilaCordero key={cordero.id} cordero={cordero} />
         ))}
       </div>
+
+      <div className="rizo" aria-hidden="true" style={{ marginTop: 'var(--sp-5)' } as CSSProperties} />
 
       <div className="barra-accion">
         <button

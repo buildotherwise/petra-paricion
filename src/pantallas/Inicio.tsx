@@ -12,7 +12,7 @@ interface Contadores {
 export function Inicio({ onRegistrarParto }: { onRegistrarParto: () => void }) {
   const hoy = hoyISO();
 
-  // Todo sale de la réplica local: la pantalla de inicio carga igual sin señal.
+  // Todo sale de la réplica local: la pantalla carga igual sin señal.
   const { data } = useQuery<Contadores>(
     `SELECT
        (SELECT count() FROM partos WHERE fecha = ?)                    AS partos_hoy,
@@ -25,6 +25,11 @@ export function Inicio({ onRegistrarParto }: { onRegistrarParto: () => void }) {
   );
 
   const contadores = data[0];
+  const fecha = new Date().toLocaleDateString('es-UY', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  });
 
   return (
     <div className="app">
@@ -32,18 +37,12 @@ export function Inicio({ onRegistrarParto }: { onRegistrarParto: () => void }) {
 
       <main className="contenido area-segura">
         <h1 className="titulo">Temporada {entorno.temporada}</h1>
-        <p className="subtitulo">
-          {new Date().toLocaleDateString('es-UY', {
-            weekday: 'long',
-            day: 'numeric',
-            month: 'long',
-          })}
-        </p>
+        <p className="subtitulo">{fecha}</p>
 
         <div className="contadores">
           <div className="contador">
             <b>{contadores?.partos_hoy ?? 0}</b>
-            <span>Partos hoy</span>
+            <span>Hoy</span>
           </div>
           <div className="contador">
             <b>{contadores?.partos_temporada ?? 0}</b>
@@ -54,6 +53,8 @@ export function Inicio({ onRegistrarParto }: { onRegistrarParto: () => void }) {
             <span>Sin señalar</span>
           </div>
         </div>
+
+        <div className="rizo" aria-hidden="true" />
 
         <div style={{ display: 'grid', gap: 'var(--sp-3)' }}>
           <button type="button" className="boton boton--principal" onClick={onRegistrarParto}>
