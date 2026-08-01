@@ -35,3 +35,7 @@ pnpm-debug.log*
 
 # Salidas de Playwright MCP (capturas de verificación)
 .playwright-mcp/
+
+# Agent skills de terceros: se instalan con `npx skills add powersync-ja/agent-skills`
+.agents/
+.claude/skills/

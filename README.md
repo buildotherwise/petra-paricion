@@ -151,7 +151,7 @@ Después, en la instancia:
    secret vacío**: los proyectos nuevos usan claves asimétricas y PowerSync
    autoconfigura el JWKS. (Solo los proyectos legacy con HS256 necesitan pegar
    el secreto.)
-3. Pegar el contenido de [`powersync/sync-rules.yaml`](powersync/sync-rules.yaml).
+3. Pegar el contenido de [`powersync/sync-config.yaml`](powersync/sync-config.yaml).
 4. La `Instance URL` va a `VITE_POWERSYNC_URL`.
 
 ---
@@ -181,8 +181,14 @@ src/lib/powersync/conector.ts  fetchCredentials + uploadData
 src/lib/powersync/esquema.ts   réplica local (SQLite)
 src/pantallas/                 Login, Inicio, RegistrarParto
 supabase/migrations/           esquema, RLS, auditoría, publicación
-supabase/manual/               lo que lleva secretos y no se versiona ejecutado
-powersync/sync-rules.yaml      qué se replica a cada dispositivo
+scripts/                       migraciones, rol de PowerSync, verificación SQL
+powersync/sync-config.yaml     qué se replica a cada dispositivo
+```
+
+Las agent skills de PowerSync no se versionan; se instalan con:
+
+```bash
+npx skills add powersync-ja/agent-skills
 ```
 
 ### Tres decisiones que conviene no deshacer
