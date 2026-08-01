@@ -69,18 +69,46 @@ pnpm install
 pnpm dev
 ```
 
+### IPv6: leer esto antes de conectar nada
+
+Supabase tiene **tres** direcciones distintas y se usan para cosas distintas:
+
+| Cadena | Para qué | Red |
+|---|---|---|
+| `https://<ref>.supabase.co` | La app (`VITE_SUPABASE_URL`) | HTTPS, indistinto |
+| `db.<ref>.supabase.co:5432` — *direct* | **Solo PowerSync** | **IPv6 únicamente** en el plan Free |
+| `aws-N-sa-east-1.pooler.supabase.com:5432` — *session pooler* | Migraciones y consultas | IPv4 |
+
+Dos hechos que no se pueden esquivar:
+
+- **La replicación lógica no pasa por el pooler.** Supabase lo dice
+  explícitamente: para replicación hay que usar la conexión directa. Así que
+  PowerSync necesita sí o sí la directa, que en el plan Free es IPv6 pura.
+- **El add-on de IPv4 no existe en el plan Free.** Requiere Pro (US$25/mes)
+  más el add-on (US$4/mes).
+
+La buena noticia es que **PowerSync Cloud tiene egress IPv6** (rango
+`2602:817::/44`), así que el plan Free alcanza. Pero es lo primero que hay que
+verificar al crear la instancia: si PowerSync no conecta, no hay sync y todo lo
+demás da igual.
+
+Para todo lo que no sea replicación —migraciones, tests, consultas— se usa el
+**session pooler**, que es IPv4 y funciona desde cualquier red.
+
 ### Aplicar el esquema
 
 ```bash
 brew install supabase/tap/supabase
 supabase link --project-ref "$SUPABASE_PROJECT_REF"
-supabase db push                  # aplica supabase/migrations/*.sql
+
+# Por el pooler: la conexión directa es IPv6 y muchas redes no la alcanzan.
+supabase db push --db-url "$POOLER_URL"
 ```
 
 Después, el rol de replicación (lleva contraseña, por eso va aparte del repo):
 
 ```bash
-psql "$DIRECT_CONNECTION_STRING" \
+psql "$POOLER_URL" \
   -v powersync_password="$(openssl rand -base64 24)" \
   -f supabase/manual/powersync-rol.sql
 ```
@@ -90,7 +118,8 @@ recupera después.
 
 ### 6. Configurar PowerSync
 
-1. Instancia nueva apuntando a la **direct connection string** de Supabase, con
+1. Instancia nueva apuntando a la **direct connection string** de Supabase
+   (`db.<ref>.supabase.co`, NO el pooler — ver la nota de IPv6 más arriba), con
    usuario `powersync_role`. PowerSync ya trae el CA de Supabase, así que
    `verify-full` funciona sin configurar nada más.
 2. En `Client Auth`, activar **Use Supabase Auth** y **dejar el campo de JWT
