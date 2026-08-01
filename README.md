@@ -8,11 +8,12 @@ formularios de Zoho. La especificación funcional completa está en
 
 | | |
 |---|---|
-| ✅ Esquema, RLS y auditoría | migraciones aplicables, 13 aserciones verdes contra Postgres 17 |
-| ✅ Reglas de negocio | R1, R2, R3, R7, R12 con 50 tests |
-| ✅ App PWA | login, inicio y registro de parto, corriendo sobre SQLite local |
-| ⏳ Conexión a Supabase y PowerSync | **bloqueado: faltan las cuentas del Bloque 0** |
-| ⏳ Importador de caravanas | **bloqueado: falta el archivo con la lista de madres** |
+| ✅ Esquema, RLS y auditoría | **aplicados en el proyecto**; 13 aserciones verdes en local y privilegios verificados en producción |
+| ✅ Rol `powersync_role` | creado, con `REPLICATION BYPASSRLS` y sin acceso a `cambios` |
+| ✅ Reglas de negocio | R1, R2, R3, R7, R12 con 68 tests |
+| ✅ App PWA | login, inicio y registro de parto, sobre SQLite local |
+| ⏳ Instancia de PowerSync | **falta crearla** y cargar su URL en `VITE_POWERSYNC_URL` |
+| ⏳ Importador de caravanas | el archivo ya está en `datos/`; falta escribir el parser |
 | ⏳ Deploy y prueba en dispositivos | después de lo anterior |
 
 ---
@@ -96,29 +97,32 @@ La buena noticia es que **PowerSync Cloud tiene egress IPv6** (rango
 verificar al crear la instancia: si PowerSync no conecta, no hay sync y todo lo
 demás da igual.
 
-Para todo lo que no sea replicación —migraciones, tests, consultas— se usa el
-**session pooler**, que es IPv4 y funciona desde cualquier red.
+Para todo lo que no sea replicación se usa la **Management API**, que va por
+HTTPS y por lo tanto por IPv4. El `POOLER_URL` queda como alternativa opcional,
+solo si hace falta una sesión interactiva de `psql`.
 
 ### Aplicar el esquema
 
 ```bash
-brew install supabase/tap/supabase
-supabase link --project-ref "$SUPABASE_PROJECT_REF"
-
-# Por el pooler: la conexión directa es IPv6 y muchas redes no la alcanzan.
-supabase db push --db-url "$POOLER_URL"
+python3 scripts/aplicar-migraciones.py --dry-run   # ver qué haría
+python3 scripts/aplicar-migraciones.py
 ```
 
-Después, el rol de replicación (lleva contraseña, por eso va aparte del repo):
+Aplica `supabase/migrations/*.sql` en orden y deja constancia en
+`supabase_migrations.schema_migrations` — la misma tabla que usa el CLI de
+Supabase, así que `db push` no las vuelve a aplicar si algún día se corre desde
+una red con IPv6.
+
+Después, el rol de replicación:
 
 ```bash
-psql "$POOLER_URL" \
-  -v powersync_password="$(openssl rand -base64 24)" \
-  -f supabase/manual/powersync-rol.sql
+python3 scripts/crear-rol-powersync.py
 ```
 
-Guardá esa contraseña — va en la connection string de PowerSync y no se
-recupera después.
+Genera la contraseña, crea el rol con `REPLICATION BYPASSRLS` y la guarda en
+`.env.local` (nunca la imprime). Esa contraseña va en la connection string de
+PowerSync y **no se recupera después**: si se pierde, hay que rotarla con
+`--rotar` y recargarla en PowerSync.
 
 ### 6. Configurar PowerSync
 
