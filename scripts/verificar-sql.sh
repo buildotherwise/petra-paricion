@@ -82,12 +82,12 @@ create function auth.uid() returns uuid language sql stable as $$
   select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid;
 $$;
 
--- Supabase otorga esto por defecto en el schema public. Sin ello los revoke de
--- las migraciones no tendrían nada que revocar y el test de blindaje daría un
--- falso verde.
+-- Se otorga el usage del schema, pero NO los privilegios por defecto sobre las
+-- tablas: se simula a propósito el caso estricto, con "Automatically expose new
+-- tables" APAGADO en Supabase. Así los tests prueban que los grants explícitos
+-- de 0002_rls.sql alcanzan por sí solos — si dependiéramos de la casilla del
+-- panel, esto fallaría acá antes que en producción.
 grant usage on schema public to anon, authenticated, service_role;
-alter default privileges in schema public
-  grant all on tables to anon, authenticated, service_role;
 SQL
 
 echo "▸ Aplicando migraciones…"

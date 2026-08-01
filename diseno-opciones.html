@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="es-UY">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Petra · Tres direcciones de diseño</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..900&family=Archivo:wght@400..800&family=Instrument+Serif:ital@0;1&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:opsz,wght@6..72,300..700&family=Manrope:wght@400..800&display=swap" rel="stylesheet">
+<style>
+/* ═══ Página de presentación ═══════════════════════════════════════════ */
+*{box-sizing:border-box}
+body{
+  margin:0; background:#12110C; color:#E8E2D0;
+  font-family:'Archivo',system-ui,sans-serif; line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+.intro{padding:88px 0 56px;border-bottom:1px solid #2C2819}
+.kicker{font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:#8C7A2E;font-weight:700;margin:0 0 20px}
+h1{font-family:'Fraunces',serif;font-variation-settings:'opsz' 120,'SOFT' 0,'WONK' 1;
+   font-weight:500;font-size:clamp(34px,5.5vw,60px);line-height:1.02;letter-spacing:-.02em;margin:0 0 22px;color:#F6F2E4}
+.lede{font-size:17px;max-width:62ch;color:#B3AB92;margin:0 0 14px}
+.lede strong{color:#E8E2D0;font-weight:600}
+
+.criterios{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:18px;margin-top:40px}
+.criterio{border-top:1px solid #2C2819;padding-top:14px}
+.criterio b{display:block;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#8C7A2E;margin-bottom:6px}
+.criterio span{font-size:14px;color:#B3AB92}
+
+section.dir{padding:76px 0;border-bottom:1px solid #2C2819}
+.dirhead{display:grid;grid-template-columns:1fr;gap:26px;margin-bottom:44px}
+@media(min-width:900px){.dirhead{grid-template-columns:1.15fr .85fr;gap:56px}}
+.num{font-family:'Fraunces',serif;font-variation-settings:'opsz' 144;font-size:13px;letter-spacing:.3em;color:#8C7A2E;font-weight:700}
+h2{font-family:'Fraunces',serif;font-variation-settings:'opsz' 144,'WONK' 1;font-weight:600;
+   font-size:clamp(28px,3.6vw,40px);line-height:1.05;margin:10px 0 16px;color:#F6F2E4;letter-spacing:-.015em}
+.dirhead p{color:#B3AB92;font-size:15.5px;margin:0 0 12px;max-width:56ch}
+.ficha{font-size:13.5px}
+.ficha dt{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:#7A7259;margin-top:15px}
+.ficha dd{margin:3px 0 0;color:#D6CFB8}
+.swatches{display:flex;gap:6px;margin-top:9px}
+.sw{width:30px;height:30px;border-radius:4px;border:1px solid rgba(255,255,255,.14)}
+.riesgo{margin-top:22px;padding:13px 15px;border-left:2px solid #A34B00;background:rgba(163,75,0,.1);font-size:13.5px;color:#D6CFB8}
+.riesgo b{color:#E8A867}
+
+.pantallas{display:flex;gap:26px;overflow-x:auto;padding:8px 0 22px;scroll-snap-type:x mandatory}
+.pantalla{flex:none;scroll-snap-align:start}
+.cap{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:#7A7259;margin:0 0 11px;font-weight:600}
+
+/* Marco de teléfono */
+.tel{width:340px;height:625px;border-radius:34px;overflow:hidden;position:relative;
+     box-shadow:0 0 0 1px rgba(255,255,255,.10),0 28px 60px -20px rgba(0,0,0,.8);
+     display:flex;flex-direction:column}
+.tel *{box-sizing:border-box}
+/* Barra de acción fija: el botón principal siempre al alcance del pulgar,
+   como en la app real. */
+.bar{display:grid;grid-template-columns:1fr 1.6fr;gap:9px;padding:14px 18px 20px;margin-top:auto}
+
+.cierre{padding:76px 0 110px}
+.cierre h2{margin-bottom:20px}
+.cierre ol{color:#B3AB92;font-size:15.5px;max-width:62ch;padding-left:20px}
+.cierre li{margin-bottom:11px}
+.cierre code{background:#22201533;border:1px solid #2C2819;border-radius:4px;padding:1px 6px;
+             font-family:'IBM Plex Mono',monospace;font-size:13px;color:#D6CFB8}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   1 · CABAÑA — el libro de registro
+   ═══════════════════════════════════════════════════════════════════════ */
+.d1{background:#F7F4EA;color:#241F10;font-family:'Archivo',sans-serif;
+    background-image:linear-gradient(#EFEADB 1px,transparent 1px);background-size:100% 30px}
+.d1 .top{display:flex;align-items:center;justify-content:space-between;padding:17px 20px 13px;
+         border-bottom:1.5px solid #241F10}
+.d1 .logo{font-family:'Fraunces',serif;font-variation-settings:'opsz' 144,'WONK' 1;
+          font-weight:600;font-size:15px;letter-spacing:.18em;text-transform:uppercase}
+.d1 .sync{font-size:10px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:#8A4000;
+          display:flex;align-items:center;gap:6px}
+.d1 .sync i{width:5px;height:5px;border-radius:50%;background:#A34B00;display:block}
+.d1 .body{padding:24px 20px;flex:1;overflow:hidden}
+.d1 .eyebrow{font-size:9.5px;letter-spacing:.26em;text-transform:uppercase;color:#8C7A2E;font-weight:700;margin:0 0 7px}
+.d1 h3{font-family:'Fraunces',serif;font-variation-settings:'opsz' 144,'SOFT' 0,'WONK' 1;
+       font-weight:500;font-size:32px;line-height:1;margin:0 0 3px;letter-spacing:-.015em}
+.d1 .sub{font-size:12.5px;color:#6B6450;margin:0 0 24px}
+.d1 .rule{height:1px;background:#241F10;opacity:.16;margin:20px 0}
+.d1 .cifras{display:flex;border-top:1.5px solid #241F10;border-bottom:1px solid #241F1833}
+.d1 .cifra{flex:1;padding:14px 4px 13px;text-align:center;border-right:1px solid #241F1826}
+.d1 .cifra:last-child{border-right:0}
+.d1 .cifra b{display:block;font-family:'Fraunces',serif;font-variation-settings:'opsz' 144;
+             font-weight:400;font-size:34px;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.d1 .cifra span{font-size:8.5px;letter-spacing:.15em;text-transform:uppercase;color:#8C7A2E;font-weight:700}
+.d1 .acciones{margin-top:28px;display:grid;gap:11px}
+.d1 .btn{padding:17px;text-align:center;font-size:12.5px;letter-spacing:.17em;text-transform:uppercase;
+         font-weight:700;border:1.5px solid #241F10;background:#241F10;color:#F7F4EA}
+.d1 .btn.ghost{background:transparent;color:#241F10;border-style:solid;opacity:.42}
+.d1 .entrada{width:100%;border:0;border-bottom:1.5px solid #241F10;background:transparent;padding:9px 0 13px;
+             font-family:'Fraunces',serif;font-variation-settings:'opsz' 144;font-size:40px;font-weight:400;
+             text-align:center;letter-spacing:.1em;color:#241F10;font-variant-numeric:tabular-nums}
+.d1 .fila{display:flex;align-items:baseline;gap:13px;padding:14px 0;border-bottom:1px solid #241F1826}
+.d1 .idx{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#A39A80;width:20px}
+/* Caravana como número de asiento en el libro, no como chip */
+.d1 .crv{font-family:'Fraunces',serif;font-variation-settings:'opsz' 144;font-size:25px;font-weight:400;
+         letter-spacing:.05em;font-variant-numeric:tabular-nums;flex:1}
+.d1 .crv em{font-style:normal;box-shadow:inset 0 -9px 0 #F4C21F66}
+.d1 .marca-nota{font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:#8A4000;font-weight:700}
+.d1 .collares{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:11px}
+.d1 .col{border:1.5px solid #241F1833;padding:13px 5px 10px;text-align:center}
+.d1 .col.on{border-color:#241F10;background:#241F100A}
+.d1 .col span{display:block;font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;margin-top:9px;font-weight:700;color:#4A4433}
+.d1 .par{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:9px}
+.d1 .opt{border:1.5px solid #241F1833;padding:15px 6px;text-align:center;font-size:14px;font-weight:600}
+.d1 .opt.on{background:#241F10;color:#F7F4EA;border-color:#241F10}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   2 · INSTRUMENTO — el aparato de medición
+   ═══════════════════════════════════════════════════════════════════════ */
+.d2{background:#131208;color:#EDE8D6;font-family:'IBM Plex Sans',sans-serif}
+.d2 .top{display:flex;align-items:center;justify-content:space-between;padding:17px 18px;
+         border-bottom:1px solid #2A2714}
+.d2 .logo{font-family:'Instrument Serif',serif;font-size:19px;letter-spacing:.1em;color:#F4C21F}
+.d2 .sync{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.06em;color:#F0A21F;
+          border:1px solid #F0A21F55;padding:4px 9px;border-radius:2px;display:flex;align-items:center;gap:6px}
+.d2 .sync i{width:5px;height:5px;background:#F0A21F;display:block;border-radius:50%}
+.d2 .body{padding:22px 18px;flex:1;overflow:hidden}
+.d2 .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.22em;
+             text-transform:uppercase;color:#8C7A2E;margin:0 0 8px}
+.d2 h3{font-family:'Instrument Serif',serif;font-weight:400;font-size:37px;line-height:1;margin:0 0 4px;color:#F6F1DF}
+.d2 .sub{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A836B;margin:0 0 22px;letter-spacing:.03em}
+/* Los datos viven en una capa de papel sobre el instrumento */
+.d2 .panel{background:#F6F1DF;color:#131208;border-radius:3px;padding:3px 14px}
+.d2 .lin{display:flex;align-items:center;justify-content:space-between;padding:12px 0;
+         border-bottom:1px solid #13120818}
+.d2 .lin:last-child{border-bottom:0}
+.d2 .lin small{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;
+               text-transform:uppercase;color:#6E6752}
+.d2 .lin b{font-family:'Instrument Serif',serif;font-size:30px;font-weight:400;font-variant-numeric:tabular-nums;line-height:1}
+.d2 .acciones{margin-top:24px;display:grid;gap:10px}
+.d2 .btn{padding:17px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:11.5px;
+         letter-spacing:.2em;text-transform:uppercase;background:#F4C21F;color:#131208;border-radius:2px;font-weight:600}
+.d2 .btn.ghost{background:transparent;color:#6E6752;border:1px solid #2A2714}
+.d2 .entrada{width:100%;background:#0C0B05;border:1px solid #2A2714;border-radius:2px;padding:15px;
+             font-family:'IBM Plex Mono',monospace;font-size:31px;text-align:center;color:#F4C21F;
+             letter-spacing:.16em;font-variant-numeric:tabular-nums}
+/* Regla de medición: motivo del instrumento */
+.d2 .ticks{display:flex;gap:3px;margin:13px 0 3px;height:9px;align-items:flex-end}
+.d2 .ticks i{flex:1;background:#2A2714;height:4px;display:block}
+.d2 .ticks i.on{background:#F4C21F;height:9px}
+.d2 .fila{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid #2A2714}
+.d2 .crv{font-family:'IBM Plex Mono',monospace;font-size:21px;letter-spacing:.13em;color:#F6F1DF;flex:1;font-weight:500}
+.d2 .crv em{font-style:normal;color:#F4C21F}
+.d2 .marca-nota{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;
+                text-transform:uppercase;color:#F0A21F}
+.d2 .collares{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:11px}
+.d2 .col{border:1px solid #2A2714;border-radius:2px;padding:12px 5px 9px;text-align:center;background:#0C0B05}
+.d2 .col.on{border-color:#F4C21F;background:#F4C21F14}
+.d2 .col span{display:block;font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.08em;
+              text-transform:uppercase;margin-top:8px;color:#8A836B}
+.d2 .par{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}
+.d2 .opt{border:1px solid #2A2714;border-radius:2px;padding:15px 6px;text-align:center;font-size:14px;background:#0C0B05}
+.d2 .opt.on{background:#F4C21F;color:#131208;border-color:#F4C21F;font-weight:600}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   3 · VELLÓN — el tacto de la lana
+   ═══════════════════════════════════════════════════════════════════════ */
+.d3{background:#EFEAE0;color:#2B2519;font-family:'Manrope',sans-serif}
+.d3 .top{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 14px}
+.d3 .logo{font-family:'Newsreader',serif;font-size:18px;font-weight:500;letter-spacing:.02em;color:#6B5A1E}
+.d3 .sync{font-size:11px;font-weight:700;color:#8A4000;background:#fff;border-radius:99px;
+          padding:6px 12px;display:flex;align-items:center;gap:7px;box-shadow:0 1px 3px #2B251914}
+.d3 .sync i{width:6px;height:6px;border-radius:50%;background:#C25E00;display:block}
+.d3 .body{padding:12px 20px 24px;flex:1;overflow:hidden}
+.d3 h3{font-family:'Newsreader',serif;font-weight:400;font-size:34px;line-height:1.06;margin:0 0 5px;letter-spacing:-.01em}
+.d3 .sub{font-size:13.5px;color:#7C7362;margin:0 0 22px}
+/* El vellón: superficies blandas y superpuestas */
+.d3 .card{background:#FCFAF6;border-radius:20px;padding:19px;box-shadow:0 1px 2px #2B25190D,0 12px 26px -14px #2B251933}
+.d3 .cifras{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.d3 .cifras .card{padding:16px 8px;text-align:center;border-radius:17px}
+.d3 .cifras b{display:block;font-family:'Newsreader',serif;font-weight:400;font-size:33px;line-height:1;
+              font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.d3 .cifras span{font-size:10px;color:#9A9182;font-weight:600;letter-spacing:.03em}
+.d3 .acciones{margin-top:26px;display:grid;gap:11px}
+.d3 .btn{padding:19px;text-align:center;border-radius:16px;background:#6B5A1E;color:#fff;
+         font-size:15.5px;font-weight:700;box-shadow:0 8px 20px -8px #6B5A1E88}
+.d3 .btn.ghost{background:#E4DDCE;color:#9A9182;box-shadow:none}
+.d3 .entrada{width:100%;border:0;border-radius:16px;background:#FCFAF6;padding:19px;
+             font-family:'Newsreader',serif;font-size:37px;text-align:center;color:#2B2519;
+             letter-spacing:.07em;font-variant-numeric:tabular-nums;box-shadow:inset 0 0 0 2px #6B5A1E22}
+/* El rizo del vellón, como separador */
+.d3 .crimp{height:9px;margin:16px 0;background-repeat:repeat-x;background-size:16px 9px;opacity:.32;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='9'><path d='M0 7 Q4 0 8 7 T16 7' fill='none' stroke='%236B5A1E' stroke-width='1.4'/></svg>")}
+.d3 .fila{display:flex;align-items:center;gap:13px;padding:13px 4px}
+.d3 .fila+.fila{border-top:1px solid #2B25190F}
+.d3 .crv{font-family:'Newsreader',serif;font-size:24px;letter-spacing:.04em;flex:1;font-variant-numeric:tabular-nums}
+.d3 .pill{background:#F4C21F;color:#2B2519;border-radius:99px;padding:3px 12px;font-size:12px;font-weight:800}
+.d3 .marca-nota{font-size:11px;font-weight:700;color:#C25E00}
+.d3 .collares{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:11px}
+.d3 .col{background:#FCFAF6;border-radius:15px;padding:14px 5px 11px;text-align:center;box-shadow:inset 0 0 0 2px transparent}
+.d3 .col.on{box-shadow:inset 0 0 0 2px #6B5A1E}
+.d3 .col span{display:block;font-size:9.5px;font-weight:700;margin-top:9px;color:#7C7362}
+.d3 .par{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:9px}
+.d3 .opt{background:#FCFAF6;border-radius:15px;padding:16px 6px;text-align:center;font-size:15px;font-weight:600}
+.d3 .opt.on{background:#6B5A1E;color:#fff}
+.d3 .lbl{font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#9A9182;margin:0 0 9px}
+.d1 .lbl{font-size:9.5px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:#8C7A2E;margin:0 0 9px}
+.d2 .lbl{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:#8C7A2E;margin:0 0 9px}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<div class="intro">
+  <p class="kicker">Petra · Parición · Dirección visual</p>
+  <h1>Tres maneras de que esto<br>no parezca una planilla</h1>
+  <p class="lede">Las tres respetan la paleta del logo y los mínimos de campo: toque de 48&nbsp;px, contraste alto, teclado numérico, un parto en menos de 45 segundos. Lo que cambia es <strong>la tipografía, la estructura y el material</strong> — que es de donde viene la sensación de calidad, no del color.</p>
+  <p class="lede">Cada una está aplicada a las mismas tres pantallas y con los datos reales de la cabaña, para que compares lo mismo contra lo mismo. <strong>Miralas en el teléfono si podés</strong>: es donde se van a usar.</p>
+
+  <div class="criterios">
+    <div class="criterio"><b>Se usa a pleno sol</b><span>Invierno en el norte, sol bajo y directo. El fondo claro a brillo máximo gana en legibilidad.</span></div>
+    <div class="criterio"><b>Se usa con guantes</b><span>Dedo grueso, pantalla mojada. Blancos generosos y objetivos grandes.</span></div>
+    <div class="criterio"><b>Los números son el contenido</b><span>Pesos, caravanas, collares. Cifras tabulares y tratadas como protagonistas.</span></div>
+    <div class="criterio"><b>Todo funciona sin señal</b><span>Las tipografías van embebidas en la app, no se bajan de internet.</span></div>
+  </div>
+</div>
+
+<!-- ══════════════════════ 1 · CABAÑA ══════════════════════ -->
+<section class="dir">
+  <div class="dirhead">
+    <div>
+      <div class="num">01</div>
+      <h2>Cabaña</h2>
+      <p>El libro de registro de la cabaña. Reglas finas, versalitas espaciadas, cada parto como un asiento en un libro. La caravana no es una etiqueta de color: es el número de asiento, resaltado como si estuviera marcado a mano.</p>
+      <p>Es la dirección más formal y la que más se parece a lo que Petra <em>es</em>: una cabaña con pedigrí, registros y trazabilidad de décadas. La <strong>Fraunces</strong> tiene contraste alto y un eje de “wonk” que le da carácter de almanaque agrícola — no es la serif de catálogo que se ve en todos lados.</p>
+      <div class="riesgo"><b>A tener en cuenta:</b> es la más sobria de las tres. Si buscabas algo que impacte de entrada, esta impacta por precisión, no por brillo.</div>
+    </div>
+    <dl class="ficha">
+      <dt>Tipografías</dt><dd>Fraunces (títulos y cifras) · Archivo (interfaz)</dd>
+      <dt>Fondo</dt><dd>Papel cálido con pauta tenue</dd>
+      <dt>Estructura</dt><dd>Reglas de 1 px, versalitas, alineación de libro contable</dd>
+      <dt>Paleta</dt>
+      <dd><div class="swatches">
+        <div class="sw" style="background:#F7F4EA"></div><div class="sw" style="background:#241F10"></div>
+        <div class="sw" style="background:#8C7A2E"></div><div class="sw" style="background:#F4C21F"></div>
+        <div class="sw" style="background:#A34B00"></div></div></dd>
+      <dt>Señal distintiva</dt><dd>La caravana marcada como asiento de registro</dd>
+    </dl>
+  </div>
+
+  <div class="pantallas">
+    <div class="pantalla"><p class="cap">Inicio</p>
+      <div class="tel d1">
+        <div class="top"><div class="logo">Petra</div><div class="sync"><i></i>7 sin sincronizar</div></div>
+        <div class="body">
+          <p class="eyebrow">Temporada 2026</p>
+          <h3>Sábado 1<br>de agosto</h3>
+          <p class="sub">Día 1 de parición</p>
+          <div class="cifras">
+            <div class="cifra"><b>3</b><span>Hoy</span></div>
+            <div class="cifra"><b>3</b><span>Temporada</span></div>
+            <div class="cifra"><b>5</b><span>Sin señalar</span></div>
+          </div>
+          <div class="acciones">
+            <div class="btn">Registrar parto</div>
+            <div class="btn ghost">Señalada</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pantalla"><p class="cap">Buscar la madre</p>
+      <div class="tel d1">
+        <div class="top"><div class="logo">Petra</div><div class="sync"><i></i>7 sin sincronizar</div></div>
+        <div class="body">
+          <p class="eyebrow">Paso 1 de 4</p>
+          <h3>¿Qué oveja parió?</h3>
+          <p class="sub">Escribí parte de la caravana</p>
+          <input class="entrada" value="01" readonly>
+          <div style="margin-top:20px">
+            <div class="fila"><span class="idx">01</span><span class="crv"><em>0178</em></span></div>
+            <div class="fila"><span class="idx">02</span><span class="crv"><em>0181</em></span><span class="marca-nota">Ya tiene parto</span></div>
+            <div class="fila"><span class="idx">03</span><span class="crv"><em>0185</em></span></div>
+            <div class="fila"><span class="idx">04</span><span class="crv">PI&nbsp;<em>136</em></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pantalla"><p class="cap">Cordero y collar</p>
+      <div class="tel d1">
+        <div class="top"><div class="logo">Petra</div><div class="sync"><i></i>7 sin sincronizar</div></div>
+        <div class="body">
+          <p class="eyebrow">Mellizo · 2 de 2</p>
+          <h3>Cordero</h3>
+          <div class="rule"></div>
+          <p class="lbl">Sexo</p>
+          <div class="par"><div class="opt on">Macho</div><div class="opt">Hembra</div></div>
+          <p class="lbl" style="margin-top:19px">Al nacer</p>
+          <div class="par"><div class="opt on">Vivo</div><div class="opt">Muerto</div></div>
+          <p class="lbl" style="margin-top:19px">Marca del collar</p>
+          <div class="collares">
+            <div class="col on"><svg width="30" height="48" viewBox="0 0 30 48"><rect x="4" y="2" width="22" height="44" rx="5" fill="none" stroke="#241F10" stroke-width="1.6"/><circle cx="15" cy="12" r="4.6" fill="#241F10"/></svg><span>Arriba</span></div>
+            <div class="col"><svg width="30" height="48" viewBox="0 0 30 48"><rect x="4" y="2" width="22" height="44" rx="5" fill="none" stroke="#241F10" stroke-width="1.6"/><g stroke="#241F10" stroke-width="3" stroke-linecap="round"><line x1="9" y1="19" x2="21" y2="29"/><line x1="21" y1="19" x2="9" y2="29"/></g></svg><span>Cruz</span></div>
+            <div class="col"><svg width="30" height="48" viewBox="0 0 30 48"><rect x="4" y="2" width="22" height="44" rx="5" fill="none" stroke="#241F10" stroke-width="1.6"/><circle cx="15" cy="36" r="4.6" fill="#241F10"/></svg><span>Abajo</span></div>
+          </div>
+        </div>
+        <div class="bar">
+          <div class="btn ghost" style="opacity:1;font-size:11px">Cancelar</div>
+          <div class="btn">Listo</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════ 2 · INSTRUMENTO ══════════════════════ -->
+<section class="dir">
+  <div class="dirhead">
+    <div>
+      <div class="num">02</div>
+      <h2>Instrumento</h2>
+      <p>Petra mide micrones, CVD, PVL y DEP. Esta dirección toma en serio esa parte: la app como aparato de medición. Cuerpo grafito, cifras monoespaciadas alineadas como lectura de instrumento, y los datos apoyados en una <em>capa de papel</em> sobre el aparato — el registro escrito encima de la máquina.</p>
+      <p>El oro de la caravana (<strong>#F4C21F</strong>) es la única señal cálida y por eso pesa. Es la dirección con más personalidad y la que menos se parece a una app de gestión.</p>
+      <div class="riesgo"><b>El costo real:</b> a pleno sol un fondo oscuro se lee peor que uno claro, aun a brillo máximo. Si la mayor parte del registro se hace al mediodía en el campo abierto, esta dirección cobra un precio funcional. Es la que más me gusta como objeto y la que menos recomiendo para el uso concreto.</div>
+    </div>
+    <dl class="ficha">
+      <dt>Tipografías</dt><dd>Instrument Serif (cifras) · IBM Plex Sans + Mono (datos)</dd>
+      <dt>Fondo</dt><dd>Grafito, con paneles de papel para los datos</dd>
+      <dt>Estructura</dt><dd>Lecturas alineadas, marcas de escala, hilos de oro</dd>
+      <dt>Paleta</dt>
+      <dd><div class="swatches">
+        <div class="sw" style="background:#131208"></div><div class="sw" style="background:#F6F1DF"></div>
+        <div class="sw" style="background:#F4C21F"></div><div class="sw" style="background:#8C7A2E"></div>
+        <div class="sw" style="background:#F0A21F"></div></div></dd>
+      <dt>Señal distintiva</dt><dd>La regla de medición como indicador de avance</dd>
+    </dl>
+  </div>
+
+  <div class="pantallas">
+    <div class="pantalla"><p class="cap">Inicio</p>
+      <div class="tel d2">
+        <div class="top"><div class="logo">Petra</div><div class="sync"><i></i>7 EN COLA</div></div>
+        <div class="body">
+          <p class="eyebrow">Temporada 2026 · día 1</p>
+          <h3>Parición</h3>
+          <p class="sub">sáb 01 ago · 06:40</p>
+          <div class="panel">
+            <div class="lin"><small>Partos hoy</small><b>3</b></div>
+            <div class="lin"><small>Temporada</small><b>3</b></div>
+            <div class="lin"><small>Sin señalar</small><b>5</b></div>
+          </div>
+          <div class="acciones">
+            <div class="btn">Registrar parto</div>
+            <div class="btn ghost">Señalada</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pantalla"><p class="cap">Buscar la madre</p>
+      <div class="tel d2">
+        <div class="top"><div class="logo">Petra</div><div class="sync"><i></i>7 EN COLA</div></div>
+        <div class="body">
+          <div class="ticks"><i class="on"></i><i></i><i></i><i></i></div>
+          <p class="eyebrow">Paso 1 / 4 · madre</p>
+          <h3>¿Qué oveja parió?</h3>
+          <p class="sub">búsqueda por caravana</p>
+          <input class="entrada" value="01" readonly>
+          <div style="margin-top:16px">
+            <div class="fila"><span class="crv"><em>01</em>78</span></div>
+            <div class="fila"><span class="crv"><em>01</em>81</span><span class="marca-nota">con parto</span></div>
+            <div class="fila"><span class="crv"><em>01</em>85</span></div>
+            <div class="fila"><span class="crv">PI <em>136</em></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pantalla"><p class="cap">Cordero y collar</p>
+      <div class="tel d2">
+        <div class="top"><div class="logo">Petra</div><div class="sync"><i></i>7 EN COLA</div></div>
+        <div class="body">
+          <div class="ticks"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div>
+          <p class="eyebrow">Mellizo 2 / 2</p>
+          <h3>Cordero</h3>
+          <p class="lbl" style="margin-top:18px">Sexo</p>
+          <div class="par"><div class="opt on">Macho</div><div class="opt">Hembra</div></div>
+          <p class="lbl" style="margin-top:16px">Al nacer</p>
+          <div class="par"><div class="opt on">Vivo</div><div class="opt">Muerto</div></div>
+          <p class="lbl" style="margin-top:16px">Marca del collar</p>
+          <div class="collares">
+            <div class="col on"><svg width="28" height="45" viewBox="0 0 30 48"><rect x="4" y="2" width="22" height="44" rx="5" fill="none" stroke="#F4C21F" stroke-width="1.6"/><circle cx="15" cy="12" r="4.6" fill="#F4C21F"/></svg><span>Arriba</span></div>
+            <div class="col"><svg width="28" height="45" viewBox="0 0 30 48"><rect x="4" y="2" width="22" height="44" rx="5" fill="none" stroke="#6E6752" stroke-width="1.6"/><g stroke="#6E6752" stroke-width="3" stroke-linecap="round"><line x1="9" y1="19" x2="21" y2="29"/><line x1="21" y1="19" x2="9" y2="29"/></g></svg><span>Cruz</span></div>
+            <div class="col"><svg width="28" height="45" viewBox="0 0 30 48"><rect x="4" y="2" width="22" height="44" rx="5" fill="none" stroke="#6E6752" stroke-width="1.6"/><circle cx="15" cy="36" r="4.6" fill="#6E6752"/></svg><span>Abajo</span></div>
+          </div>
+        </div>
+        <div class="bar">
+          <div class="btn ghost">Cancelar</div>
+          <div class="btn">Listo</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════ 3 · VELLÓN ══════════════════════ -->
+<section class="dir">
+  <div class="dirhead">
+    <div>
+      <div class="num">03</div>
+      <h2>Vellón</h2>
+      <p>El producto de Petra es lana fina. Esta dirección lo traduce a la interfaz: superficies blandas superpuestas, esquinas amplias, sombras muy suaves, mucho aire. Los números en <strong>Newsreader</strong>, una serif de lectura con cifras elegantes, sobre <strong>Manrope</strong> para la interfaz.</p>
+      <p>Es la más cálida y la más fácil de usar con guantes: los objetivos son grandes y separados. El rizo del vellón aparece como separador — un detalle chico que sale del propio producto y no de un kit de íconos.</p>
+      <div class="riesgo"><b>A tener en cuenta:</b> el lenguaje de tarjetas blandas es el más común de los tres en apps modernas. La diferencia la hacen la tipografía y el detalle del rizo; sin esa disciplina puede acercarse a lo genérico.</div>
+    </div>
+    <dl class="ficha">
+      <dt>Tipografías</dt><dd>Newsreader (cifras y títulos) · Manrope (interfaz)</dd>
+      <dt>Fondo</dt><dd>Capas de blancos cálidos con profundidad suave</dd>
+      <dt>Estructura</dt><dd>Tarjetas amplias, mucho aire, jerarquía por tamaño y peso</dd>
+      <dt>Paleta</dt>
+      <dd><div class="swatches">
+        <div class="sw" style="background:#EFEAE0"></div><div class="sw" style="background:#FCFAF6"></div>
+        <div class="sw" style="background:#6B5A1E"></div><div class="sw" style="background:#F4C21F"></div>
+        <div class="sw" style="background:#C25E00"></div></div></dd>
+      <dt>Señal distintiva</dt><dd>El rizo del vellón como separador</dd>
+    </dl>
+  </div>
+
+  <div class="pantallas">
+    <div class="pantalla"><p class="cap">Inicio</p>
+      <div class="tel d3">
+        <div class="top"><div class="logo">Petra</div><div class="sync"><i></i>7 sin sincronizar</div></div>
+        <div class="body">
+          <h3>Temporada 2026</h3>
+          <p class="sub">sábado 1 de agosto · día 1</p>
+          <div class="cifras">
+            <div class="card"><b>3</b><span>Hoy</span></div>
+            <div class="card"><b>3</b><span>Temporada</span></div>
+            <div class="card"><b>5</b><span>Sin señalar</span></div>
+          </div>
+          <div class="crimp"></div>
+          <div class="acciones">
+            <div class="btn">Registrar parto</div>
+            <div class="btn ghost">Señalada</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pantalla"><p class="cap">Buscar la madre</p>
+      <div class="tel d3">
+        <div class="top"><div class="logo">Petra</div><div class="sync"><i></i>7 sin sincronizar</div></div>
+        <div class="body">
+          <h3>¿Qué oveja parió?</h3>
+          <p class="sub">Escribí parte de la caravana</p>
+          <input class="entrada" value="01" readonly>
+          <div class="card" style="margin-top:15px;padding:5px 15px">
+            <div class="fila"><span class="crv">0178</span></div>
+            <div class="fila"><span class="crv">0181</span><span class="marca-nota">Ya tiene parto</span></div>
+            <div class="fila"><span class="crv">0185</span></div>
+            <div class="fila"><span class="crv">PI 136</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pantalla"><p class="cap">Cordero y collar</p>
+      <div class="tel d3">
+        <div class="top"><div class="logo">Petra</div><div class="sync"><i></i>7 sin sincronizar</div></div>
+        <div class="body">
+          <h3>Cordero</h3>
+          <p class="sub">Mellizo · 2 de 2 · madre <span class="pill">0178</span></p>
+          <p class="lbl">Sexo</p>
+          <div class="par"><div class="opt on">Macho</div><div class="opt">Hembra</div></div>
+          <p class="lbl" style="margin-top:18px">Al nacer</p>
+          <div class="par"><div class="opt on">Vivo</div><div class="opt">Muerto</div></div>
+          <p class="lbl" style="margin-top:18px">Marca del collar</p>
+          <div class="collares">
+            <div class="col on"><svg width="30" height="48" viewBox="0 0 30 48"><rect x="4" y="2" width="22" height="44" rx="7" fill="none" stroke="#6B5A1E" stroke-width="1.8"/><circle cx="15" cy="12" r="4.8" fill="#6B5A1E"/></svg><span>Arriba</span></div>
+            <div class="col"><svg width="30" height="48" viewBox="0 0 30 48"><rect x="4" y="2" width="22" height="44" rx="7" fill="none" stroke="#9A9182" stroke-width="1.8"/><g stroke="#9A9182" stroke-width="3.2" stroke-linecap="round"><line x1="9" y1="19" x2="21" y2="29"/><line x1="21" y1="19" x2="9" y2="29"/></g></svg><span>Cruz</span></div>
+            <div class="col"><svg width="30" height="48" viewBox="0 0 30 48"><rect x="4" y="2" width="22" height="44" rx="7" fill="none" stroke="#9A9182" stroke-width="1.8"/><circle cx="15" cy="36" r="4.8" fill="#9A9182"/></svg><span>Abajo</span></div>
+          </div>
+        </div>
+        <div class="bar">
+          <div class="btn ghost">Cancelar</div>
+          <div class="btn">Listo</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="cierre">
+  <div class="num">Para elegir</div>
+  <h2>Qué mirar</h2>
+  <ol>
+    <li><strong>Abrila en el teléfono.</strong> En el monitor las tres se ven bien; en la mano a las 6 de la mañana, no.</li>
+    <li><strong>Fijate en la pantalla de buscar la madre.</strong> Es la que más se usa: entra en cada uno de los ~500 partos de la temporada.</li>
+    <li><strong>Decime si algo te gusta de una y algo de otra.</strong> No hace falta elegir una entera — la tipografía de una con la estructura de otra es una combinación perfectamente válida.</li>
+    <li>Mi recomendación, si querés una: <strong>Cabaña</strong>. Es la que mejor dice lo que Petra es, y el fondo claro es el correcto para el sol. <strong>Instrumento</strong> es la más linda como objeto, pero paga un precio real de legibilidad en el campo.</li>
+  </ol>
+</div>
+
+</div>
+</body>
+</html>

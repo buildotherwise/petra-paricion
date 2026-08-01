@@ -122,6 +122,20 @@ create policy corderos_edicion on corderos
   with check (actualizado_por = auth.uid());
 
 -- ---------------------------------------------------------------------------
+-- Privilegios explícitos
+-- ---------------------------------------------------------------------------
+
+-- Supabase tiene una opción "Automatically expose new tables" que otorga estos
+-- privilegios sola. Declararlos acá hace que el esquema funcione con esa opción
+-- prendida o apagada, y deja escrito qué puede hacer cada rol en vez de
+-- heredarlo de una casilla del panel.
+--
+-- Sin estos grants, PowerSync sube por PostgREST y recibe 42501: mi clasificador
+-- lo trataría como error de dato y descartaría el parto.
+grant select, insert, update on ovejas, partos, corderos to authenticated;
+grant select, insert, update on perfiles to authenticated;
+
+-- ---------------------------------------------------------------------------
 -- Sin borrado físico, en ninguna tabla
 -- ---------------------------------------------------------------------------
 
