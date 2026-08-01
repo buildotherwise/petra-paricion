@@ -4,7 +4,7 @@ App de campo offline-first para registrar parición y señalada. Reemplaza los
 formularios de Zoho. La especificación funcional completa está en
 [CLAUDE.md](CLAUDE.md); acá está cómo se corre y cómo se despliega.
 
-**Estado: Fase 1 construida, esperando cuentas para conectarla.**
+**Estado: backend en pie y sincronizando. Falta conectar la app y desplegar.**
 
 | | |
 |---|---|
@@ -12,8 +12,10 @@ formularios de Zoho. La especificación funcional completa está en
 | ✅ Rol `powersync_role` | creado, con `REPLICATION BYPASSRLS` y sin acceso a `cambios` |
 | ✅ Reglas de negocio | R1, R2, R3, R7, R12 con 68 tests |
 | ✅ App PWA | login, inicio y registro de parto, sobre SQLite local |
-| ⏳ Instancia de PowerSync | **falta crearla** y cargar su URL en `VITE_POWERSYNC_URL` |
-| ⏳ Importador de caravanas | el archivo ya está en `datos/`; falta escribir el parser |
+| ✅ Instancia de PowerSync | replicando por IPv6; slot activo y WAL al día |
+| ✅ Las 502 madres | importadas y verificadas contra el archivo original |
+| ⏳ `VITE_POWERSYNC_URL` | **falta**: copiar la Instance URL a `.env.local` |
+| ⏳ Cuentas del equipo | faltan nombres y correos |
 | ⏳ Deploy y prueba en dispositivos | después de lo anterior |
 
 ---
