@@ -1,0 +1,5 @@
+# wa-sqlite necesita correr su postinstall: descarga el core dinámico de
+# PowerSync (libpowersync*.wasm). Sin él la base local no abre en runtime.
+allowBuilds:
+  '@journeyapps/wa-sqlite': true
+  '@swc/core': true

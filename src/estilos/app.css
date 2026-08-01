@@ -1,0 +1,542 @@
+/* Estructura y componentes.
+   Los números son el contenido de esta app —pesos, caravanas, collares—, así
+   que van todos en cifras tabulares: cambian sin que la línea se mueva. */
+
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  max-width: 34rem;
+  margin: 0 auto;
+  background: var(--paper);
+}
+
+/* --- Encabezado ------------------------------------------------------- */
+
+.encabezado {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  padding-top: calc(var(--sp-3) + env(safe-area-inset-top));
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.marca {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.marca img {
+  width: 1.75rem;
+  height: 1.75rem;
+  object-fit: contain;
+}
+
+.marca-texto {
+  font-family: var(--serif);
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--tag);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- Indicador de sincronización -------------------------------------- */
+
+/* La señal operativa clave del día a día. Está en TODAS las pantallas y usa
+   los colores semánticos, no los de marca: acá la claridad manda. */
+.sync {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.sync--ok {
+  background: color-mix(in srgb, var(--ok) 22%, transparent);
+  border-color: var(--ok);
+  color: #cfe8d6;
+}
+
+.sync--pendiente {
+  background: color-mix(in srgb, var(--amber) 28%, transparent);
+  border-color: var(--amber);
+  color: #ffd9b8;
+}
+
+.sync--error {
+  background: color-mix(in srgb, var(--red) 30%, transparent);
+  border-color: var(--red);
+  color: #ffd2cf;
+}
+
+.sync-punto {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+
+.sync--pendiente .sync-punto {
+  animation: latido 1.6s ease-in-out infinite;
+}
+
+@keyframes latido {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+/* --- Contenido y bloques ---------------------------------------------- */
+
+.contenido {
+  flex: 1;
+  padding: var(--sp-4);
+  padding-bottom: 7rem; /* deja aire para la barra de acción fija */
+}
+
+.titulo {
+  margin: 0 0 var(--sp-1);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.subtitulo {
+  margin: 0 0 var(--sp-5);
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.etiqueta {
+  display: block;
+  margin-bottom: var(--sp-2);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.campo {
+  margin-bottom: var(--sp-5);
+}
+
+.tarjeta {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radio);
+  padding: var(--sp-4);
+}
+
+/* --- Botones ----------------------------------------------------------- */
+
+.boton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  width: 100%;
+  min-height: var(--toque);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid transparent;
+  border-radius: var(--radio);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.boton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.boton--principal {
+  background: var(--brand);
+  color: #fff;
+}
+
+.boton--principal:active:not(:disabled) {
+  background: var(--brand-press);
+}
+
+.boton--oscuro {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.boton--secundario {
+  background: transparent;
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+.boton--secundario:active:not(:disabled) {
+  background: var(--brand-tint);
+}
+
+.boton--texto {
+  min-height: 2.75rem;
+  background: none;
+  border: none;
+  color: var(--brand);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+:where(button, a, input, select, textarea):focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* Barra de acción fija: el botón principal siempre al alcance del pulgar. */
+.barra-accion {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  gap: var(--sp-2);
+  max-width: 34rem;
+  margin: 0 auto;
+  padding: var(--sp-3) var(--sp-4);
+  padding-bottom: calc(var(--sp-3) + env(safe-area-inset-bottom));
+  background: linear-gradient(to top, var(--paper) 72%, transparent);
+}
+
+/* --- Botoneras de opción ---------------------------------------------- */
+
+.opciones {
+  display: grid;
+  gap: var(--sp-2);
+  grid-template-columns: repeat(var(--columnas, 2), 1fr);
+}
+
+.opcion {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  min-height: var(--toque);
+  padding: var(--sp-2);
+  background: var(--surface);
+  border: 2px solid var(--line);
+  border-radius: var(--radio);
+  font: inherit;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.opcion[aria-pressed='true'] {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+}
+
+.opcion small {
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  opacity: 0.75;
+  text-transform: none;
+}
+
+/* --- Entradas ---------------------------------------------------------- */
+
+.entrada {
+  width: 100%;
+  min-height: var(--toque);
+  padding: var(--sp-3);
+  background: var(--surface);
+  border: 2px solid var(--line);
+  border-radius: var(--radio);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.entrada:focus {
+  border-color: var(--brand);
+}
+
+.entrada--numero {
+  font-size: 1.75rem;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+
+/* --- Caravana: la chapa amarilla, como está en la oreja ---------------- */
+
+.caravana {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.7rem 0.3rem 0.45rem;
+  background: var(--tag);
+  border: 1px solid color-mix(in srgb, var(--tag) 60%, var(--ink));
+  border-radius: 0.35rem 0.7rem 0.7rem 0.35rem;
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+
+/* El agujero por donde pasa el vástago. Es lo que la vuelve reconocible. */
+.caravana::before {
+  content: '';
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 1px solid color-mix(in srgb, var(--tag) 55%, var(--ink));
+  flex: none;
+}
+
+.caravana--chica {
+  font-size: 0.85rem;
+  padding: 0.15rem 0.5rem 0.15rem 0.3rem;
+}
+
+/* --- Lista de madres --------------------------------------------------- */
+
+.lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radio);
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.lista li + li {
+  border-top: 1px solid var(--line);
+}
+
+.lista button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  width: 100%;
+  min-height: var(--toque);
+  padding: var(--sp-2) var(--sp-3);
+  background: none;
+  border: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.lista button:active {
+  background: var(--brand-tint);
+}
+
+.lista-nota {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.lista-nota--alerta {
+  color: var(--amber);
+  font-weight: 700;
+}
+
+/* --- Marca de collar: el signature ------------------------------------- */
+
+/* Las tres marcas se dibujan donde están físicamente en el collar. El
+   operario tiene el collar en la mano; que la pantalla lo espeje evita el
+   error de traducir "punto arriba" a un texto en una lista. */
+.collar-opciones {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-2);
+}
+
+.collar-opcion {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-2);
+  background: var(--surface);
+  border: 2px solid var(--line);
+  border-radius: var(--radio);
+  font: inherit;
+  cursor: pointer;
+  color: var(--ink);
+}
+
+.collar-opcion[aria-pressed='true'] {
+  border-color: var(--brand);
+  background: var(--brand-tint);
+}
+
+.collar-opcion span {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* --- Avisos ------------------------------------------------------------ */
+
+.aviso {
+  display: flex;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  border-radius: var(--radio);
+  border-left: 4px solid;
+  font-size: 0.9rem;
+  margin-bottom: var(--sp-4);
+}
+
+.aviso--atencion {
+  background: color-mix(in srgb, var(--amber) 10%, var(--paper));
+  border-color: var(--amber);
+  color: #5c2a00;
+}
+
+.aviso--error {
+  background: color-mix(in srgb, var(--red) 9%, var(--paper));
+  border-color: var(--red);
+  color: #7a1a15;
+}
+
+/* --- Resumen del parto -------------------------------------------------- */
+
+.cordero-fila {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) 0;
+}
+
+.cordero-fila + .cordero-fila {
+  border-top: 1px solid var(--line);
+}
+
+.cordero-datos {
+  flex: 1;
+  min-width: 0;
+}
+
+.cordero-datos strong {
+  display: block;
+  font-variant-numeric: tabular-nums;
+}
+
+.cordero-datos small {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.contadores {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-5);
+}
+
+.contador {
+  padding: var(--sp-3) var(--sp-2);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radio);
+  text-align: center;
+}
+
+.contador b {
+  display: block;
+  font-size: 1.9rem;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.contador span {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* --- Progreso del flujo ------------------------------------------------- */
+
+/* Cuatro segmentos, uno por paso. En el campo se lee de un vistazo cuánto
+   falta, sin leer un número. */
+.progreso {
+  display: flex;
+  gap: 3px;
+  margin-bottom: var(--sp-4);
+}
+
+.progreso i {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--line);
+}
+
+.progreso i[data-activo='true'] {
+  background: var(--brand);
+}
+
+/* --- Login -------------------------------------------------------------- */
+
+.login {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: var(--sp-5);
+  max-width: 26rem;
+  margin: 0 auto;
+}
+
+.login img {
+  width: 5rem;
+  align-self: center;
+  margin-bottom: var(--sp-3);
+}
+
+.login-marca {
+  text-align: center;
+  font-family: var(--serif);
+  font-size: 0.78rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: var(--sp-6);
+}

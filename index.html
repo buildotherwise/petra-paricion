@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="es-UY">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/icono-192.png" />
+
+    <!-- viewport-fit=cover + maximum-scale=1 evita el zoom automático de iOS al
+         enfocar un input, que en el campo desalinea toda la pantalla. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#2A2410" />
+
+    <!-- iOS: sin esto, "Agregar a pantalla de inicio" abre una pestaña de Safari
+         en vez de una PWA instalada, y el almacenamiento queda sujeto al borrado
+         a 7 días de ITP. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Petra" />
+    <link rel="apple-touch-icon" href="/icono-192.png" />
+
+    <title>Petra · Parición</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

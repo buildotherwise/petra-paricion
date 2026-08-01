@@ -1,0 +1,33 @@
+# Dependencias
+node_modules/
+
+# Build
+dist/
+dist-ssr/
+*.local
+
+# Entorno — NUNCA versionar credenciales
+.env
+.env.*
+!.env.example
+
+# Datos reales de la temporada (caravanas, exports). Se comparten fuera del repo.
+datos/
+
+# Assets de PowerSync copiados por `powersync-web copy-assets`
+public/@powersync/
+public/*.wasm
+
+# Editor / SO
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Salidas de Playwright MCP (capturas de verificación)
+.playwright-mcp/

@@ -1,0 +1,100 @@
+/* Identidad visual de Petra. Paleta derivada del logo (ver CLAUDE.md §3).
+   Regla que gobierna todo lo de acá: la app se usa a pleno sol, con las manos
+   sucias y a veces con guantes. Contraste y tamaño de toque ganan siempre. */
+
+:root {
+  /* --- Marca --- */
+  --ink: #2a2410; /* texto principal, botón de señalada, barras oscuras */
+  --paper: #f4f0e3; /* fondo general, marfil cálido */
+  --brand: #6b5a1e; /* acciones principales — 6,8:1 con texto blanco */
+  --brand-press: #514413; /* estado presionado */
+  --brand-tint: #efe8cf; /* fondos suaves, champán del emblema */
+  --gold: #8c7a2e; /* SOLO decorativo: 3,0:1 sobre blanco no pasa AA */
+  --tag: #f4c21f; /* chips de caravana, amarillo real de las caravanas */
+
+  /* --- Semánticos. Deliberadamente fuera de la paleta de marca: la claridad
+         del indicador de sync vale más que la coherencia cromática. --- */
+  --ok: #2e6b3f; /* sincronizado */
+  --amber: #a34b00; /* pendiente */
+  --red: #b3261e; /* error / muerto */
+
+  /* --- Estructura --- */
+  --line: #e0d9c4;
+  --muted: #7a7259;
+  --surface: #fffdf6;
+
+  /* --- Escala de espaciado --- */
+  --sp-1: 0.25rem;
+  --sp-2: 0.5rem;
+  --sp-3: 0.75rem;
+  --sp-4: 1rem;
+  --sp-5: 1.5rem;
+  --sp-6: 2rem;
+
+  --radio: 0.625rem;
+
+  /* Mínimo de área táctil. 48px es el piso de la spec; 56 es lo que
+     realmente se usa con guantes. */
+  --toque: 3.5rem;
+
+  --serif: Georgia, 'Times New Roman', serif;
+  --sans:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 17px;
+  line-height: 1.45;
+
+  /* El texto en el campo se lee de reojo; que el SO no lo achique solo. */
+  -webkit-text-size-adjust: 100%;
+
+  /* Un doble toque accidental no debe hacer zoom sobre un botón de sexo. */
+  touch-action: manipulation;
+
+  /* Nada de selección accidental de texto al arrastrar el dedo. Los inputs
+     se reactivan explícitamente más abajo. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+input,
+textarea {
+  -webkit-user-select: text;
+  user-select: text;
+  font-family: inherit;
+
+  /* iOS hace zoom automático en cualquier input de menos de 16px. */
+  font-size: max(16px, 1rem);
+}
+
+/* Respeta el notch y la barra de gestos en iPhone. */
+.area-segura {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
