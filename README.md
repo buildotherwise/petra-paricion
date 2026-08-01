@@ -126,10 +126,27 @@ PowerSync y **no se recupera después**: si se pierde, hay que rotarla con
 
 ### 6. Configurar PowerSync
 
-1. Instancia nueva apuntando a la **direct connection string** de Supabase
-   (`db.<ref>.supabase.co`, NO el pooler — ver la nota de IPv6 más arriba), con
-   usuario `powersync_role`. PowerSync ya trae el CA de Supabase, así que
-   `verify-full` funciona sin configurar nada más.
+Al crear el proyecto en PowerSync:
+
+- **Región `BR`**, no `US` (que es el default). Supabase está en São Paulo y la
+  replicación es un enlace permanente entre ambos: ponerlos en el mismo
+  continente evita que cada byte del WAL cruce el ecuador.
+- **Solo la instancia `Production`.** Cada instancia abre su propio slot de
+  replicación sobre el mismo Postgres, y un slot inactivo acumula WAL hasta
+  llenar el disco — de los pocos modos de falla que pueden tumbar una base
+  Supabase del plan Free. Sin una base de desarrollo aparte, la instancia de
+  Development no aporta nada. El plan Free permite 2, así que se puede crear
+  después si hace falta probar cambios de sync rules.
+- **Ojo:** los proyectos Free se desactivan tras **una semana sin actividad**.
+  Durante la parición hay uso diario, pero entre temporadas hay que tenerlo
+  presente.
+
+Después, en la instancia:
+
+1. `Database Connections` → pestaña **Postgres**, apuntando a la **conexión
+   directa** (`db.<ref>.supabase.co`, NO el pooler — ver la nota de IPv6 más
+   arriba), con usuario `powersync_role`. PowerSync ya trae el CA de Supabase,
+   así que `verify-full` funciona sin configurar nada más.
 2. En `Client Auth`, activar **Use Supabase Auth** y **dejar el campo de JWT
    secret vacío**: los proyectos nuevos usan claves asimétricas y PowerSync
    autoconfigura el JWKS. (Solo los proyectos legacy con HS256 necesitan pegar
