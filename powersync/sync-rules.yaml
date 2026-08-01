@@ -1,23 +1,35 @@
-# Sync Rules — qué replica PowerSync a cada dispositivo.
+# Sync Streams — qué replica PowerSync a cada dispositivo.
 #
-# Un único bucket global, sin parámetros: todos los dispositivos reciben el
-# dataset completo. Es lo que pide CLAUDE.md §6 y lo correcto para este perfil
-# de uso — miles de filas, cinco dispositivos, y una app que tiene que
-# funcionar días enteros sin señal. Particionar por dispositivo o por temporada
-# agregaría complejidad sin resolver ningún problema real.
+# Un stream por tabla, todos con auto_subscribe: el dispositivo baja el dataset
+# completo apenas conecta, sin que la app tenga que suscribirse a nada. Es lo
+# que pide CLAUDE.md §6 y lo correcto para este perfil de uso: ~500 madres,
+# cinco dispositivos, y una app que tiene que funcionar días enteros sin señal.
+# Sincronizar parcialmente agregaría complejidad sin resolver ningún problema
+# real, y rompería el trabajo offline.
 #
-# Ojo: esto NO es control de acceso. El recorte por usuario no existe acá
-# porque no hace falta (todos ven todo), y la seguridad de las ESCRITURAS la
-# hace RLS cuando la cola de subida las manda por PostgREST.
+# Ojo: esto NO es control de acceso. Acá no hay recorte por usuario porque
+# todos ven todo. La seguridad de las ESCRITURAS la hace RLS cuando la cola de
+# subida las manda por PostgREST con el JWT de cada operador.
 
-bucket_definitions:
-  global:
-    data:
-      - SELECT * FROM ovejas
-      - SELECT * FROM partos
-      - SELECT * FROM corderos
+config:
+  edition: 3
 
-      # PowerSync exige que la clave primaria de cada tabla sincronizada se
-      # llame `id`. En `perfiles` la PK es `user_id` (apunta a auth.users), así
-      # que se renombra acá en vez de deformar el esquema del servidor.
-      - SELECT user_id as id, nombre, rol, activo FROM perfiles
+streams:
+  ovejas:
+    auto_subscribe: true
+    query: SELECT * FROM ovejas
+
+  partos:
+    auto_subscribe: true
+    query: SELECT * FROM partos
+
+  corderos:
+    auto_subscribe: true
+    query: SELECT * FROM corderos
+
+  # PowerSync exige que la clave primaria de cada tabla sincronizada se llame
+  # `id`. En `perfiles` la PK real es `user_id` (apunta a auth.users), así que
+  # se renombra acá en vez de deformar el esquema del servidor.
+  perfiles:
+    auto_subscribe: true
+    query: SELECT user_id as id, nombre, rol, activo FROM perfiles
