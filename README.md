@@ -58,16 +58,20 @@ persona: así la auditoría responde *quién*, no solo *qué aparato*.
 ## Puesta en marcha
 
 ```bash
-# Credenciales
 cp .env.example .env.local        # completar con los valores del Bloque 0
-
-# Para el MCP de Supabase y los scripts, en ~/.zshrc:
-export SUPABASE_ACCESS_TOKEN="el-personal-access-token"
-export SUPABASE_PROJECT_REF="el-project-ref"
+direnv allow                      # una sola vez
 
 pnpm install
 pnpm dev
 ```
+
+**Las credenciales no van a `~/.zshrc`.** Un Personal Access Token de Supabase
+es de la **cuenta entera**, no de un proyecto: exportarlo globalmente le daría
+a cualquier proceso, en cualquier carpeta, acceso a todos los proyectos
+Supabase. `direnv` carga `.env.local` al entrar a este directorio y lo descarga
+al salir, así que las variables existen solo acá. `.mcp.json` las toma de ahí.
+
+Si `direnv` no está: `brew install direnv` y agregar el hook al shell.
 
 ### IPv6: leer esto antes de conectar nada
 

@@ -11,6 +11,10 @@ dist-ssr/
 .env.*
 !.env.example
 
+# .envrc sí se versiona: no tiene secretos, solo carga .env.local con direnv.
+# Lo que se ignora es la caché que direnv genera.
+.direnv/
+
 # Datos reales de la temporada (caravanas, exports). Se comparten fuera del repo.
 datos/
 
