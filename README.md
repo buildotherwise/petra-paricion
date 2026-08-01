@@ -158,6 +158,33 @@ Después, en la instancia:
 
 ---
 
+## Deploy
+
+El proyecto de Vercel se conecta al repo de GitHub, así que cada push a `main`
+publica solo. En el dashboard: *Add New → Project → Import* desde
+`buildotherwise/petra-paricion`. El preset de Vite se detecta solo.
+
+**Las variables de entorno hay que cargarlas en Vercel antes del primer build.**
+Son de build time: si faltan, el bundle sale con `undefined` y la app no abre.
+Van **solo estas cuatro**:
+
+```
+VITE_SUPABASE_URL
+VITE_SUPABASE_ANON_KEY
+VITE_POWERSYNC_URL
+VITE_TEMPORADA
+```
+
+`SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ACCESS_TOKEN` y `POWERSYNC_DB_PASSWORD`
+**no van a Vercel**: son de las tareas administrativas locales y ahí quedarían
+expuestas sin ninguna necesidad.
+
+`vercel.json` fija los headers de caché. El service worker se sirve sin caché y
+los assets con hash como inmutables — un service worker cacheado de más deja la
+app congelada en una versión vieja, y desde el campo eso es indiagnosticable.
+
+---
+
 ## Verificación
 
 ```bash

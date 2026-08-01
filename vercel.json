@@ -1,0 +1,21 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
+  "headers": [
+    {
+      "comment": "El service worker NUNCA se cachea. Si el navegador sirve uno viejo, la app queda congelada en una versión anterior y el síntoma es 'actualicé y no cambió nada' — imposible de diagnosticar desde el campo.",
+      "source": "/sw.js",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }]
+    },
+    {
+      "comment": "Igual para el runtime de Workbox, el script que registra el SW y el manifiesto.",
+      "source": "/(workbox-.*\\.js|registerSW\\.js|manifest\\.webmanifest)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }]
+    },
+    {
+      "comment": "Los assets llevan hash en el nombre: si cambia el contenido cambia la URL, así que se pueden cachear para siempre. Esto es lo que hace que la app abra al instante en el campo.",
+      "source": "/assets/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+    }
+  ]
+}
