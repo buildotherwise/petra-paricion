@@ -622,6 +622,57 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* La fila entera es el objetivo: con guantes, un chevrón de 12px no se
+   acierta. Se declara como botón para que el teclado y el lector de pantalla
+   la encuentren igual que a cualquier otro control. */
+.cordero-fila--abrible {
+  width: 100%;
+  min-height: var(--toque);
+  background: none;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Muertos y anulados: siguen a la vista —esconderlos haría dudar de si se
+   guardaron— pero en segundo plano. */
+.cordero-fila--atenuada .cordero-datos strong {
+  color: var(--tinta-tenue);
+}
+
+.cordero-fila--atenuada :is(svg, .dibujo-marca) {
+  opacity: 0.4;
+}
+
+.cordero-chevron {
+  color: var(--marca);
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.chip {
+  flex: none;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.chip--muerto {
+  background: rgba(43, 37, 25, 0.09);
+  color: #5c5342;
+}
+
+.chip--anulado {
+  background: rgba(163, 75, 0, 0.13);
+  color: #7d3a00;
+}
+
 /* ── Contadores del inicio ──────────────────────────────────────────── */
 
 .contadores {

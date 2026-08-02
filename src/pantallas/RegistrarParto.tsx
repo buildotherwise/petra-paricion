@@ -2,7 +2,6 @@ import { useMemo, useState, type CSSProperties } from 'react';
 import { useQuery } from '@powersync/react';
 import { Encabezado } from '../componentes/Encabezado';
 import { Caravana } from '../componentes/Caravana';
-import { DibujoMarca, SelectorMarcaCollar } from '../componentes/MarcaCollar';
 import {
   SelectorCondicionCorporal,
   formatearCondicion,
@@ -11,10 +10,10 @@ import { db } from '../lib/powersync/db';
 import { dispositivo, entorno } from '../lib/entorno';
 import { useUsuarioId } from '../lib/sesion';
 import { BuscadorCaravana, type OvejaElegida } from '../componentes/BuscadorCaravana';
+import { FormularioCordero, type BorradorCordero } from '../componentes/FormularioCordero';
+import { causaLegible, FilaCordero } from '../componentes/FilaCordero';
 import {
   ajustarCollarDelParto,
-  CAUSAS_MUERTE,
-  collarDisponible,
   corderosQueRequierenMarca,
   hoyISO,
   marcasOcupadas,
@@ -22,28 +21,14 @@ import {
   partoRequiereCollar,
   rangoTemporada,
   tipoNacimiento,
-  validarFechaMuerte,
   validarFechaNacimiento,
-  validarPeso,
-  type CausaMuerte,
   type CorderoDelParto,
-  type MarcaCollar,
 } from '../lib/reglas';
+import { nombreTipo } from '../lib/parto';
 
 type Paso = 'madre' | 'datos' | 'corderos' | 'cordero' | 'resumen';
 
-interface BorradorCordero extends CorderoDelParto {
-  sexo: 'macho' | 'hembra';
-  peso_kg: number | null;
-  causa_muerte: CausaMuerte | null;
-  fecha_muerte: string | null;
-  /** R10: si se cría con otra madre, se conserva siempre el parto biológico. */
-  madre_crianza: OvejaElegida | null;
-  observaciones: string;
-}
-
 const PASOS: Paso[] = ['madre', 'datos', 'corderos', 'resumen'];
-const NOMBRE_TIPO: Record<number, string> = { 1: 'Único', 2: 'Mellizos', 3: 'Trillizos' };
 
 export function RegistrarParto({ onSalir }: { onSalir: () => void }) {
   const usuarioId = useUsuarioId();
@@ -353,6 +338,20 @@ function PasoDatos({
 // Paso 3 — Los corderos
 // ───────────────────────────────────────────────────────────────────────
 
+/** La línea chica de cada cordero mientras el parto todavía es un borrador. */
+function detalleDelBorrador(cordero: BorradorCordero, collarNumero: string | null): string {
+  const causa = causaLegible(cordero.causa_muerte);
+  const estado =
+    cordero.condicion === 'muerto'
+      ? `Muerto · ${causa ?? 'sin causa'}`
+      : collarNumero !== null
+        ? `Collar ${collarNumero}`
+        : 'Vivo';
+  return cordero.madre_crianza !== null
+    ? `${estado} · nodriza ${cordero.madre_crianza.caravana}`
+    : estado;
+}
+
 function PasoCorderos({
   corderos,
   collarNumero,
@@ -382,7 +381,7 @@ function PasoCorderos({
         {tipo === 0
           ? 'Todavía no agregaste ninguno.'
           : // R1: el tipo de nacimiento se cuenta, nunca se tipea.
-            `${NOMBRE_TIPO[tipo] ?? `${tipo} corderos`} · se calcula solo`}
+            `${nombreTipo(tipo)} · se calcula solo`}
       </p>
 
       {incompleto && (
@@ -399,7 +398,7 @@ function PasoCorderos({
             <FilaCordero
               key={cordero.id}
               cordero={cordero}
-              collarNumero={collarNumero}
+              detalle={detalleDelBorrador(cordero, collarNumero)}
               onEditar={() => onEditar(cordero)}
               onQuitar={() => onQuitar(cordero.id)}
             />
@@ -419,394 +418,6 @@ function PasoCorderos({
           disabled={corderos.length === 0 || incompleto}
         >
           Revisar y guardar
-        </button>
-      </div>
-    </>
-  );
-}
-
-function FilaCordero({
-  cordero,
-  collarNumero,
-  onEditar,
-  onQuitar,
-}: {
-  cordero: BorradorCordero;
-  collarNumero: string | null;
-  /** Sin handler la fila es solo lectura: en el resumen no se edita. */
-  onEditar?: (() => void) | undefined;
-  onQuitar?: (() => void) | undefined;
-}) {
-  const peso =
-    cordero.peso_kg !== null ? `${cordero.peso_kg.toFixed(2).replace('.', ',')} kg` : 'sin pesar';
-  const causa =
-    cordero.causa_muerte !== null
-      ? (CAUSAS_MUERTE.find((c) => c.valor === cordero.causa_muerte)?.etiqueta ?? null)
-      : null;
-
-  return (
-    <div className="cordero-fila">
-      {cordero.collar_marca !== null && <DibujoMarca marca={cordero.collar_marca} tamano={0.62} />}
-      <div className="cordero-datos">
-        <strong>
-          {cordero.sexo === 'macho' ? 'Macho' : 'Hembra'} · {peso}
-        </strong>
-        <small>
-          {cordero.condicion === 'muerto'
-            ? `Muerto · ${causa ?? 'sin causa'}`
-            : collarNumero !== null
-              ? `Collar ${collarNumero}`
-              : 'Vivo'}
-          {cordero.madre_crianza !== null && ` · nodriza ${cordero.madre_crianza.caravana}`}
-        </small>
-      </div>
-      {onEditar !== undefined && (
-        <button type="button" className="boton--texto" onClick={onEditar}>
-          Editar
-        </button>
-      )}
-      {onQuitar !== undefined && (
-        <button type="button" className="boton--texto boton--peligro" onClick={onQuitar}>
-          Quitar
-        </button>
-      )}
-    </div>
-  );
-}
-
-// ───────────────────────────────────────────────────────────────────────
-// Formulario de un cordero
-// ───────────────────────────────────────────────────────────────────────
-
-/** Recorta lo tipeado a dos decimales, en vez de avisar después. */
-function limitarDecimales(texto: string): string {
-  const limpio = texto.replace(/[^0-9.,]/g, '');
-  const partes = limpio.replace('.', ',').split(',');
-  if (partes.length < 2) return limpio;
-  return `${partes[0]},${(partes[1] ?? '').slice(0, 2)}`;
-}
-
-function FormularioCordero({
-  inicial,
-  esMultiple,
-  fechaParto,
-  madreBiologicaId,
-  collarNumero,
-  numerosUsados,
-  ocupadas,
-  onGuardar,
-  onCancelar,
-}: {
-  inicial: BorradorCordero | null;
-  esMultiple: boolean;
-  fechaParto: string;
-  madreBiologicaId: string;
-  /** Número ya asignado al parto. Si es null y el parto es múltiple, se pide. */
-  collarNumero: string | null;
-  /** Todo collar usado en la temporada: una vez usado no vuelve (R3). */
-  numerosUsados: readonly string[];
-  ocupadas: readonly MarcaCollar[];
-  onGuardar: (cordero: BorradorCordero, numero: string | null) => void;
-  onCancelar: () => void;
-}) {
-  const [sexo, setSexo] = useState<'macho' | 'hembra' | null>(inicial?.sexo ?? null);
-  const [condicion, setCondicion] = useState<'vivo' | 'muerto'>(inicial?.condicion ?? 'vivo');
-  // Con coma, como se escribe y se lee en Uruguay.
-  const [peso, setPeso] = useState(
-    inicial?.peso_kg !== null && inicial?.peso_kg !== undefined
-      ? inicial.peso_kg.toFixed(2).replace('.', ',')
-      : '',
-  );
-  const [numero, setNumero] = useState(collarNumero ?? '');
-  const [marca, setMarca] = useState<MarcaCollar | null>(inicial?.collar_marca ?? null);
-  const [causa, setCausa] = useState<CausaMuerte | ''>(inicial?.causa_muerte ?? '');
-  const [fechaMuerte, setFechaMuerte] = useState(inicial?.fecha_muerte ?? fechaParto);
-  const [nodriza, setNodriza] = useState<OvejaElegida | null>(inicial?.madre_crianza ?? null);
-  const [buscandoNodriza, setBuscandoNodriza] = useState(false);
-  const [observaciones, setObservaciones] = useState(inicial?.observaciones ?? '');
-
-  const pesoNumero = peso.trim() === '' ? null : Number(peso.replace(',', '.'));
-  const validacionPeso = validarPeso(pesoNumero);
-
-  // El número solo se pide una vez por parto: si ya está, se muestra fijo.
-  const pideNumero = esMultiple && collarNumero === null;
-  const numeroLibre =
-    !pideNumero || numero.trim() === '' ? true : collarDisponible(numero, numerosUsados);
-
-  const validacionMuerte =
-    condicion === 'muerto'
-      ? validarFechaMuerte(fechaMuerte, fechaParto, hoyISO())
-      : ({ valida: true } as const);
-
-  const puedeGuardar =
-    sexo !== null &&
-    validacionPeso.estado !== 'bloqueo' &&
-    // R2: en parto múltiple no se confirma un cordero sin collar Y marca.
-    (!esMultiple || (marca !== null && (collarNumero !== null || numero.trim() !== ''))) &&
-    numeroLibre &&
-    // R10: elegir nodriza sin decir cuál dejaría el dato a medias.
-    (!buscandoNodriza || nodriza !== null) &&
-    (condicion === 'vivo' || (causa !== '' && validacionMuerte.valida));
-
-  return (
-    <>
-      <h1 className="titulo">{inicial === null ? 'Nuevo cordero' : 'Editar cordero'}</h1>
-      <p className="subtitulo">{esMultiple ? 'Parto múltiple' : 'Primer cordero del parto'}</p>
-
-      <div className="campo">
-        <span className="etiqueta">Sexo</span>
-        <div className="opciones">
-          <button
-            type="button"
-            className="opcion"
-            aria-pressed={sexo === 'macho'}
-            onClick={() => setSexo('macho')}
-          >
-            Macho
-          </button>
-          <button
-            type="button"
-            className="opcion"
-            aria-pressed={sexo === 'hembra'}
-            onClick={() => setSexo('hembra')}
-          >
-            Hembra
-          </button>
-        </div>
-      </div>
-
-      <div className="campo">
-        <span className="etiqueta">Al nacer</span>
-        <div className="opciones">
-          <button
-            type="button"
-            className="opcion"
-            aria-pressed={condicion === 'vivo'}
-            onClick={() => setCondicion('vivo')}
-          >
-            Vivo
-          </button>
-          <button
-            type="button"
-            className="opcion"
-            aria-pressed={condicion === 'muerto'}
-            onClick={() => setCondicion('muerto')}
-          >
-            Muerto
-          </button>
-        </div>
-      </div>
-
-      {condicion === 'muerto' && (
-        <>
-          <div className="campo">
-            <label className="etiqueta" htmlFor="causa">
-              Motivo de muerte
-            </label>
-            <select
-              id="causa"
-              className="desplegable"
-              value={causa}
-              onChange={(e) => setCausa(e.target.value as CausaMuerte | '')}
-            >
-              <option value="">Elegir…</option>
-              {CAUSAS_MUERTE.map((c) => (
-                <option key={c.valor} value={c.valor}>
-                  {c.etiqueta}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="campo">
-            <label className="etiqueta" htmlFor="fecha-muerte">
-              Fecha de muerte
-            </label>
-            <input
-              id="fecha-muerte"
-              className="entrada"
-              type="date"
-              value={fechaMuerte}
-              min={fechaParto}
-              max={hoyISO()}
-              onChange={(e) => setFechaMuerte(e.target.value)}
-            />
-            {!validacionMuerte.valida && (
-              <p className="aviso aviso--error" style={{ marginTop: 'var(--sp-2)', marginBottom: 0 }}>
-                {validacionMuerte.motivo}
-              </p>
-            )}
-          </div>
-        </>
-      )}
-
-      <div className="campo">
-        <label className="etiqueta" htmlFor="peso">
-          Peso en kg {condicion === 'muerto' && '· opcional'}
-        </label>
-        <input
-          id="peso"
-          className="entrada entrada--cifra"
-          inputMode="decimal"
-          placeholder="0,00"
-          value={peso}
-          onChange={(e) => setPeso(limitarDecimales(e.target.value))}
-        />
-        {validacionPeso.estado !== 'ok' && (
-          <p
-            className={
-              validacionPeso.estado === 'bloqueo' ? 'aviso aviso--error' : 'aviso aviso--atencion'
-            }
-            style={{ marginTop: 'var(--sp-2)', marginBottom: 0 }}
-          >
-            {validacionPeso.mensaje}
-          </p>
-        )}
-      </div>
-
-      {esMultiple && (
-        <>
-          <div className="campo">
-            <span className="etiqueta">Collar del parto</span>
-            {pideNumero ? (
-              <>
-                <input
-                  className="entrada entrada--cifra"
-                  inputMode="numeric"
-                  placeholder="00"
-                  value={numero}
-                  onChange={(e) => setNumero(e.target.value)}
-                  aria-label="Número de collar del parto"
-                />
-                <p
-                  style={{
-                    margin: 'var(--sp-2) 0 0',
-                    fontSize: '0.8125rem',
-                    fontWeight: 700,
-                    color: 'var(--tinta-suave)',
-                  }}
-                >
-                  Va en todos los corderos del parto y también en la madre.
-                </p>
-                {!numeroLibre && (
-                  <p className="aviso aviso--error" style={{ marginTop: 'var(--sp-3)', marginBottom: 0 }}>
-                    Ese collar ya se usó esta temporada. Elegí otro número.
-                  </p>
-                )}
-              </>
-            ) : (
-              <div className="collar-asignado">
-                <b>{collarNumero}</b>
-                <small>
-                  Ya asignado al parto.
-                  <br />
-                  Solo falta la marca de este cordero.
-                </small>
-              </div>
-            )}
-          </div>
-
-          <div className="campo">
-            <span className="etiqueta">Marca de este cordero</span>
-            <SelectorMarcaCollar valor={marca} ocupadas={ocupadas} onChange={setMarca} />
-          </div>
-        </>
-      )}
-
-      {/* R10: la nodriza no reemplaza a la madre biológica — el parto sigue
-          siendo de la oveja que parió. Solo dice con quién se cría. */}
-      <div className="campo">
-        <span className="etiqueta">Se cría con</span>
-        <div className="opciones">
-          <button
-            type="button"
-            className="opcion"
-            aria-pressed={!buscandoNodriza}
-            onClick={() => {
-              setBuscandoNodriza(false);
-              setNodriza(null);
-            }}
-          >
-            Su madre
-          </button>
-          <button
-            type="button"
-            className="opcion"
-            aria-pressed={buscandoNodriza}
-            onClick={() => setBuscandoNodriza(true)}
-          >
-            Nodriza
-          </button>
-        </div>
-
-        {buscandoNodriza && (
-          <div style={{ marginTop: 'var(--sp-3)' }}>
-            {nodriza === null ? (
-              <>
-                <span className="etiqueta">Caravana de la nodriza</span>
-                <BuscadorCaravana excluirId={madreBiologicaId} onElegir={setNodriza} />
-              </>
-            ) : (
-              <div className="collar-asignado">
-                <Caravana numero={nodriza.caravana} grande />
-                <button
-                  type="button"
-                  className="boton--texto"
-                  style={{ marginLeft: 'auto' }}
-                  onClick={() => setNodriza(null)}
-                >
-                  Cambiar
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      <div className="campo">
-        <label className="etiqueta" htmlFor="observaciones">
-          Observaciones · opcional
-        </label>
-        <textarea
-          id="observaciones"
-          className="entrada"
-          rows={3}
-          placeholder="Algo que valga la pena recordar de este cordero"
-          value={observaciones}
-          onChange={(e) => setObservaciones(e.target.value)}
-        />
-      </div>
-
-      <div className="barra-accion">
-        <button type="button" className="boton boton--secundario" onClick={onCancelar}>
-          Cancelar
-        </button>
-        <button
-          type="button"
-          className="boton boton--principal"
-          disabled={!puedeGuardar}
-          onClick={() => {
-            if (sexo === null) return;
-            onGuardar(
-              {
-                id: inicial?.id ?? crypto.randomUUID(),
-                // Un borrador nunca está anulado: la anulación es para lo ya
-                // guardado. Va explícito porque las reglas lo piden.
-                anulado_en: null,
-                sexo,
-                condicion,
-                peso_kg: pesoNumero,
-                collar_marca: esMultiple ? marca : null,
-                causa_muerte: condicion === 'muerto' && causa !== '' ? causa : null,
-                fecha_muerte: condicion === 'muerto' ? fechaMuerte : null,
-                madre_crianza: nodriza,
-                observaciones: observaciones.trim(),
-              },
-              pideNumero && numero.trim() !== '' ? numero.trim() : null,
-            );
-          }}
-        >
-          Listo
         </button>
       </div>
     </>
@@ -841,7 +452,7 @@ function PasoResumen({
 
   return (
     <>
-      <h1 className="titulo">{NOMBRE_TIPO[tipo] ?? `${tipo} corderos`}</h1>
+      <h1 className="titulo">{nombreTipo(tipo)}</h1>
       <p className="subtitulo">
         Madre <Caravana numero={oveja.caravana} /> · {vivos} vivo{vivos === 1 ? '' : 's'} ·{' '}
         {new Date(`${fecha}T12:00:00`).toLocaleDateString('es-UY')}
@@ -850,7 +461,11 @@ function PasoResumen({
 
       <div className="tarjeta">
         {corderos.map((cordero) => (
-          <FilaCordero key={cordero.id} cordero={cordero} collarNumero={collarNumero} />
+          <FilaCordero
+            key={cordero.id}
+            cordero={cordero}
+            detalle={detalleDelBorrador(cordero, collarNumero)}
+          />
         ))}
       </div>
 
