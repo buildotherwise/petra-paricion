@@ -324,6 +324,26 @@
   box-shadow: inset 0 0 0 2px var(--marca);
 }
 
+/* Safari en iOS le da a los input de fecha un ancho intrínseco propio, y su
+   `min-width: auto` resuelve a ese ancho: por eso `width: 100%` no alcanza y el
+   campo se desborda por el costado derecho de la pantalla. Hay que anular las
+   dos cosas. */
+.entrada[type='date'] {
+  min-width: 0;
+  max-width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  /* Safari lo centra por defecto; alineado a la izquierda queda como el resto
+     de los campos. */
+  text-align: left;
+}
+
+/* El ícono del calendario ocupa su propio espacio a la derecha. */
+.entrada[type='date']::-webkit-calendar-picker-indicator {
+  margin-left: auto;
+  opacity: 0.55;
+}
+
 /* Las cifras que se tipean son grandes y en serif: son el contenido. */
 .entrada--cifra {
   font-family: var(--serif);
