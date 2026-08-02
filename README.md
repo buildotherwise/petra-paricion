@@ -17,7 +17,7 @@ formularios de Zoho. La especificación funcional completa está en
 | ✅ Deploy en Vercel | desde `main`, con los headers de caché del service worker |
 | ✅ Protocolo §11 | corrido en dispositivos reales |
 | ⏳ Cuentas del equipo | quedan para el final, a pedido del usuario |
-| ⏳ **Fase 2** | ficha de parto y cordero, edición, registro de muertes, y los registros con error |
+| ⏳ **Fase 2** | ver y corregir registros — [dónde retomar](#fase-2--dónde-retomar) |
 
 ---
 
@@ -156,6 +156,56 @@ Después, en la instancia:
    el secreto.)
 3. Pegar el contenido de [`powersync/sync-config.yaml`](powersync/sync-config.yaml).
 4. La `Instance URL` va a `VITE_POWERSYNC_URL`.
+
+---
+
+## Fase 2 — dónde retomar
+
+Poder **ver y corregir** un registro ya cargado. Los dos pedidos del usuario
+—arreglar un registro rechazado y editar cualquier cosa— son el mismo problema:
+un rechazado se arregla editándolo, así que comparten pantalla.
+
+Maquetas en [`diseno/fase2.html`](diseno/fase2.html) — abrir en el navegador.
+
+**Recomendado:** dos entradas, ninguna agrega pantallas nuevas.
+
+- Las filas bloqueadas del buscador (ovejas que ya parieron) pasan a ser
+  tocables y abren su parto. Es lo que pide la spec §7: «avisar y ofrecer
+  abrirlo».
+- Una lista «Partos de hoy» al pie del inicio, que cubre la corrección más
+  común: la del parto recién cargado.
+
+Se descartó una tercera pantalla de «Registros» con pestañas: no aporta nada que
+las dos anteriores no den, y compite por el pulgar en una app cuyo valor es
+hacer una cosa rápido.
+
+### Tres decisiones abiertas
+
+Editar es más riesgoso que crear: al crear, un error deja un registro de más; al
+editar, pisa uno bueno. Conviene resolverlas antes de escribir código.
+
+1. **Quitar un cordero de un parto guardado.** No puede ser un `delete` — la
+   spec dice que las bajas son lógicas, para preservar la trazabilidad. Falta
+   definir qué significa: ¿solo admin?, ¿queda marcado como anulado?
+2. **Editar el collar de un parto guardado** puede chocar con R3 si ese número
+   ya se reasignó a otro parto.
+3. **Qué puede editar un operador y qué solo un admin.** Los dos roles existen
+   en `perfiles` y en las políticas RLS, pero la app todavía no los distingue.
+
+### Lo que esta fase pone a trabajar
+
+La auditoría por campo de la Fase 1 **nunca se usó**. Con solo altas, `cambios`
+guarda únicamente filas de `creacion`; el diff campo por campo —lo que permite
+reconstruir una pisada accidental— recién entra en juego cuando exista la
+edición. El trigger y sus tests ya están; falta el caso de uso.
+
+### Pendiente aparte
+
+Las **cuentas del equipo** (4–6 personas). El script está probado:
+
+```bash
+python3 scripts/crear-cuenta.py --email X --nombre "Y" --rol operador
+```
 
 ---
 
