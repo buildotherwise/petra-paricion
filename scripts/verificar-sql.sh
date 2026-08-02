@@ -96,7 +96,10 @@ for archivo in "$RAIZ"/supabase/migrations/*.sql; do
   "${PSQL[@]}" -f "$archivo"
 done
 
-echo "▸ Tests de auditoría…"
-"${PSQL[@]}" -f "$RAIZ/supabase/tests/auditoria.test.sql"
+echo "▸ Tests…"
+for archivo in "$RAIZ"/supabase/tests/*.test.sql; do
+  echo "   $(basename "$archivo")"
+  "${PSQL[@]}" -f "$archivo"
+done
 
-echo "▸ OK — esquema, RLS y auditoría validados."
+echo "▸ OK — esquema, RLS, auditoría y anulación validados."
