@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="es-UY">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Petra · Fase 2 — Ver y corregir</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300..700&family=Manrope:wght@400..800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#12110C;color:#E8E2D0;font-family:'Manrope',sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1280px;margin:0 auto;padding:0 24px}
+.intro{padding:70px 0 38px;border-bottom:1px solid #2C2819}
+.kicker{font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:#8C7A2E;font-weight:800;margin:0 0 16px}
+h1{font-family:'Newsreader',serif;font-weight:400;font-size:clamp(32px,5vw,50px);line-height:1.05;margin:0 0 16px;color:#F6F2E4}
+.lede{font-size:16px;max-width:68ch;color:#B3AB92;margin:0 0 12px}
+.lede strong{color:#E8E2D0;font-weight:700}
+.dato{margin:24px 0 0;padding:15px 18px;border-left:2px solid #8C7A2E;background:rgba(140,122,46,.10);font-size:15px;color:#D6CFB8;max-width:68ch}
+.dato b{color:#E8C86A}
+section{padding:54px 0;border-bottom:1px solid #2C2819}
+.num{font-family:'Newsreader',serif;font-size:12px;letter-spacing:.28em;color:#8C7A2E;font-weight:700}
+h2{font-family:'Newsreader',serif;font-weight:400;font-size:30px;line-height:1.12;margin:6px 0 12px;color:#F6F2E4}
+section > .wrap > p, section > p{color:#B3AB92;font-size:15px;max-width:66ch;margin:0 0 12px}
+section p strong{color:#E8E2D0}
+.grid{display:flex;gap:28px;overflow-x:auto;padding:20px 0 18px}
+.op{flex:none;width:330px}
+.op h3x{display:block;font-family:'Newsreader',serif;font-size:22px;color:#F6F2E4;margin:0 0 8px}
+.op p{color:#B3AB92;font-size:13.5px;margin:0 0 8px}
+.pro{font-size:13px;color:#9FD8AE;margin:0 0 3px}
+.con{font-size:13px;color:#E8A867;margin:0 0 12px}
+.cap{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:#7A7259;margin:0 0 10px;font-weight:700}
+
+.tel{width:330px;height:640px;border-radius:32px;overflow:hidden;display:flex;flex-direction:column;
+     box-shadow:0 0 0 1px rgba(255,255,255,.10),0 26px 56px -20px rgba(0,0,0,.8);
+     background:#EFEAE0;color:#2B2519}
+.tel *{box-sizing:border-box}
+.top{display:flex;align-items:center;justify-content:space-between;padding:15px 17px 9px}
+.volver{font-size:13.5px;font-weight:800;color:#6B5A1E}
+.sync{font-size:10.5px;font-weight:800;color:#2E6B3F;background:#FCFAF6;border-radius:99px;padding:5px 10px}
+.sync.err{color:#B3261E}
+.body{padding:2px 17px 17px;flex:1;overflow:hidden}
+h3{font-family:'Newsreader',serif;font-weight:400;font-size:26px;line-height:1.06;margin:0 0 3px}
+.sub{font-size:12px;color:#7C7362;font-weight:600;margin:0 0 14px}
+.lbl{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#9A9182;margin:14px 0 7px}
+.tag{background:#F4C21F;border-radius:99px;padding:2px 10px;font-weight:800;font-size:14px}
+.card{background:#FCFAF6;border-radius:18px;padding:14px;box-shadow:0 1px 2px rgba(43,37,25,.05),0 12px 26px -14px rgba(43,37,25,.22)}
+.lista{background:#FCFAF6;border-radius:18px;padding:0 14px;box-shadow:0 1px 2px rgba(43,37,25,.05),0 12px 26px -14px rgba(43,37,25,.22)}
+.fila{display:flex;align-items:center;justify-content:space-between;gap:9px;padding:11px 0}
+.fila+.fila{border-top:1px solid rgba(43,37,25,.09)}
+.n{font-family:'Newsreader',serif;font-size:21px;letter-spacing:.03em}
+.n mark{background:none;color:#6B5A1E;font-weight:600}
+.mini{font-size:11px;font-weight:800;color:#9A9182}
+.abrir{font-size:11.5px;font-weight:800;color:#6B5A1E}
+.bloq{opacity:.55}
+.dat{display:flex;justify-content:space-between;padding:9px 0;font-size:13.5px}
+.dat+.dat{border-top:1px solid rgba(43,37,25,.09)}
+.dat b{font-weight:800}
+.cordero{display:flex;align-items:center;gap:10px;padding:11px 0}
+.cordero+.cordero{border-top:1px solid rgba(43,37,25,.09)}
+.cordero .info{flex:1}
+.cordero strong{display:block;font-size:14.5px}
+.cordero small{font-size:11.5px;color:#7C7362;font-weight:700}
+.btn{padding:14px;text-align:center;border-radius:15px;background:#6B5A1E;color:#fff;font-size:14.5px;font-weight:800;margin-top:9px}
+.btn.sec{background:#FCFAF6;color:#2B2519;box-shadow:0 1px 3px rgba(43,37,25,.1)}
+.btn.peligro{background:#FCFAF6;color:#B3261E;box-shadow:0 1px 3px rgba(43,37,25,.1)}
+.err{background:rgba(179,38,30,.08);border-radius:15px;padding:13px;font-size:12.5px;color:#7a1a15;font-weight:600}
+.hist{font-size:11.5px;color:#7C7362;padding:7px 0;display:flex;justify-content:space-between;gap:8px}
+.hist+.hist{border-top:1px solid rgba(43,37,25,.07)}
+.hist b{color:#2B2519;font-weight:800}
+.tabs{display:flex;gap:6px;background:rgba(43,37,25,.06);border-radius:99px;padding:4px;margin-bottom:13px}
+.tab{flex:1;text-align:center;padding:8px;border-radius:99px;font-size:12.5px;font-weight:800;color:#7C7362}
+.tab.on{background:#FCFAF6;color:#2B2519}
+.cierre{padding:56px 0 110px}
+.cierre p{color:#B3AB92;font-size:15.5px;max-width:68ch;margin:0 0 14px}
+.cierre strong{color:#E8E2D0}
+.cierre ol{color:#B3AB92;font-size:15px;max-width:68ch;padding-left:20px}
+.cierre li{margin-bottom:9px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="intro">
+  <p class="kicker">Petra · Fase 2 · Ver y corregir</p>
+  <h1>Abrir un parto ya cargado</h1>
+  <p class="lede">Los dos pedidos son el mismo problema: <strong>un registro rechazado se arregla editándolo</strong>. Una vez que existe la ficha del parto, el rechazado se abre en la misma pantalla y se vuelve a guardar. Por eso van juntos.</p>
+  <div class="dato">
+    <b>Un efecto secundario que vale la pena:</b> la auditoría por campo que armamos en la Fase 1 todavía no se usó nunca. Con solo altas, la tabla <code>cambios</code> únicamente guarda filas de «creación». El diff campo por campo —lo que permite reconstruir una pisada— recién entra en juego cuando se puede editar. Esta fase es la que lo pone a trabajar.
+  </div>
+</div>
+
+<!-- ═══════════ 1 · Cómo se llega ═══════════ -->
+<section>
+  <div class="num">01</div>
+  <h2>Cómo se llega a un parto ya cargado</h2>
+  <p>Es la decisión que más cambia el resto. Tres caminos, y no son excluyentes.</p>
+
+  <div class="grid">
+
+    <div class="op">
+      <span class="h3x">A · Desde el buscador</span>
+      <p>Las ovejas bloqueadas del paso 1 —las que ya parieron— pasan a ser <strong>tocables</strong>: abren su parto. Es literalmente lo que pide la spec §7: «avisar y ofrecer abrirlo».</p>
+      <p class="pro">+ No agrega ninguna pantalla nueva. El operario ya sabe buscar por caravana.</p>
+      <p class="con">− Hay que saber qué oveja buscar. No sirve para «¿qué cargué hoy?».</p>
+      <p class="cap" style="margin-top:14px">Buscador — ahora se abren</p>
+      <div class="tel">
+        <div class="top"><span class="volver">‹ Volver</span><span class="sync">● Todo sincronizado</span></div>
+        <div class="body">
+          <h3>¿Qué oveja parió?</h3>
+          <p class="sub">Escribí los números de la caravana.</p>
+          <div class="card" style="text-align:center;font-family:'Newsreader',serif;font-size:28px;padding:11px">170</div>
+          <div class="lista" style="margin-top:11px">
+            <div class="fila"><span class="n"><mark>170</mark>0</span></div>
+            <div class="fila"><span class="n"><mark>170</mark>1</span></div>
+          </div>
+          <p class="lbl">Ya tienen parto registrado</p>
+          <div class="lista">
+            <div class="fila"><span class="n bloq"><mark>170</mark>3</span><span class="abrir">Abrir ›</span></div>
+            <div class="fila"><span class="n bloq"><mark>170</mark>6</span><span class="abrir">Abrir ›</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="op">
+      <span class="h3x">B · Lista de lo cargado hoy</span>
+      <p>El inicio suma <strong>«Partos de hoy»</strong>. Contesta la pregunta que el operario se hace de verdad al final de la jornada: qué cargué, y está bien.</p>
+      <p class="pro">+ Cubre la corrección más común: la del parto que acabás de cargar.</p>
+      <p class="con">− Para algo de hace tres días hay que ir igual al buscador.</p>
+      <p class="cap" style="margin-top:14px">Inicio — con lo de hoy</p>
+      <div class="tel">
+        <div class="top"><span style="font-family:'Newsreader',serif;font-size:16px;color:#6B5A1E">Petra</span><span class="sync">● Todo sincronizado</span></div>
+        <div class="body">
+          <h3>Temporada 2026</h3>
+          <p class="sub">domingo, 2 de agosto</p>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+            <div class="card" style="text-align:center;padding:12px 6px"><b style="font-family:'Newsreader',serif;font-size:26px;display:block">3</b><span style="font-size:10px;color:#9A9182;font-weight:700">Hoy</span></div>
+            <div class="card" style="text-align:center;padding:12px 6px"><b style="font-family:'Newsreader',serif;font-size:26px;display:block">3</b><span style="font-size:10px;color:#9A9182;font-weight:700">Temporada</span></div>
+            <div class="card" style="text-align:center;padding:12px 6px"><b style="font-family:'Newsreader',serif;font-size:26px;display:block">4</b><span style="font-size:10px;color:#9A9182;font-weight:700">Sin señalar</span></div>
+          </div>
+          <div class="btn" style="margin-top:14px">Registrar parto</div>
+          <div class="btn sec">Señalada</div>
+          <p class="lbl">Partos de hoy</p>
+          <div class="lista">
+            <div class="fila"><span><span class="tag">1740</span> <span class="mini">Mellizos · collar 12</span></span><span class="abrir">›</span></div>
+            <div class="fila"><span><span class="tag">1582</span> <span class="mini">Único</span></span><span class="abrir">›</span></div>
+            <div class="fila"><span><span class="tag">2509</span> <span class="mini">Único</span></span><span class="abrir">›</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="op">
+      <span class="h3x">C · Pantalla de registros</span>
+      <p>Una tercera entrada desde el inicio, con todos los partos de la temporada, filtros y los rechazados en una pestaña.</p>
+      <p class="pro">+ Un solo lugar para todo, incluidos los errores.</p>
+      <p class="con">− Es la más cara de construir y compite con «Registrar parto» por el pulgar. En el campo, la app tiene que hacer una cosa.</p>
+      <p class="cap" style="margin-top:14px">Registros — con pestañas</p>
+      <div class="tel">
+        <div class="top"><span class="volver">‹ Volver</span><span class="sync err">● 1 registro con error</span></div>
+        <div class="body">
+          <h3>Registros</h3>
+          <p class="sub">Temporada 2026</p>
+          <div class="tabs"><span class="tab on">Partos</span><span class="tab">Con error 1</span></div>
+          <div class="lista">
+            <div class="fila"><span><span class="tag">1740</span> <span class="mini">2 ago · mellizos</span></span><span class="abrir">›</span></div>
+            <div class="fila"><span><span class="tag">1582</span> <span class="mini">2 ago · único</span></span><span class="abrir">›</span></div>
+            <div class="fila"><span><span class="tag">2509</span> <span class="mini">1 ago · único</span></span><span class="abrir">›</span></div>
+            <div class="fila"><span><span class="tag">0178</span> <span class="mini">1 ago · trillizos</span></span><span class="abrir">›</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════ 2 · La ficha ═══════════ -->
+<section>
+  <div class="num">02</div>
+  <h2>La ficha del parto</h2>
+  <p>Adonde llevan los tres caminos. Todo editable, cada cordero se abre aparte, y abajo el historial de cambios — que es la auditoría de la Fase 1 haciéndose visible.</p>
+
+  <div class="grid">
+    <div class="op">
+      <p class="cap">Ficha del parto</p>
+      <div class="tel">
+        <div class="top"><span class="volver">‹ Volver</span><span class="sync">● Todo sincronizado</span></div>
+        <div class="body">
+          <h3><span class="tag" style="font-size:19px;padding:3px 12px">1740</span></h3>
+          <p class="sub" style="margin-top:8px">Mellizos · 2 vivos · 2 de agosto</p>
+          <div class="card">
+            <div class="dat"><span>Fecha</span><b>2 ago 2026</b></div>
+            <div class="dat"><span>Condición corporal</span><b>3,25</b></div>
+            <div class="dat"><span>Collar del parto</span><b>12</b></div>
+          </div>
+          <div class="btn sec">Editar datos del parto</div>
+          <p class="lbl">Corderos</p>
+          <div class="card">
+            <div class="cordero">
+              <svg width="18" height="29" viewBox="0 0 30 48"><rect x="4" y="2" width="22" height="44" rx="7" fill="none" stroke="#6B5A1E" stroke-width="2.4"/><circle cx="15" cy="12" r="5.4" fill="#6B5A1E"/></svg>
+              <div class="info"><strong>Macho · 4,20 kg</strong><small>Collar 12 · punto arriba</small></div>
+              <span class="abrir">›</span>
+            </div>
+            <div class="cordero">
+              <svg width="18" height="29" viewBox="0 0 30 48"><rect x="4" y="2" width="22" height="44" rx="7" fill="none" stroke="#6B5A1E" stroke-width="2.4"/><circle cx="15" cy="36" r="5.4" fill="#6B5A1E"/></svg>
+              <div class="info"><strong>Hembra · 3,80 kg</strong><small>Collar 12 · punto abajo</small></div>
+              <span class="abrir">›</span>
+            </div>
+          </div>
+          <div class="btn sec">+ Agregar un cordero</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="op">
+      <p class="cap">Ficha del cordero — acciones de R8 y R10</p>
+      <div class="tel">
+        <div class="top"><span class="volver">‹ Volver</span><span class="sync">● Todo sincronizado</span></div>
+        <div class="body">
+          <h3>Macho</h3>
+          <p class="sub">Madre <span class="tag">1740</span> · nacido el 2 de agosto</p>
+          <div class="card">
+            <div class="dat"><span>Peso</span><b>4,20 kg</b></div>
+            <div class="dat"><span>Collar</span><b>12 · punto arriba</b></div>
+            <div class="dat"><span>Se cría con</span><b>Su madre</b></div>
+            <div class="dat"><span>Estado</span><b>Sin señalar</b></div>
+          </div>
+          <div class="btn sec">Editar</div>
+          <div class="btn sec">Asignar nodriza</div>
+          <div class="btn peligro">Registrar muerte</div>
+          <p class="lbl">Historial</p>
+          <div class="card" style="padding:4px 14px">
+            <div class="hist"><span>Peso <b>3,90</b> → <b>4,20</b></span><span>hoy 16:42</span></div>
+            <div class="hist"><span>Creado por <b>Carlos</b></span><span>hoy 11:04</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="op">
+      <p class="cap">Registros con error — desde la pastilla roja</p>
+      <div class="tel">
+        <div class="top"><span class="volver">‹ Volver</span><span class="sync err">● 1 registro con error</span></div>
+        <div class="body">
+          <h3>Con error</h3>
+          <p class="sub">No se pudieron subir al servidor.</p>
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:baseline">
+              <strong style="font-size:15px">Parto de <span class="tag">0181</span></strong>
+              <span class="mini">1 ago 14:20</span>
+            </div>
+            <div class="err" style="margin-top:10px">
+              Esa oveja ya tenía un parto registrado desde otro dispositivo.
+            </div>
+            <div class="btn sec" style="margin-top:11px">Abrir y corregir</div>
+            <div class="btn peligro">Descartar</div>
+          </div>
+          <p class="lbl">Qué se había cargado</p>
+          <div class="card" style="padding:4px 14px">
+            <div class="dat"><span>Fecha</span><b>1 ago 2026</b></div>
+            <div class="dat"><span>Condición</span><b>2,50</b></div>
+            <div class="dat"><span>Corderos</span><b>1 macho, 4,10 kg</b></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="cierre">
+  <div class="num">Mi recomendación</div>
+  <h2>A + B ahora, C nunca</h2>
+  <p>Las dos primeras entradas <strong>no agregan pantallas</strong>: la A convierte en tocables filas que ya existen, y la B es una lista al pie del inicio. Entre las dos cubren los dos casos reales — «me equivoqué en lo que acabo de cargar» y «necesito la oveja tal».</p>
+  <p>La <strong>C la descartaría</strong>. Es una pantalla más compitiendo por el pulgar en una app cuyo valor es que hace una cosa rápido. Todo lo que ofrece lo dan A y B, salvo los rechazados — y esos tienen su propia puerta, que es la pastilla roja del encabezado.</p>
+  <p style="margin-top:22px"><strong>Sobre el alcance, algo que quiero decir antes de empezar:</strong></p>
+  <ol>
+    <li><strong>Editar es más riesgoso que crear.</strong> Al crear, un error deja un registro de más; al editar, pisa uno bueno. La auditoría ya está lista para eso, pero es la primera vez que la vamos a usar de verdad.</li>
+    <li><strong>El borrado.</strong> «Quitar un cordero» de un parto ya guardado no puede ser un delete: la spec dice que las bajas son lógicas. Habría que definir qué significa — probablemente que solo un admin pueda, y quede registrado.</li>
+    <li><strong>Editar el collar de un parto guardado</strong> puede chocar con R3 si ese número ya se reasignó a otro parto. Hay que resolverlo, no descubrirlo en el campo.</li>
+  </ol>
+  <p style="margin-top:16px">Ninguna es un bloqueo. Son las tres decisiones que conviene tomar antes de escribir la primera línea.</p>
+</div>
+
+</div>
+</body>
+</html>

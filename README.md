@@ -4,7 +4,7 @@ App de campo offline-first para registrar parición y señalada. Reemplaza los
 formularios de Zoho. La especificación funcional completa está en
 [CLAUDE.md](CLAUDE.md); acá está cómo se corre y cómo se despliega.
 
-**Estado: backend en pie y sincronizando. Falta conectar la app y desplegar.**
+**Estado: Fase 1 cerrada — protocolo §11 aprobado en dispositivos reales.**
 
 | | |
 |---|---|
@@ -14,9 +14,10 @@ formularios de Zoho. La especificación funcional completa está en
 | ✅ App PWA | login, inicio y registro de parto, sobre SQLite local |
 | ✅ Instancia de PowerSync | replicando por IPv6; slot activo y WAL al día |
 | ✅ Las 502 madres | importadas y verificadas contra el archivo original |
-| ⏳ `VITE_POWERSYNC_URL` | **falta**: copiar la Instance URL a `.env.local` |
-| ⏳ Cuentas del equipo | faltan nombres y correos |
-| ⏳ Deploy y prueba en dispositivos | después de lo anterior |
+| ✅ Deploy en Vercel | desde `main`, con los headers de caché del service worker |
+| ✅ Protocolo §11 | corrido en dispositivos reales |
+| ⏳ Cuentas del equipo | quedan para el final, a pedido del usuario |
+| ⏳ **Fase 2** | ficha de parto y cordero, edición, registro de muertes, y los registros con error |
 
 ---
 
