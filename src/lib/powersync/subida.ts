@@ -14,7 +14,8 @@ export type AccionSubida = 'reintentar' | 'descartar';
  */
 const CLASES_TRANSITORIAS = new Set(['08', '40', '53', '57', '58']);
 
-function codigoDe(error: unknown): string | null {
+/** El SQLSTATE del error, si el servidor llegó a contestar. */
+export function codigoDe(error: unknown): string | null {
   if (typeof error !== 'object' || error === null) return null;
   const codigo = (error as { code?: unknown }).code;
   return typeof codigo === 'string' && codigo !== '' ? codigo : null;

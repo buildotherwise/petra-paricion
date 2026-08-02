@@ -7,7 +7,7 @@ import {
 } from '@powersync/web';
 import { supabase } from '../supabase';
 import { entorno } from '../entorno';
-import { clasificarErrorSubida, normalizarParaPostgres } from './subida';
+import { clasificarErrorSubida, codigoDe, normalizarParaPostgres } from './subida';
 
 /**
  * Nombre de la columna clave en Postgres, cuando no es `id`.
@@ -60,11 +60,11 @@ export class ConectorSupabase implements PowerSyncBackendConnector {
     const transaccion = await base.getNextCrudTransaction();
     if (transaccion === null) return;
 
-    let operacionActual: CrudEntry | null = null;
+    let indiceActual = 0;
 
     try {
-      for (const operacion of transaccion.crud) {
-        operacionActual = operacion;
+      for (const [i, operacion] of transaccion.crud.entries()) {
+        indiceActual = i;
         await this.aplicar(operacion);
       }
       await transaccion.complete();
@@ -73,7 +73,14 @@ export class ConectorSupabase implements PowerSyncBackendConnector {
         throw error;
       }
 
-      await this.registrarRechazo(base, operacionActual, error);
+      // Se descarta la transacción ENTERA, así que hay que registrar todo lo
+      // que no llegó al servidor: la operación que falló y las que venían
+      // después, que nunca se intentaron. Las anteriores sí entraron.
+      //
+      // Registrar solo la que falló perdía los corderos de un parto de
+      // mellizos sin dejar rastro, que es exactamente el caso donde más
+      // importa saber qué se perdió.
+      await this.registrarRechazo(base, transaccion.crud.slice(indiceActual), error);
       await transaccion.complete();
     }
   }
@@ -114,25 +121,83 @@ export class ConectorSupabase implements PowerSyncBackendConnector {
 
   private async registrarRechazo(
     base: AbstractPowerSyncDatabase,
-    operacion: CrudEntry | null,
+    perdidas: readonly CrudEntry[],
     error: unknown,
   ): Promise<void> {
     const motivo = error instanceof Error ? error.message : JSON.stringify(error);
-    console.error('[sync] operación rechazada por el servidor', { operacion, error });
+    const codigo = codigoDe(error);
+    // Un solo id para toda la carga: lo que la persona hizo una vez se muestra
+    // una vez, aunque sean tres filas.
+    const cargaId = crypto.randomUUID();
+    const ahora = new Date().toISOString();
 
-    await base.execute(
-      `insert into subidas_rechazadas
-         (id, tabla, registro_id, operacion, motivo, datos, ocurrido_en)
-       values (?, ?, ?, ?, ?, ?, ?)`,
-      [
-        crypto.randomUUID(),
-        operacion?.table ?? 'desconocida',
-        operacion?.id ?? '',
-        operacion?.op ?? '',
-        motivo,
-        JSON.stringify(operacion?.opData ?? {}),
-        new Date().toISOString(),
-      ],
-    );
+    console.error('[sync] carga rechazada por el servidor', { perdidas, error });
+
+    for (const operacion of perdidas) {
+      await base.execute(
+        `insert into subidas_rechazadas
+           (id, carga_id, tabla, registro_id, operacion, codigo, motivo, caravana,
+            datos, ocurrido_en)
+         values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          crypto.randomUUID(),
+          cargaId,
+          operacion.table,
+          operacion.id,
+          operacion.op,
+          codigo,
+          motivo,
+          await this.caravanaDe(base, operacion),
+          JSON.stringify(operacion.opData ?? {}),
+          ahora,
+        ],
+      );
+    }
+  }
+
+  /**
+   * La caravana del animal, resuelta AHORA y guardada como texto.
+   *
+   * No se resuelve al mostrar: la oveja de un alta manual rechazada también va a
+   * desaparecer de la réplica local, y entonces no habría contra qué unir. Con
+   * la caravana guardada, la pantalla de rechazos sigue diciendo de qué animal
+   * se trata aunque no quede nada más.
+   */
+  private async caravanaDe(
+    base: AbstractPowerSyncDatabase,
+    operacion: CrudEntry,
+  ): Promise<string | null> {
+    const datos = operacion.opData ?? {};
+
+    try {
+      if (operacion.table === 'ovejas') {
+        const caravana = datos['caravana'];
+        return typeof caravana === 'string' ? caravana : null;
+      }
+
+      if (operacion.table === 'partos') {
+        const fila = await base.getOptional<{ caravana: string }>(
+          'SELECT caravana FROM ovejas WHERE id = ?',
+          [datos['oveja_id'] ?? ''],
+        );
+        return fila?.caravana ?? null;
+      }
+
+      if (operacion.table === 'corderos') {
+        const fila = await base.getOptional<{ caravana: string }>(
+          `SELECT o.caravana FROM partos p
+             JOIN ovejas o ON o.id = p.oveja_id
+            WHERE p.id = ?`,
+          [datos['parto_id'] ?? ''],
+        );
+        return fila?.caravana ?? null;
+      }
+    } catch {
+      // Que no se pueda nombrar el animal no puede impedir dejar constancia de
+      // lo que se perdió.
+      return null;
+    }
+
+    return null;
   }
 }

@@ -83,6 +83,12 @@ const corderos = new Table(
     fecha_muerte: column.text,
     causa_muerte: column.text,
 
+    // Baja lógica: un cordero cargado por error no se borra —el delete está
+    // revocado en todas las tablas— y deja de contar para el tipo de nacimiento.
+    anulado_en: column.text,
+    anulado_por: column.text,
+    anulado_motivo: column.text,
+
     observaciones: column.text,
     creado_en: column.text,
     creado_por: column.text,
@@ -114,14 +120,28 @@ const perfiles = new Table({
  * para siempre. Pero descartar en silencio perdería un parto sin que nadie se
  * entere — que es el peor final posible para esta app.
  *
- * Así que se descarta Y se deja constancia acá, para que la app pueda avisar.
+ * Así que se descarta Y se deja constancia acá. Y esta constancia es la ÚLTIMA
+ * COPIA que queda del registro: el servidor no lo aceptó, y la réplica local se
+ * sincroniza con el servidor, así que cuando el aparato vuelva a bajar datos la
+ * fila original también desaparece del teléfono.
  */
 const subidas_rechazadas = new Table(
   {
+    /**
+     * Agrupa las filas de una misma carga. Un parto de mellizos son tres
+     * operaciones de algo que la persona hizo una vez, y mostrarlas por
+     * separado repetiría el error que ya se corrigió en el contador de
+     * pendientes.
+     */
+    carga_id: column.text,
     tabla: column.text,
     registro_id: column.text,
     operacion: column.text,
+    /** SQLSTATE, para poder traducir el motivo sin adivinar (ver rechazos.ts). */
+    codigo: column.text,
     motivo: column.text,
+    /** La caravana, resuelta al momento del rechazo: después puede no existir. */
+    caravana: column.text,
     datos: column.text,
     ocurrido_en: column.text,
   },
