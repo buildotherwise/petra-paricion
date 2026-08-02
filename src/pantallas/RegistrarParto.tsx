@@ -15,6 +15,8 @@ import {
   collarDisponible,
   corderosQueRequierenCollar,
   hoyISO,
+  maximoElegible,
+  rangoTemporada,
   tipoNacimiento,
   validarFechaNacimiento,
   validarPeso,
@@ -41,7 +43,9 @@ export function RegistrarParto({ onSalir }: { onSalir: () => void }) {
   const usuarioId = useUsuarioId();
   const [paso, setPaso] = useState<Paso>('madre');
   const [oveja, setOveja] = useState<OvejaElegida | null>(null);
-  const [fecha, setFecha] = useState(hoyISO());
+  // Hoy, salvo que la temporada ya haya cerrado: ahí arranca en su último día,
+  // para que la carga tardía siga siendo posible sin pelear con el campo.
+  const [fecha, setFecha] = useState(() => maximoElegible(hoyISO(), entorno.temporada));
   const [condicion, setCondicion] = useState<number | null>(null);
   const [corderos, setCorderos] = useState<BorradorCordero[]>([]);
   const [editando, setEditando] = useState<BorradorCordero | null>(null);
@@ -416,7 +420,9 @@ function PasoDatos({
   onCondicion: (valor: number) => void;
   onSiguiente: () => void;
 }) {
-  const validacionFecha = validarFechaNacimiento(fecha, hoyISO());
+  const hoy = hoyISO();
+  const validacionFecha = validarFechaNacimiento(fecha, hoy, entorno.temporada);
+  const { desde } = rangoTemporada(entorno.temporada);
 
   return (
     <>
@@ -429,12 +435,16 @@ function PasoDatos({
         <label className="etiqueta" htmlFor="fecha">
           Fecha del parto
         </label>
+        {/* min y max acotan el selector del teléfono a la ventana de parición,
+            así el operador no llega ni a ver una fecha inválida. La validación
+            igual corre: el atributo se puede saltear. */}
         <input
           id="fecha"
           className="entrada"
           type="date"
           value={fecha}
-          max={hoyISO()}
+          min={desde}
+          max={maximoElegible(hoy, entorno.temporada)}
           onChange={(e) => onFecha(e.target.value)}
         />
         {!validacionFecha.valida && (

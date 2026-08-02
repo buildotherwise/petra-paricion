@@ -195,7 +195,7 @@ group by p.id, o.caravana;
 - **R9 — Oveja fuera de la lista:** si una madre no aparece en la búsqueda, alta manual con `precargada = false`. Aparece en el panel de revisión web para verificar la caravana.
 - **R10 — Nodriza:** si un cordero pasa a criarse con otra madre, se registra `madre_tipo = nodriza` y `madre_crianza_id`, conservando siempre el parto (madre biológica) original.
 - **R11 — Señalada completa o nada:** el pasaje a estado `senalado` exige tatuaje + todos los campos fenotípicos. No se admiten señaladas a medias.
-- **R12 — Fechas:** fecha de nacimiento por defecto = hoy, editable hacia atrás (máximo 7 días) para partos encontrados tarde. Nunca fechas futuras.
+- **R12 — Fechas:** fecha de nacimiento por defecto = hoy. Tiene que caer dentro de la **ventana de parición de la temporada — del 1 de agosto al 30 de noviembre** del año correspondiente — y nunca en el futuro. Dentro de esa ventana no hay límite de días hacia atrás: un parto puede encontrarse bastante después de ocurrido, y mientras caiga en la temporada es un dato legítimo. Lo que se bloquea es la fecha de otro año o fuera de esos cuatro meses, que solo puede ser un error de tipeo.
 
 ## 6. Sincronización (PowerSync + Supabase)
 

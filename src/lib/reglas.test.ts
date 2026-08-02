@@ -2,6 +2,8 @@ import { describe, expect, test } from 'vitest';
 import {
   collarDisponible,
   corderosQueRequierenCollar,
+  maximoElegible,
+  rangoTemporada,
   tipoNacimiento,
   validarFechaNacimiento,
   validarPeso,
@@ -175,44 +177,89 @@ describe('R7 — el peso avisa fuera de 2–8 kg y bloquea fuera de 0,5–15 kg'
 // R12 — Fechas
 // ---------------------------------------------------------------------------
 
-describe('R12 — la fecha de nacimiento admite hasta 7 días atrás y nunca el futuro', () => {
-  const hoy = '2026-08-10';
+describe('R12 — la fecha cae dentro de la temporada y nunca en el futuro', () => {
+  // La parición de la temporada 2026 va del 1 de agosto al 30 de noviembre.
+  const TEMPORADA = 2026;
+  const valida = (fecha: string, hoy: string) =>
+    validarFechaNacimiento(fecha, hoy, TEMPORADA).valida;
 
   test('hoy es válida', () => {
-    expect(validarFechaNacimiento('2026-08-10', hoy).valida).toBe(true);
+    expect(valida('2026-08-10', '2026-08-10')).toBe(true);
   });
 
-  test('ayer es válida', () => {
-    expect(validarFechaNacimiento('2026-08-09', hoy).valida).toBe(true);
+  test('un parto encontrado tarde, de hace tres semanas, es válido', () => {
+    // Antes se bloqueaba más allá de 7 días. Dentro de la temporada no hay
+    // motivo: un parto se puede encontrar bastante después.
+    expect(valida('2026-08-10', '2026-08-31')).toBe(true);
   });
 
-  test('siete días atrás es válida', () => {
-    expect(validarFechaNacimiento('2026-08-03', hoy).valida).toBe(true);
+  test('el primer día de la temporada es válido', () => {
+    expect(valida('2026-08-01', '2026-08-05')).toBe(true);
   });
 
-  test('ocho días atrás no es válida', () => {
-    expect(validarFechaNacimiento('2026-08-02', hoy).valida).toBe(false);
+  test('el día anterior al inicio de la temporada no es válido', () => {
+    expect(valida('2026-07-31', '2026-08-05')).toBe(false);
   });
 
-  test('mañana no es válida', () => {
-    expect(validarFechaNacimiento('2026-08-11', hoy).valida).toBe(false);
+  test('el último día de la temporada es válido', () => {
+    expect(valida('2026-11-30', '2026-12-15')).toBe(true);
   });
 
-  test('cruza el fin de mes sin equivocarse', () => {
-    // 3 de agosto menos 7 días es 27 de julio, no 27 de agosto.
-    expect(validarFechaNacimiento('2026-07-27', '2026-08-03').valida).toBe(true);
-    expect(validarFechaNacimiento('2026-07-26', '2026-08-03').valida).toBe(false);
+  test('el día siguiente al cierre de la temporada no es válido', () => {
+    expect(valida('2026-12-01', '2026-12-15')).toBe(false);
+  });
+
+  test('mañana no es válida aunque caiga dentro de la temporada', () => {
+    expect(valida('2026-08-11', '2026-08-10')).toBe(false);
+  });
+
+  test('una fecha de la temporada anterior no es válida', () => {
+    expect(valida('2025-09-15', '2026-08-10')).toBe(false);
+  });
+
+  test('la ventana sigue al año de la temporada', () => {
+    expect(validarFechaNacimiento('2027-08-01', '2027-08-05', 2027).valida).toBe(true);
+    expect(validarFechaNacimiento('2026-08-01', '2027-08-05', 2027).valida).toBe(false);
   });
 
   test('una fecha con formato inválido no es válida', () => {
-    expect(validarFechaNacimiento('10/08/2026', hoy).valida).toBe(false);
+    expect(valida('10/08/2026', '2026-08-10')).toBe(false);
+  });
+
+  test('una fecha imposible no es válida', () => {
+    expect(valida('2026-09-31', '2026-10-05')).toBe(false);
   });
 
   test('el rango no se corre por zona horaria', () => {
-    // Uruguay es UTC-3. Con objetos Date, "2026-08-10" se interpreta como
-    // medianoche UTC y al mostrarlo localmente retrocede al día 9. Todo el
-    // cálculo trabaja sobre strings ISO justamente para evitar eso.
-    expect(validarFechaNacimiento('2026-01-01', '2026-01-01').valida).toBe(true);
-    expect(validarFechaNacimiento('2026-01-02', '2026-01-01').valida).toBe(false);
+    // Uruguay es UTC-3. Con objetos Date, "2026-08-01" se interpreta como
+    // medianoche UTC y al mostrarlo localmente retrocede al 31 de julio, que
+    // caería fuera de la temporada. Todo el cálculo trabaja sobre strings ISO
+    // justamente para evitar eso.
+    expect(valida('2026-08-01', '2026-08-01')).toBe(true);
+  });
+
+  test('el motivo distingue el futuro de estar fuera de la temporada', () => {
+    const futuro = validarFechaNacimiento('2026-08-11', '2026-08-10', TEMPORADA);
+    const fuera = validarFechaNacimiento('2026-07-31', '2026-08-10', TEMPORADA);
+    expect(futuro.valida).toBe(false);
+    expect(fuera.valida).toBe(false);
+    if (!futuro.valida && !fuera.valida) {
+      expect(futuro.motivo).not.toBe(fuera.motivo);
+    }
+  });
+});
+
+describe('límites de la temporada', () => {
+  test('la temporada 2026 va del 1 de agosto al 30 de noviembre', () => {
+    expect(rangoTemporada(2026)).toEqual({ desde: '2026-08-01', hasta: '2026-11-30' });
+  });
+
+  test('el máximo elegible nunca pasa de hoy', () => {
+    // A mitad de temporada el tope es hoy, no el cierre de noviembre.
+    expect(maximoElegible('2026-08-10', 2026)).toBe('2026-08-10');
+  });
+
+  test('pasado el cierre, el máximo elegible es el fin de la temporada', () => {
+    expect(maximoElegible('2026-12-20', 2026)).toBe('2026-11-30');
   });
 });

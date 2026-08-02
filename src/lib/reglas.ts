@@ -34,8 +34,15 @@ export const PESO_AVISO_MAX = 8;
 export const PESO_BLOQUEO_MIN = 0.5;
 export const PESO_BLOQUEO_MAX = 15;
 
-/** R12: cuántos días hacia atrás se admite fechar un parto encontrado tarde. */
-export const DIAS_RETROACTIVOS_MAX = 7;
+/**
+ * R12: la ventana de parición de una temporada.
+ *
+ * Del 1 de agosto al 30 de noviembre del año de la temporada. Es el rango real
+ * de la cabaña, no un margen arbitrario: un parto puede encontrarse bastante
+ * después de ocurrido, pero nunca fuera de estos cuatro meses.
+ */
+export const TEMPORADA_MES_INICIO = 8;
+export const TEMPORADA_MES_FIN = 11;
 
 // ---------------------------------------------------------------------------
 // R1 — Tipo de nacimiento derivado
@@ -178,14 +185,43 @@ function aDiasEpoca(fecha: string): number | null {
   return ms / 86_400_000;
 }
 
+/** Primer y último día de parición de una temporada, en formato ISO. */
+export function rangoTemporada(temporada: number): { desde: string; hasta: string } {
+  const mes = (n: number) => String(n).padStart(2, '0');
+  const ultimoDia = new Date(Date.UTC(temporada, TEMPORADA_MES_FIN, 0)).getUTCDate();
+  return {
+    desde: `${temporada}-${mes(TEMPORADA_MES_INICIO)}-01`,
+    hasta: `${temporada}-${mes(TEMPORADA_MES_FIN)}-${mes(ultimoDia)}`,
+  };
+}
+
 /**
- * La fecha de nacimiento admite hasta 7 días hacia atrás (partos encontrados
- * tarde) y nunca el futuro.
+ * La fecha más adelantada que se puede elegir: hoy, o el cierre de la
+ * temporada si ya pasó. Alimenta el atributo `max` del campo, para que el
+ * selector del teléfono no llegue siquiera a ofrecer una fecha inválida.
+ */
+export function maximoElegible(hoy: string, temporada: number): string {
+  const { hasta } = rangoTemporada(temporada);
+  return hoy < hasta ? hoy : hasta;
+}
+
+/**
+ * La fecha del parto tiene que caer dentro de la temporada y nunca en el
+ * futuro.
+ *
+ * No hay límite de días hacia atrás: un parto puede encontrarse bastante
+ * después de ocurrido, y mientras caiga dentro de los cuatro meses de parición
+ * es un dato legítimo. Lo que no puede es quedar fuera de la temporada — eso
+ * sería un error de tipeo o una fecha de otro año.
  *
  * `hoy` se recibe como parámetro en vez de leerlo del sistema: hace la función
  * testeable y deja explícito de quién es el reloj.
  */
-export function validarFechaNacimiento(fecha: string, hoy: string): ValidacionFecha {
+export function validarFechaNacimiento(
+  fecha: string,
+  hoy: string,
+  temporada: number,
+): ValidacionFecha {
   const diaFecha = aDiasEpoca(fecha);
   if (diaFecha === null) {
     return { valida: false, motivo: 'La fecha no tiene un formato válido.' };
@@ -196,20 +232,40 @@ export function validarFechaNacimiento(fecha: string, hoy: string): ValidacionFe
     return { valida: false, motivo: 'La fecha de referencia no es válida.' };
   }
 
-  const diferencia = diaHoy - diaFecha;
-
-  if (diferencia < 0) {
+  if (diaFecha > diaHoy) {
     return { valida: false, motivo: 'No se puede registrar un parto con fecha futura.' };
   }
 
-  if (diferencia > DIAS_RETROACTIVOS_MAX) {
+  const { desde, hasta } = rangoTemporada(temporada);
+  if (fecha < desde || fecha > hasta) {
     return {
       valida: false,
-      motivo: `No se puede fechar más de ${DIAS_RETROACTIVOS_MAX} días atrás.`,
+      motivo: `La parición de ${temporada} va del ${formatearDia(desde)} al ${formatearDia(hasta)}.`,
     };
   }
 
   return { valida: true };
+}
+
+/** 'YYYY-MM-DD' → '1 de agosto', para los mensajes de error. */
+function formatearDia(iso: string): string {
+  const meses = [
+    'enero',
+    'febrero',
+    'marzo',
+    'abril',
+    'mayo',
+    'junio',
+    'julio',
+    'agosto',
+    'setiembre',
+    'octubre',
+    'noviembre',
+    'diciembre',
+  ];
+  const [, mes, dia] = iso.split('-');
+  const nombre = meses[Number(mes) - 1] ?? mes;
+  return `${Number(dia)} de ${nombre}`;
 }
 
 /** Fecha de hoy como 'YYYY-MM-DD' en la zona horaria del dispositivo. */
