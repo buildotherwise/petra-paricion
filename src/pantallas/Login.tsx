@@ -32,9 +32,10 @@ export function Login() {
 
   return (
     <form className="login area-segura" onSubmit={entrar}>
-      {/* El logo ya trae el lettering "Petra · Merino Australiano"; repetirlo
-          debajo sería decir dos veces lo mismo. */}
-      <img src="/icono-512.png" alt="Petra · Merino Australiano" />
+      {/* Asset propio de 640px: el de 512 se ablanda al agrandarlo en pantallas
+          3x. El logo ya trae el lettering "Petra · Merino Australiano", así que
+          repetirlo debajo sería decir dos veces lo mismo. */}
+      <img src="/logo-login.png" alt="Petra · Merino Australiano" />
 
       <h1 className="titulo">Parición</h1>
       <p className="subtitulo">Entrá una vez con señal. Después funciona sin conexión.</p>

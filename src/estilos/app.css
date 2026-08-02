@@ -583,8 +583,11 @@
   margin: 0 auto;
 }
 
+/* El logo es lo único que hay en esta pantalla además de dos campos, así que
+   ocupa el lugar que le corresponde. El tope en vw evita que se desborde en
+   pantallas angostas. */
 .login img {
-  width: 5.5rem;
+  width: min(12rem, 50vw);
   align-self: center;
-  margin-bottom: var(--sp-5);
+  margin-bottom: var(--sp-6);
 }
