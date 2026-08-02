@@ -590,6 +590,148 @@
   color: #7a1a15;
 }
 
+/* Con rechazos la pastilla deja de ser un cartel y pasa a ser la puerta:
+   avisar de un problema sin dar el camino para verlo es peor que no avisar. */
+.sync--tocable {
+  border: 0;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.sync--tocable:disabled {
+  cursor: default;
+}
+
+/* ── Fichas ─────────────────────────────────────────────────────────── */
+
+/* Una tarjeta que se abre. Es la fila de la bandeja de rechazados, donde no
+   entra en una línea: hay título, hora, resumen y motivo. */
+.tarjeta--tocable {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  width: 100%;
+  margin-bottom: var(--sp-3);
+  border: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rechazo-encabezado {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+
+.rechazo-encabezado strong {
+  font-size: 0.9375rem;
+  font-weight: 800;
+}
+
+/* La fila que lleva a todos los partos de la temporada. Va al pie de «Partos
+   de hoy» y no como tercer botón del inicio: está donde se mira cuando se
+   busca un parto, y deja el pulgar libre para «Registrar parto». */
+.ver-todos {
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: var(--marca);
+}
+
+.lista-vacia {
+  display: block;
+  padding: var(--sp-3) 0;
+  color: var(--tinta-suave);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+/* Una fila de dato: etiqueta a la izquierda, valor a la derecha. El valor va
+   en negrita y con cifras tabulares porque es lo que se viene a mirar. */
+.dato {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  padding: var(--sp-3) 0;
+  font-size: 0.875rem;
+}
+
+.dato + .dato {
+  border-top: 1px solid var(--linea);
+}
+
+.dato b {
+  font-weight: 800;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* La explicación de por qué un botón está apagado. Sin ella, un botón inerte
+   se lee como una falla de la app. */
+.nota-boton {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--tinta-suave);
+}
+
+.cambio-madre {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-4);
+  font-size: 1.25rem;
+  color: var(--tinta-tenue);
+}
+
+/* Acciones que no vuelven atrás. Secundarias en peso —no son lo que se viene a
+   hacer— pero con el texto en rojo, para que no se toquen de paso. */
+.boton--riesgo {
+  color: var(--error);
+}
+
+.boton--peligroso {
+  background: var(--error);
+}
+
+.boton--peligroso:active:not(:disabled) {
+  background: #8f1e17;
+}
+
+/* ── Motivos de una lista corta ─────────────────────────────────────── */
+
+/* Un toque en vez de texto libre: escribir con guantes y al sol termina en un
+   campo vacío o con una letra. */
+.motivos {
+  display: grid;
+  gap: var(--sp-2);
+}
+
+.motivo {
+  min-height: var(--toque);
+  padding: var(--sp-3) var(--sp-4);
+  border: 0;
+  border-radius: var(--r-medio);
+  background: var(--superficie);
+  box-shadow: var(--sombra);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.motivo[aria-pressed='true'] {
+  background: var(--marca);
+  color: #fff;
+}
+
 /* ── Corderos ───────────────────────────────────────────────────────── */
 
 .cordero-fila {

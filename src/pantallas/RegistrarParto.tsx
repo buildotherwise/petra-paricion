@@ -30,7 +30,15 @@ type Paso = 'madre' | 'datos' | 'corderos' | 'cordero' | 'resumen';
 
 const PASOS: Paso[] = ['madre', 'datos', 'corderos', 'resumen'];
 
-export function RegistrarParto({ onSalir }: { onSalir: () => void }) {
+export function RegistrarParto({
+  onSalir,
+  onGuardado,
+  onAbrirParto,
+}: {
+  onSalir: () => void;
+  onGuardado: () => void;
+  onAbrirParto: (partoId: string) => void;
+}) {
   const usuarioId = useUsuarioId();
   const [paso, setPaso] = useState<Paso>('madre');
   const [oveja, setOveja] = useState<OvejaElegida | null>(null);
@@ -100,10 +108,14 @@ export function RegistrarParto({ onSalir }: { onSalir: () => void }) {
     try {
       await db.writeTransaction(async (tx) => {
         await tx.execute(
+          // collar_puesto va explícito en 1 en vez de confiar en el default de
+          // Postgres: la columna es NOT NULL, y depender de que la operación
+          // llegue sin ella haría que un cambio en cómo PowerSync arma la
+          // subida se manifieste como partos rechazados en pleno campo.
           `INSERT INTO partos
-             (id, oveja_id, fecha, condicion_corporal, collar_numero, observaciones,
-              creado_en, creado_por, actualizado_en, actualizado_por, dispositivo)
-           VALUES (?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?)`,
+             (id, oveja_id, fecha, condicion_corporal, collar_numero, collar_puesto,
+              observaciones, creado_en, creado_por, actualizado_en, actualizado_por, dispositivo)
+           VALUES (?, ?, ?, ?, ?, 1, NULL, ?, ?, ?, ?, ?)`,
           [
             partoId, oveja.id, fecha, condicion, collarNumero,
             ahora, usuarioId, ahora, usuarioId, aparato,
@@ -143,7 +155,7 @@ export function RegistrarParto({ onSalir }: { onSalir: () => void }) {
         }
       });
 
-      onSalir();
+      onGuardado();
     } catch (fallo) {
       setError(fallo instanceof Error ? fallo.message : 'No se pudo guardar el parto.');
       setGuardando(false);
@@ -181,6 +193,7 @@ export function RegistrarParto({ onSalir }: { onSalir: () => void }) {
               setOveja(elegida);
               setPaso('datos');
             }}
+            onAbrirParto={onAbrirParto}
           />
         )}
 
@@ -249,12 +262,20 @@ export function RegistrarParto({ onSalir }: { onSalir: () => void }) {
 // Paso 1 — La madre
 // ───────────────────────────────────────────────────────────────────────
 
-function PasoMadre({ onElegir }: { onElegir: (oveja: OvejaElegida) => void }) {
+function PasoMadre({
+  onElegir,
+  onAbrirParto,
+}: {
+  onElegir: (oveja: OvejaElegida) => void;
+  onAbrirParto: (partoId: string) => void;
+}) {
   return (
     <>
       <h1 className="titulo">¿Qué oveja parió?</h1>
       <p className="subtitulo">Escribí los números de la caravana.</p>
-      <BuscadorCaravana autoFocus bloquearConParto onElegir={onElegir} />
+      {/* Las que ya parieron se abren: spec §7, «avisar y ofrecer abrirlo». Es
+          la forma de ver si el parto que ya existe es el que se iba a cargar. */}
+      <BuscadorCaravana autoFocus bloquearConParto onElegir={onElegir} onAbrirParto={onAbrirParto} />
     </>
   );
 }

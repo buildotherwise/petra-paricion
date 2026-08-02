@@ -1,6 +1,13 @@
 import { IndicadorSync } from './IndicadorSync';
+import { useNavegacion } from '../lib/navegacion';
 
 export function Encabezado({ atras }: { atras?: (() => void) | undefined }) {
+  const { pantalla, ir } = useNavegacion();
+
+  // Desde la propia bandeja la pastilla no lleva a ningún lado: ya se está ahí.
+  const verRechazados =
+    pantalla.nombre === 'rechazados' ? undefined : () => ir({ nombre: 'rechazados' });
+
   return (
     <header className="encabezado">
       {atras !== undefined ? (
@@ -23,7 +30,7 @@ export function Encabezado({ atras }: { atras?: (() => void) | undefined }) {
           <span className="marca-nombre">Petra</span>
         </div>
       )}
-      <IndicadorSync />
+      <IndicadorSync onVerRechazados={verRechazados} />
     </header>
   );
 }

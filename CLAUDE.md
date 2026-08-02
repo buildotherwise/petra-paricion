@@ -91,6 +91,7 @@ create type marca_collar_t  as enum ('punto_arriba', 'cruz_al_medio', 'punto_aba
 create type entropion_t     as enum ('ninguno', 'ojo_derecho', 'ojo_izquierdo', 'ambos');
 create type estado_cordero_t as enum ('nacido', 'senalado', 'muerto');
 create type madre_t         as enum ('biologica', 'nodriza');
+create type motivo_anulacion_t as enum ('duplicado', 'otra_oveja', 'otro_parto', 'otro');
 
 -- Madres: se precargan por CSV antes de la temporada
 create table ovejas (
@@ -147,6 +148,11 @@ create table corderos (
   fecha_muerte      date,
   causa_muerte      causa_muerte_t,
 
+  -- Baja lógica del error de carga (R13). Los tres van juntos o ninguno.
+  anulado_en        timestamptz,
+  anulado_por       uuid references auth.users(id),
+  anulado_motivo    motivo_anulacion_t,
+
   observaciones     text,
   creado_en         timestamptz not null default now(),
   actualizado_en    timestamptz not null default now(),
@@ -173,9 +179,11 @@ create table cambios (
 create view partos_resumen as
 select
   p.id, p.oveja_id, o.caravana, p.fecha, p.condicion_corporal,
-  count(c.id)                                              as tipo_nacimiento,
-  count(c.id) filter (where c.condicion = 'vivo')          as nacidos_vivos,
-  count(c.id) filter (where c.estado = 'senalado')         as senalados
+  -- Los anulados no cuentan: un muerto existió, un anulado no (R13).
+  count(c.id) filter (where c.anulado_en is null)                           as tipo_nacimiento,
+  count(c.id) filter (where c.anulado_en is null and c.condicion = 'vivo')  as nacidos_vivos,
+  count(c.id) filter (where c.anulado_en is null and c.estado = 'senalado') as senalados,
+  count(c.id) filter (where c.anulado_en is not null)                       as anulados
 from partos p
 join ovejas o on o.id = p.oveja_id
 left join corderos c on c.parto_id = p.id
@@ -185,13 +193,14 @@ group by p.id, o.caravana;
 ## 5. Reglas de negocio y validaciones
 
 - **R1 — Tipo de nacimiento derivado:** nunca se ingresa manualmente. Se calcula como cantidad de corderos del parto. En pantalla y exportaciones se muestra el valor derivado (1/2/3).
-- **R2 — Collar solo en múltiples:** el **número de collar es del parto**, no del cordero: lo llevan todos los hermanos y también la madre (sin marca). Se pide una sola vez, al agregar el segundo cordero. Lo que distingue a cada hermano es la **marca**, que se exige a todos —vivos y muertos— antes de poder confirmarlos. En partos únicos los campos de collar no se muestran, y si un parto múltiple vuelve a ser único al quitar un cordero, el collar **se libera automáticamente**.
-- **R3 — Collar activo único:** un número de collar no puede estar en dos partos a la vez mientras alguno tenga corderos sin señalar. Dentro del parto, cada marca se usa una sola vez. Validación en la app contra la base local; la web muestra un panel de duplicados por si dos dispositivos offline asignaron el mismo collar (caso muy improbable con 5 dispositivos: resolver manualmente).
+- **R2 — Collar solo en múltiples:** el **número de collar es del parto**, no del cordero: lo llevan todos los hermanos y también la madre (sin marca). Se pide una sola vez, al agregar el segundo cordero. Lo que distingue a cada hermano es la **marca**, que se exige a todos —vivos y muertos— antes de poder confirmarlos. En partos únicos los campos de collar no se muestran. Si un parto múltiple vuelve a ser único, la app **pregunta si la madre sigue con el collar puesto** (`partos.collar_puesto`): antes de guardar el parto el collar se suelta solo, pero después de guardado el collar puede estar físicamente en el animal y solo lo sabe quien lo está mirando. El **número** queda reservado igual — ver R3.
+- **R3 — Un número, una temporada:** un número de collar usado no vuelve a estar disponible hasta la temporada siguiente. No lo liberan la muerte de un cordero (R8), ni la señalada, ni la anulación: el collar es un objeto que sigue puesto en la madre y en los hermanos hasta que alguien va y lo saca, y ninguno de esos hechos lo saca de la oveja. Dentro del parto, cada marca se usa una sola vez — y la marca de un cordero anulado sí se libera, porque no es un objeto aparte sino la que lleva ese collar. Validación en la app contra la base local; la web muestra un panel de duplicados por si dos dispositivos offline asignaron el mismo collar (caso muy improbable con 5 dispositivos: resolver manualmente).
 - **R4 — Condición corporal una sola vez:** es atributo del parto, no del cordero. Se pide una vez, con la escala visible (1 muy flaca … 5 muy gorda).
 - **R5 — Corderos muertos al nacer:** requieren sexo, **causa de muerte** (lista cerrada de siete motivos, heredada de Zoho) y **fecha de muerte** — que no puede ser anterior al parto ni posterior a hoy. El peso es opcional. En partos múltiples llevan collar y marca igual que los vivos. No pasan por señalada. Estado = `muerto`.
 - **R6 — Confirmación de sexo en la señalada:** la app muestra el sexo registrado al nacer y pide confirmarlo con un toque. Si el operador indica lo contrario, se actualiza el sexo, se marca `sexo_discrepancia = true` y el caso aparece en el panel de revisión web. Así el dato duplicado de Zoho se convierte en una verificación que detecta errores de vínculo en vez de generarlos.
 - **R7 — Rangos de peso:** advertencia (no bloqueo) fuera de **2,5–6,0 kg**; bloqueo fuera de **0,5–8,0 kg** y con más de dos decimales. Umbrales calibrados contra los 468 corderos vivos de 2025 (mediana 4,14 · máximo 6,90): el aviso sobre 6 kg salta en 1 de cada 33 partos — a 5 kg saltaría en 1 de cada 6 y el equipo aprendería a descartarlo.
-- **R8 — Muerte entre nacimiento y señalada:** acción "Registrar muerte" sobre el cordero → estado `muerto`, `fecha_muerte`, causa opcional. Libera el collar. El parto conserva el conteo de nacidos (tipo de nacimiento no cambia).
+- **R8 — Muerte entre nacimiento y señalada:** acción "Registrar muerte" sobre el cordero → estado `muerto`, `fecha_muerte` y **causa obligatoria** (la restricción `muerte_documentada` la exige, y sin causa no hay análisis de mortalidad; la lista trae "Sin diagnóstico" para cuando de verdad no se sabe). `condicion` no cambia: dice cómo nació. **No libera el collar** (R3). El parto conserva el conteo de nacidos. Solo se aplica a corderos sin señalar: la muerte de un señalado perdería el hecho de haberlo sido y se corrige desde la web.
+- **R13 — Anulación de un cordero:** para el error de carga —se cargó de más, o dos veces—, no para lo que le pasó al animal. Es baja lógica (`anulado_en`, `anulado_por`, `anulado_motivo` de lista cerrada), porque el borrado está revocado en todas las tablas. Un anulado **no cuenta** para el tipo de nacimiento (R1) ni para la señalada, y sigue visible en la ficha, tachado y con autor. No se puede anular un cordero señalado —tiene el tatuaje puesto— ni el último que queda: un parto sin corderos no puede existir, porque alguien vio parir a la oveja. Si el parto entero está mal, lo que corresponde es cambiar la madre.
 - **R9 — Oveja fuera de la lista:** si una madre no aparece en la búsqueda, alta manual con `precargada = false`. Aparece en el panel de revisión web para verificar la caravana.
 - **R10 — Nodriza:** si un cordero pasa a criarse con otra madre, se registra `madre_tipo = nodriza` y `madre_crianza_id`, conservando siempre el parto (madre biológica) original.
 - **R11 — Señalada completa o nada:** el pasaje a estado `senalado` exige tatuaje + todos los campos fenotípicos. No se admiten señaladas a medias.
@@ -220,7 +229,13 @@ group by p.id, o.caravana;
 1. Lista de pendientes (estado `nacido`), ordenada por fecha de nacimiento, buscable por caravana de la madre o número de collar.
 2. Detalle: datos del nacimiento visibles, confirmación de sexo (R6), tatuaje (teclado numérico), botoneras para fenotipo (0/1 y 0–4), entropión, observaciones → `Ingresar`.
 
-**Ficha de cordero:** ver/corregir cualquier registro, acciones "Registrar muerte" y "Asignar nodriza".
+**Partos registrados:** sección propia, con buscador por caravana o collar y la lista de la temporada agrupada por jornada. Se llega desde el pie de «Partos de hoy», en el inicio.
+
+**Ficha del parto:** se mira, y editar es un paso aparte — es la pantalla que más se abre sin intención de cambiar nada, y un formulario siempre activo cambia un dato de un roce. Datos del parto, lista de corderos, "Agregar un cordero" y "Cambiar la madre" (el error de la caravana equivocada, frenado en el teléfono si la oveja destino ya parió).
+
+**Ficha de cordero:** ver/corregir cualquier registro, con las acciones "Registrar muerte" (R8), "Asignar nodriza" (R10) y "Anular cordero" (R13) a la vista, no detrás de un menú.
+
+**Registros con error:** detrás de la pastilla roja del encabezado. Lista de cargas rechazadas por el servidor, con el motivo en castellano llano y todo lo que se había cargado. Quitar una de la lista **pierde datos a propósito** —es la última copia que queda— así que pasa por una confirmación que lo muestra por última vez. El historial de cambios NO está en el teléfono: `cambios` queda fuera de la replicación y su lectura es solo para admin (va en la web, §8).
 
 ## 8. Plataforma web (admin)
 
@@ -251,8 +266,8 @@ Tarjetas del dashboard:
 **Fase 1 — Captura de partos (días 1–3):**
 esquema en Supabase + repo + PWA con flujo "Registrar parto" guardando en local + integración PowerSync + importador CSV de caravanas + indicador de pendientes. *Criterio de salida:* prueba en dos dispositivos reales en modo avión, reconexión y verificación de datos en Supabase.
 
-**Fase 2 — Prueba de campo y ajustes (días 3–5):**
-carga real en paralelo con Zoho (solo la tablet duplica registros los primeros 2–3 días para validar paridad), ajustes de UX con el equipo, ficha de cordero y registro de muertes.
+**Fase 2 — Ver y corregir (días 3–5):**
+ficha del parto y del cordero, edición de lo guardado, cambio de madre, registro de muertes (R8), nodriza posterior (R10), anulación de corderos (R13) y bandeja de registros rechazados. En paralelo: carga real junto con Zoho (solo la tablet duplica registros los primeros 2–3 días para validar paridad) y ajustes de UX con el equipo. Maquetas y decisiones en `diseno/fase2-pantallas.html`.
 
 **Fase 3 — Señalada (días 5–10):**
 lista de pendientes + flujo de señalada + confirmación de sexo. Llega antes de la primera señalada real.

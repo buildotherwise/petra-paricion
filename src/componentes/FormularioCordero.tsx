@@ -48,7 +48,7 @@ export function FormularioCordero({
   collarNumero,
   numerosUsados,
   ocupadas,
-  murioDespues = false,
+  nacimientoFijo,
   titulo,
   onGuardar,
   onCancelar,
@@ -63,11 +63,14 @@ export function FormularioCordero({
   numerosUsados: readonly string[];
   ocupadas: readonly MarcaCollar[];
   /**
-   * El cordero nació vivo y murió después (R8). Entonces «al nacer» no se toca:
-   * cambiarlo a muerto pisaría la fecha y la causa de una muerte que sí ocurrió,
-   * y el formulario no tiene cómo saber cuál de las dos es la buena.
+   * Cuando «al nacer» no se puede tocar, y por qué.
+   *
+   * Pasa en dos casos y por el mismo motivo: el formulario pisaría un hecho que
+   * ya está registrado y no tiene cómo saber cuál de las dos versiones es la
+   * buena. Un cordero que nació vivo y murió después (R8) perdería la fecha y la
+   * causa de esa muerte; uno señalado quedaría en un estado que la base rechaza.
    */
-  murioDespues?: boolean;
+  nacimientoFijo?: { motivo: string } | undefined;
   titulo?: string | undefined;
   onGuardar: (cordero: BorradorCordero, numero: string | null) => void;
   onCancelar: () => void;
@@ -96,7 +99,7 @@ export function FormularioCordero({
   const numeroLibre =
     !pideNumero || numero.trim() === '' ? true : collarDisponible(numero, numerosUsados);
 
-  const pideMuerte = condicion === 'muerto' && !murioDespues;
+  const pideMuerte = condicion === 'muerto' && nacimientoFijo === undefined;
   const validacionMuerte = pideMuerte
     ? validarFechaMuerte(fechaMuerte, fechaParto, hoyISO())
     : ({ valida: true } as const);
@@ -138,12 +141,11 @@ export function FormularioCordero({
         </div>
       </div>
 
-      {murioDespues ? (
+      {nacimientoFijo !== undefined ? (
         <div className="campo">
           <span className="etiqueta">Al nacer</span>
           <p className="aviso aviso--atencion" style={{ marginBottom: 0 }}>
-            Este cordero nació vivo y murió después. Para corregir la muerte, usá «Corregir la
-            muerte» en la ficha.
+            {nacimientoFijo.motivo}
           </p>
         </div>
       ) : (
@@ -370,18 +372,20 @@ export function FormularioCordero({
                 condicion,
                 peso_kg: pesoNumero,
                 collar_marca: esMultiple ? marca : null,
-                // Con murioDespues la muerte no se toca: se conserva tal cual
-                // vino, para no pisar una muerte que sí ocurrió.
-                causa_muerte: murioDespues
-                  ? (inicial?.causa_muerte ?? null)
-                  : condicion === 'muerto' && causa !== ''
-                    ? causa
-                    : null,
-                fecha_muerte: murioDespues
-                  ? (inicial?.fecha_muerte ?? null)
-                  : condicion === 'muerto'
-                    ? fechaMuerte
-                    : null,
+                // Con el nacimiento fijo la muerte no se toca: se conserva tal
+                // cual vino, para no pisar una muerte que sí ocurrió.
+                causa_muerte:
+                  nacimientoFijo !== undefined
+                    ? (inicial?.causa_muerte ?? null)
+                    : condicion === 'muerto' && causa !== ''
+                      ? causa
+                      : null,
+                fecha_muerte:
+                  nacimientoFijo !== undefined
+                    ? (inicial?.fecha_muerte ?? null)
+                    : condicion === 'muerto'
+                      ? fechaMuerte
+                      : null,
                 madre_crianza: nodriza,
                 observaciones: observaciones.trim(),
               },

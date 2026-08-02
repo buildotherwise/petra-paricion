@@ -40,6 +40,7 @@ export function BuscadorCaravana({
   excluirId,
   bloquearConParto = false,
   onElegir,
+  onAbrirParto,
 }: {
   autoFocus?: boolean;
   /** Oveja que no debe ofrecerse (la madre biológica no puede ser su propia nodriza). */
@@ -51,6 +52,12 @@ export function BuscadorCaravana({
    */
   bloquearConParto?: boolean;
   onElegir: (oveja: OvejaElegida) => void;
+  /**
+   * Qué hacer al tocar una oveja que ya parió. Es lo que pide la spec §7:
+   * avisar y ofrecer abrirlo. Sin esto la fila queda muerta y el operador no
+   * tiene forma de ver si el parto que ya existe es el que él iba a cargar.
+   */
+  onAbrirParto?: ((partoId: string) => void) | undefined;
 }) {
   const [consulta, setConsulta] = useState('');
   const [altaManual, setAltaManual] = useState(false);
@@ -128,28 +135,44 @@ export function BuscadorCaravana({
         </ul>
       )}
 
-      {/* Las que ya parieron se muestran, pero no se pueden elegir.
-          Esconderlas sería peor: el operador supondría que faltan de la lista y
-          las cargaría por alta manual, creando una caravana duplicada que
-          Postgres rechaza igual. La fecha permite distinguir "esta la cargué yo
-          hace un rato" de "alguien la cargó por error". */}
+      {/* Las que ya parieron se muestran aparte, no se esconden: el operador
+          supondría que faltan de la lista y las cargaría por alta manual,
+          creando una caravana duplicada que Postgres rechaza igual. Con
+          `onAbrirParto` se pueden tocar y llevan a su parto — que es lo que
+          resuelve el caso de verdad: mirar si el parto que ya existe es el que
+          se iba a cargar. La fecha distingue "esta la cargué yo hace un rato"
+          de "alguien la cargó por error". */}
       {bloqueadas.length > 0 && (
         <>
-          <p className="grupo-bloqueado">Ya tienen parto registrado</p>
-          <ul className="lista lista--bloqueada">
+          <p className="grupo-bloqueado">
+            {onAbrirParto !== undefined
+              ? 'Ya parieron · tocá para ver el parto'
+              : 'Ya tienen parto registrado'}
+          </p>
+          <ul className={onAbrirParto !== undefined ? 'lista' : 'lista lista--bloqueada'}>
             {bloqueadasVisibles.map((fila) => {
               const [antes, coincide, despues] = partirCoincidencia(fila.caravana, consulta);
+              const partoId = fila.parto_id;
               return (
                 <li key={fila.id}>
-                  <button type="button" disabled>
+                  <button
+                    type="button"
+                    disabled={onAbrirParto === undefined || partoId === null}
+                    onClick={
+                      onAbrirParto !== undefined && partoId !== null
+                        ? () => onAbrirParto(partoId)
+                        : undefined
+                    }
+                  >
                     <span className="numero">
                       {antes}
                       <mark>{coincide}</mark>
                       {despues}
                     </span>
-                    {fila.parto_fecha !== null && (
-                      <span className="nota">{diaCorto(fila.parto_fecha)}</span>
-                    )}
+                    <span className="nota">
+                      {fila.parto_fecha !== null && diaCorto(fila.parto_fecha)}
+                      {onAbrirParto !== undefined && ' · Abrir ›'}
+                    </span>
                   </button>
                 </li>
               );

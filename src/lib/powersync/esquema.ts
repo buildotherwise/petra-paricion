@@ -41,6 +41,9 @@ const partos = new Table(
     // El collar es del parto: lo llevan todos los hermanos y también la madre.
     // Cada cordero se distingue por su collar_marca.
     collar_numero: column.text,
+    // 0 = alguien confirmó que el collar ya no está en los animales. El número
+    // queda reservado igual: R3 mira collar_numero, que no se borra nunca.
+    collar_puesto: column.integer,
     observaciones: column.text,
     creado_en: column.text,
     creado_por: column.text,

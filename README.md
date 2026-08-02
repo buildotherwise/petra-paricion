@@ -4,20 +4,21 @@ App de campo offline-first para registrar parición y señalada. Reemplaza los
 formularios de Zoho. La especificación funcional completa está en
 [CLAUDE.md](CLAUDE.md); acá está cómo se corre y cómo se despliega.
 
-**Estado: Fase 1 cerrada — protocolo §11 aprobado en dispositivos reales.**
+**Estado: Fases 1 y 2 cerradas.**
 
 | | |
 |---|---|
-| ✅ Esquema, RLS y auditoría | **aplicados en el proyecto**; 13 aserciones verdes en local y privilegios verificados en producción |
+| ✅ Esquema, RLS y auditoría | **aplicados en el proyecto**; 22 aserciones verdes en local y privilegios verificados en producción |
 | ✅ Rol `powersync_role` | creado, con `REPLICATION BYPASSRLS` y sin acceso a `cambios` |
-| ✅ Reglas de negocio | R1, R2, R3, R7, R12 con 68 tests |
-| ✅ App PWA | login, inicio y registro de parto, sobre SQLite local |
+| ✅ Reglas de negocio | R1, R2, R3, R7, R8, R12, R13 con 131 tests |
+| ✅ App PWA | registro de parto, fichas, corrección, muerte, nodriza, anulación y rechazados |
 | ✅ Instancia de PowerSync | replicando por IPv6; slot activo y WAL al día |
 | ✅ Las 502 madres | importadas y verificadas contra el archivo original |
 | ✅ Deploy en Vercel | desde `main`, con los headers de caché del service worker |
 | ✅ Protocolo §11 | corrido en dispositivos reales |
+| ✅ Auditoría por campo | en uso: cada edición deja su diff en `cambios` |
 | ⏳ Cuentas del equipo | quedan para el final, a pedido del usuario |
-| ⏳ **Fase 2** | ver y corregir registros — [dónde retomar](#fase-2--dónde-retomar) |
+| ⏳ **Fase 3** | señalada — lista de pendientes, fenotipo y confirmación de sexo |
 
 ---
 
@@ -159,45 +160,43 @@ Después, en la instancia:
 
 ---
 
-## Fase 2 — dónde retomar
+## Fase 2 — qué quedó hecho
 
-Poder **ver y corregir** un registro ya cargado. Los dos pedidos del usuario
-—arreglar un registro rechazado y editar cualquier cosa— son el mismo problema:
-un rechazado se arregla editándolo, así que comparten pantalla.
+Ver y corregir un registro ya cargado. Maquetas y decisiones —incluidas las
+alternativas descartadas— en [`diseno/fase2-pantallas.html`](diseno/fase2-pantallas.html).
 
-Maquetas en [`diseno/fase2.html`](diseno/fase2.html) — abrir en el navegador.
+**Tres entradas a un parto guardado**, ninguna con pantalla propia en el inicio:
+las filas del buscador que ya parieron ahora se abren, «Partos de hoy» al pie del
+inicio, y desde ahí una sección de partos registrados con buscador por caravana o
+collar.
 
-**Recomendado:** dos entradas, ninguna agrega pantallas nuevas.
+**Lo que se puede corregir:** datos del parto, cualquier cordero, la madre del
+parto (el error de la caravana equivocada), y agregar un cordero que faltaba.
+Todo pasa por `src/lib/powersync/escritura.ts`.
 
-- Las filas bloqueadas del buscador (ovejas que ya parieron) pasan a ser
-  tocables y abren su parto. Es lo que pide la spec §7: «avisar y ofrecer
-  abrirlo».
-- Una lista «Partos de hoy» al pie del inicio, que cubre la corrección más
-  común: la del parto recién cargado.
+**Lo que se puede registrar:** muerte posterior al nacimiento (R8), nodriza
+después del parto (R10) y anulación de un cordero cargado por error (R13).
 
-Se descartó una tercera pantalla de «Registros» con pestañas: no aporta nada que
-las dos anteriores no den, y compite por el pulgar en una app cuyo valor es
-hacer una cosa rápido.
+### Tres decisiones que conviene no deshacer
 
-### Tres decisiones abiertas
+**El collar no vuelve.** Un número usado queda tomado toda la temporada: no lo
+liberan la muerte, ni la señalada, ni la anulación. El collar es un objeto que
+sigue puesto en la madre hasta que alguien va y lo saca, y ninguno de esos hechos
+lo saca de la oveja. Al anular un cordero que deja el parto en único, la app
+pregunta si la madre lo tiene puesto (`partos.collar_puesto`) — es lo único que
+no puede deducir. El número queda reservado en los dos casos.
 
-Editar es más riesgoso que crear: al crear, un error deja un registro de más; al
-editar, pisa uno bueno. Conviene resolverlas antes de escribir código.
+**Toda edición escribe `actualizado_por`.** La política de RLS exige
+`actualizado_por = auth.uid()` y evalúa la fila **resultante**: si B edita un
+parto que creó A sin tocar esa columna, Postgres devuelve 42501, el clasificador
+lo trata como error de dato y descarta el cambio. Por eso hay un solo camino para
+editar y no una escritura suelta por pantalla.
 
-1. **Quitar un cordero de un parto guardado.** No puede ser un `delete` — la
-   spec dice que las bajas son lógicas, para preservar la trazabilidad. Falta
-   definir qué significa: ¿solo admin?, ¿queda marcado como anulado?
-2. **Editar el collar de un parto guardado** puede chocar con R3 si ese número
-   ya se reasignó a otro parto.
-3. **Qué puede editar un operador y qué solo un admin.** Los dos roles existen
-   en `perfiles` y en las políticas RLS, pero la app todavía no los distingue.
-
-### Lo que esta fase pone a trabajar
-
-La auditoría por campo de la Fase 1 **nunca se usó**. Con solo altas, `cambios`
-guarda únicamente filas de `creacion`; el diff campo por campo —lo que permite
-reconstruir una pisada accidental— recién entra en juego cuando exista la
-edición. El trigger y sus tests ya están; falta el caso de uso.
+**Un rechazo guarda toda la transacción.** Antes se registraba solo la operación
+que fallaba, y los corderos de un parto de mellizos rechazado se perdían sin
+dejar rastro. Ahora se guardan la que falló y las posteriores, agrupadas por
+`carga_id` — las anteriores sí entraron al servidor. Y «quitar de la lista» borra
+la última copia que queda del registro, así que pide confirmación mostrándolo.
 
 ### Pendiente aparte
 
@@ -206,8 +205,6 @@ Las **cuentas del equipo** (4–6 personas). El script está probado:
 ```bash
 python3 scripts/crear-cuenta.py --email X --nombre "Y" --rol operador
 ```
-
----
 
 ## Deploy
 
@@ -266,11 +263,15 @@ Fase 1 y no es negociable.
 ## Cómo está organizado
 
 ```
-src/lib/reglas.ts              R1, R2, R3, R7, R12 como funciones puras
+src/lib/reglas.ts              R1, R2, R3, R7, R8, R12, R13 como funciones puras
+src/lib/rechazos.ts            los errores del servidor, en castellano
+src/lib/navegacion.tsx         la pila de pantallas
 src/lib/powersync/subida.ts    clasificación de errores de subida
+src/lib/powersync/escritura.ts el único camino para editar algo guardado
 src/lib/powersync/conector.ts  fetchCredentials + uploadData
 src/lib/powersync/esquema.ts   réplica local (SQLite)
-src/pantallas/                 Login, Inicio, RegistrarParto
+src/pantallas/                 Login, Inicio, RegistrarParto, PartosRegistrados,
+                               FichaParto, FichaCordero, Rechazados
 supabase/migrations/           esquema, RLS, auditoría, publicación
 scripts/                       migraciones, rol de PowerSync, verificación SQL
 powersync/sync-config.yaml     qué se replica a cada dispositivo

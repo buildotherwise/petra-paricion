@@ -19,12 +19,23 @@ function usarPendientes(): number {
   return data[0]?.n ?? 0;
 }
 
+/**
+ * Cuántas CARGAS rechazó el servidor.
+ *
+ * Por la misma razón que los pendientes cuentan transacciones: un parto de
+ * mellizos son tres filas de algo que la persona hizo una sola vez, y decir «3
+ * registros con error» para un solo parto manda a buscar tres problemas donde
+ * hay uno.
+ */
 function usarRechazados(): number {
-  const { data } = useQuery<{ n: number }>('SELECT count() AS n FROM subidas_rechazadas');
+  const { data } = useQuery<{ n: number }>(
+    'SELECT count(DISTINCT carga_id) AS n FROM subidas_rechazadas',
+  );
   return data[0]?.n ?? 0;
 }
 
 const registros = (n: number) => `${n} ${n === 1 ? 'registro' : 'registros'}`;
+const cargas = (n: number) => `${n} ${n === 1 ? 'carga' : 'cargas'}`;
 
 /**
  * El indicador de sincronización.
@@ -33,17 +44,24 @@ const registros = (n: number) => `${n} ${n === 1 ? 'registro' : 'registros'}`;
  * del día a día: con pendientes en 0 el dispositivo se puede perder, romper o
  * reinstalar sin perder nada. Es el hábito que hay que construir en el equipo.
  */
-export function IndicadorSync() {
+export function IndicadorSync({ onVerRechazados }: { onVerRechazados?: (() => void) | undefined }) {
   const estado = useStatus();
   const pendientes = usarPendientes();
   const rechazados = usarRechazados();
 
+  // Con rechazos la pastilla deja de ser un cartel y pasa a ser la puerta: avisar
+  // de un problema sin dar el camino para verlo es peor que no avisar.
   if (rechazados > 0) {
     return (
-      <span className="sync sync--error" role="status">
+      <button
+        type="button"
+        className="sync sync--error sync--tocable"
+        onClick={onVerRechazados}
+        disabled={onVerRechazados === undefined}
+      >
         <span className="sync-punto" />
-        {registros(rechazados)} con error
-      </span>
+        {cargas(rechazados)} con error
+      </button>
     );
   }
 

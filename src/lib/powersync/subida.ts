@@ -50,6 +50,7 @@ export function clasificarErrorSubida(error: unknown): AccionSubida {
  */
 const COLUMNAS_BOOLEANAS: Record<string, readonly string[]> = {
   ovejas: ['precargada'],
+  partos: ['collar_puesto'],
   corderos: ['sexo_discrepancia'],
   perfiles: ['activo'],
 };
