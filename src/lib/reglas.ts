@@ -8,12 +8,43 @@
 
 export type Condicion = 'vivo' | 'muerto';
 export type MarcaCollar = 'punto_arriba' | 'cruz_al_medio' | 'punto_abajo';
+export type EstadoCordero = 'nacido' | 'senalado' | 'muerto';
 
 export interface CorderoDelParto {
   id: string;
   condicion: Condicion;
   /** La marca distingue a este cordero de sus hermanos. El NÚMERO es del parto. */
   collar_marca: MarcaCollar | null;
+  /**
+   * Baja lógica. Un anulado no existió: no cuenta para el tipo de nacimiento,
+   * no exige marca y no pasa por la señalada. Distinto de un muerto, que sí
+   * existió y por eso sigue contando.
+   */
+  anulado_en: string | null;
+}
+
+/** Lo que las reglas necesitan de un cordero ya guardado en la base. */
+export interface CorderoEnFicha {
+  id: string;
+  estado: EstadoCordero;
+  anulado_en: string | null;
+}
+
+export type Permiso = { puede: true } | { puede: false; motivo: string };
+
+/** Los cuatro errores de carga que de verdad ocurren, más una salida. */
+export const MOTIVOS_ANULACION = [
+  { valor: 'duplicado', etiqueta: 'Lo cargué dos veces' },
+  { valor: 'otra_oveja', etiqueta: 'Es de otra oveja' },
+  { valor: 'otro_parto', etiqueta: 'Me equivoqué de parto' },
+  { valor: 'otro', etiqueta: 'Otro' },
+] as const;
+
+export type MotivoAnulacion = (typeof MOTIVOS_ANULACION)[number]['valor'];
+
+/** Los corderos que siguen contando: todos menos los anulados. */
+function activos<T extends { anulado_en: string | null }>(corderos: readonly T[]): T[] {
+  return corderos.filter((c) => c.anulado_en === null);
 }
 
 /** Las siete causas de muerte de los formularios Zoho, para poder comparar temporadas. */
@@ -70,9 +101,12 @@ export const TEMPORADA_MES_FIN = 11;
  *
  * Nunca se ingresa a mano: en los datos 2025 el operador tipeaba este número y
  * podía contradecir la cantidad de corderos cargados. Acá es imposible.
+ *
+ * Los muertos cuentan —existieron— y los anulados no, que es toda la diferencia
+ * entre las dos bajas.
  */
 export function tipoNacimiento(corderos: readonly CorderoDelParto[]): number {
-  return corderos.length;
+  return activos(corderos).length;
 }
 
 // ---------------------------------------------------------------------------
@@ -89,13 +123,14 @@ export function tipoNacimiento(corderos: readonly CorderoDelParto[]): number {
 export function corderosQueRequierenMarca(
   corderos: readonly CorderoDelParto[],
 ): CorderoDelParto[] {
-  if (corderos.length < 2) return [];
-  return corderos.filter((c) => c.collar_marca === null);
+  const enPie = activos(corderos);
+  if (enPie.length < 2) return [];
+  return enPie.filter((c) => c.collar_marca === null);
 }
 
 /** ¿Este parto necesita número de collar? Solo si es múltiple. */
 export function partoRequiereCollar(corderos: readonly CorderoDelParto[]): boolean {
-  return corderos.length >= 2;
+  return tipoNacimiento(corderos) >= 2;
 }
 
 /**
@@ -119,18 +154,24 @@ export function ajustarCollarDelParto<T extends CorderoDelParto>(
   };
 }
 
-/** Marcas ya tomadas por los hermanos, para no ofrecerlas dos veces. */
+/**
+ * Marcas ya tomadas por los hermanos, para no ofrecerlas dos veces.
+ *
+ * La de un anulado se libera, al revés que el número: la marca no es un objeto
+ * aparte, es la que lleva ese collar. Si el cordero no existió, ningún animal la
+ * lleva puesta.
+ */
 export function marcasOcupadas(
   corderos: readonly CorderoDelParto[],
   exceptoId?: string,
 ): MarcaCollar[] {
-  return corderos
+  return activos(corderos)
     .filter((c) => c.id !== exceptoId && c.collar_marca !== null)
     .map((c) => c.collar_marca as MarcaCollar);
 }
 
 // ---------------------------------------------------------------------------
-// R3 — Un número de collar, un parto
+// R3 — Un número de collar, una temporada
 // ---------------------------------------------------------------------------
 
 /**
@@ -145,19 +186,99 @@ function normalizarNumeroCollar(numero: string): string {
  * ¿Está libre este número de collar?
  *
  * El número identifica al parto entero: lo llevan todos los hermanos y también
- * la madre. Así que no puede estar en dos partos a la vez. Se compara contra
- * los partos que todavía tienen corderos sin señalar; al señalar o al morir
- * (R8) el collar se libera.
+ * la madre. Y una vez usado en la temporada **no vuelve a circulación**: el
+ * collar es un objeto que sigue puesto en la oveja hasta que alguien va y lo
+ * saca, y que un cordero muera no lo saca de la oveja.
+ *
+ * `numeroActual` es el collar del parto que se está editando. Sin él, abrir un
+ * parto con collar 12 y guardarlo sin tocar nada avisaría que el 12 está
+ * ocupado — por él mismo.
  */
 export function collarDisponible(
   numero: string,
-  numerosEnUso: readonly (string | null)[],
+  numerosUsados: readonly (string | null)[],
+  numeroActual?: string | null,
 ): boolean {
   const buscado = normalizarNumeroCollar(numero);
   if (buscado === '') return false;
-  return !numerosEnUso.some(
-    (n) => n !== null && normalizarNumeroCollar(n) === buscado,
-  );
+  if (numeroActual != null && normalizarNumeroCollar(numeroActual) === buscado) return true;
+  return !numerosUsados.some((n) => n !== null && normalizarNumeroCollar(n) === buscado);
+}
+
+// ---------------------------------------------------------------------------
+// Anular un cordero ya guardado
+// ---------------------------------------------------------------------------
+
+/**
+ * ¿Se puede anular este cordero?
+ *
+ * La anulación es para el error de carga —se cargó de más, o dos veces—, no
+ * para lo que le pasó al animal. Por eso deja afuera al señalado, que tiene el
+ * tatuaje puesto, y al último que queda: un parto sin corderos no puede existir,
+ * porque alguien vio parir a la oveja.
+ */
+export function puedeAnular(
+  corderos: readonly CorderoEnFicha[],
+  id: string,
+): Permiso {
+  const cordero = corderos.find((c) => c.id === id);
+  if (cordero === undefined) {
+    return { puede: false, motivo: 'Ese cordero no es de este parto.' };
+  }
+  if (cordero.anulado_en !== null) {
+    return { puede: false, motivo: 'Este cordero ya está anulado.' };
+  }
+  if (cordero.estado === 'senalado') {
+    return {
+      puede: false,
+      motivo: 'Este cordero ya está señalado: tiene el tatuaje puesto y no se puede anular.',
+    };
+  }
+  if (activos(corderos).length <= 1) {
+    return {
+      puede: false,
+      motivo: 'Un parto no puede quedar sin corderos. Si el parto entero está mal, cambiá la madre.',
+    };
+  }
+  return { puede: true };
+}
+
+/**
+ * ¿El parto queda en único si se anula este cordero?
+ *
+ * Es lo que decide si hay que preguntar por el collar: al quedar un solo
+ * cordero el collar deja de hacer falta para distinguirlos, pero puede seguir
+ * puesto en la oveja. Solo lo sabe quien la está mirando.
+ */
+export function partoQuedaUnico(corderos: readonly CorderoEnFicha[], id: string): boolean {
+  return activos(corderos).filter((c) => c.id !== id).length === 1;
+}
+
+// ---------------------------------------------------------------------------
+// R8 — Muerte entre el nacimiento y la señalada
+// ---------------------------------------------------------------------------
+
+/**
+ * ¿Se le puede registrar la muerte a este cordero?
+ *
+ * Solo a los que están sin señalar. La muerte de un cordero ya señalado
+ * perdería el hecho de haberlo sido —el estado es uno solo— y eso se resuelve
+ * desde la web, no en el campo.
+ */
+export function puedeRegistrarMuerte(cordero: CorderoEnFicha): Permiso {
+  if (cordero.anulado_en !== null) {
+    return { puede: false, motivo: 'Este cordero está anulado.' };
+  }
+  if (cordero.estado === 'muerto') {
+    return { puede: false, motivo: 'Este cordero ya figura como muerto.' };
+  }
+  if (cordero.estado === 'senalado') {
+    return {
+      puede: false,
+      motivo: 'Este cordero ya está señalado. La muerte de un señalado se corrige desde la web.',
+    };
+  }
+  return { puede: true };
 }
 
 // ---------------------------------------------------------------------------

@@ -5,13 +5,17 @@ import {
   corderosQueRequierenMarca,
   marcasOcupadas,
   maximoElegible,
+  partoQuedaUnico,
   partoRequiereCollar,
+  puedeAnular,
+  puedeRegistrarMuerte,
   rangoTemporada,
   tipoNacimiento,
   validarFechaMuerte,
   validarFechaNacimiento,
   validarPeso,
   type CorderoDelParto,
+  type CorderoEnFicha,
 } from './reglas';
 
 /** Constructor breve de corderos para los tests. Por defecto: vivo, sin marca. */
@@ -20,6 +24,17 @@ function cordero(sobre: Partial<CorderoDelParto> = {}): CorderoDelParto {
     id: crypto.randomUUID(),
     condicion: 'vivo',
     collar_marca: null,
+    anulado_en: null,
+    ...sobre,
+  };
+}
+
+/** Lo que las reglas necesitan de un cordero ya guardado. */
+function guardado(sobre: Partial<CorderoEnFicha> = {}): CorderoEnFicha {
+  return {
+    id: crypto.randomUUID(),
+    estado: 'nacido',
+    anulado_en: null,
     ...sobre,
   };
 }
@@ -45,6 +60,14 @@ describe('R1 — el tipo de nacimiento se deriva, nunca se tipea', () => {
     // R8: el parto conserva el conteo de nacidos aunque el cordero muera.
     const corderos = [cordero(), cordero({ condicion: 'muerto' })];
     expect(tipoNacimiento(corderos)).toBe(2);
+  });
+
+  test('un cordero anulado NO cuenta', () => {
+    // La diferencia con el muerto: el muerto existió, el anulado nunca existió.
+    // Si contara, un parto único cargado por error como mellizos figuraría como
+    // mellizos para siempre, y la mellicería es una métrica de la temporada.
+    const corderos = [cordero(), cordero({ anulado_en: '2026-08-02T16:42:00Z' })];
+    expect(tipoNacimiento(corderos)).toBe(1);
   });
 });
 
@@ -77,6 +100,13 @@ describe('R2 — el collar se exige solo en partos múltiples', () => {
     const vivo = cordero({ collar_marca: 'punto_arriba' });
     const muerto = cordero({ condicion: 'muerto' });
     expect(corderosQueRequierenMarca([vivo, muerto]).map((c) => c.id)).toEqual([muerto.id]);
+  });
+
+  test('un anulado no exige marca, y deja al parto en único', () => {
+    const vivo = cordero();
+    const anulado = cordero({ anulado_en: '2026-08-02T16:42:00Z' });
+    expect(corderosQueRequierenMarca([vivo, anulado])).toEqual([]);
+    expect(partoRequiereCollar([vivo, anulado])).toBe(false);
   });
 });
 
@@ -111,12 +141,12 @@ describe('el collar se suelta cuando el parto deja de ser múltiple', () => {
 // R3 — Collar activo único
 // ---------------------------------------------------------------------------
 
-describe('R3 — un número de collar no puede estar en dos partos a la vez', () => {
+describe('R3 — un número usado queda tomado toda la temporada', () => {
   test('un número sin uso está disponible', () => {
     expect(collarDisponible('12', [])).toBe(true);
   });
 
-  test('un número tomado por otro parto activo no está disponible', () => {
+  test('un número ya usado en la temporada no está disponible', () => {
     expect(collarDisponible('12', ['12'])).toBe(false);
   });
 
@@ -131,6 +161,17 @@ describe('R3 — un número de collar no puede estar en dos partos a la vez', ()
 
   test('los nulos de partos sin collar no estorban', () => {
     expect(collarDisponible('12', [null, null, '13'])).toBe(true);
+  });
+
+  test('al editar un parto, su propio número no se bloquea a sí mismo', () => {
+    // Sin esto, abrir un parto con collar 12 y guardarlo sin tocar el número
+    // avisaría que el 12 está ocupado — por él mismo.
+    expect(collarDisponible('12', ['12', '13'], '12')).toBe(true);
+    expect(collarDisponible('13', ['12', '13'], '12')).toBe(false);
+  });
+
+  test('el número propio también se reconoce con ceros a la izquierda', () => {
+    expect(collarDisponible('012', ['12'], '12')).toBe(true);
   });
 });
 
@@ -148,6 +189,119 @@ describe('las marcas no se repiten dentro del parto', () => {
     const a = cordero({ collar_marca: 'punto_arriba' });
     const b = cordero({ collar_marca: 'cruz_al_medio' });
     expect(marcasOcupadas([a, b], a.id)).toEqual(['cruz_al_medio']);
+  });
+
+  test('la marca de un anulado vuelve a estar libre', () => {
+    // Dentro del parto sí se libera, al revés que el número: la marca no es un
+    // objeto aparte, es la que lleva ese collar. Si el cordero no existió,
+    // ningún animal la lleva puesta.
+    const anulado = cordero({ collar_marca: 'punto_arriba', anulado_en: '2026-08-02T16:42:00Z' });
+    expect(marcasOcupadas([anulado, cordero()])).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Anular un cordero ya guardado
+// ---------------------------------------------------------------------------
+
+describe('anular un cordero', () => {
+  test('en mellizos se puede anular uno', () => {
+    const a = guardado();
+    const b = guardado();
+    expect(puedeAnular([a, b], a.id).puede).toBe(true);
+  });
+
+  test('el último cordero que queda no se puede anular', () => {
+    // Un parto sin corderos no puede existir: alguien vio parir a la oveja.
+    // Si el parto entero está mal, lo que corresponde es cambiar la madre.
+    const solo = guardado();
+    expect(puedeAnular([solo], solo.id).puede).toBe(false);
+  });
+
+  test('tampoco si los demás ya están anulados', () => {
+    const vivo = guardado();
+    const anulado = guardado({ anulado_en: '2026-08-02T16:42:00Z' });
+    expect(puedeAnular([vivo, anulado], vivo.id).puede).toBe(false);
+  });
+
+  test('un cordero muerto sigue contando como hermano', () => {
+    // El muerto existió: el parto no queda sin corderos si se anula al otro.
+    const vivo = guardado();
+    const muerto = guardado({ estado: 'muerto' });
+    expect(puedeAnular([vivo, muerto], vivo.id).puede).toBe(true);
+  });
+
+  test('un cordero señalado no se anula', () => {
+    // Tiene tatuaje puesto: se lo vio y se lo midió. La base lo rechaza igual.
+    const a = guardado({ estado: 'senalado' });
+    const b = guardado();
+    expect(puedeAnular([a, b], a.id).puede).toBe(false);
+  });
+
+  test('uno ya anulado no se vuelve a anular', () => {
+    const a = guardado({ anulado_en: '2026-08-02T16:42:00Z' });
+    const b = guardado();
+    const c = guardado();
+    expect(puedeAnular([a, b, c], a.id).puede).toBe(false);
+  });
+
+  test('cada rechazo dice por qué', () => {
+    const solo = guardado();
+    const senalado = guardado({ estado: 'senalado' });
+    const otro = guardado();
+    const porUltimo = puedeAnular([solo], solo.id);
+    const porSenalado = puedeAnular([senalado, otro], senalado.id);
+    expect(porUltimo.puede).toBe(false);
+    expect(porSenalado.puede).toBe(false);
+    if (!porUltimo.puede && !porSenalado.puede) {
+      expect(porUltimo.motivo).not.toBe(porSenalado.motivo);
+    }
+  });
+});
+
+describe('el parto que queda en único después de anular', () => {
+  test('de mellizos a único: hay que preguntar por el collar', () => {
+    const a = guardado();
+    const b = guardado();
+    expect(partoQuedaUnico([a, b], a.id)).toBe(true);
+  });
+
+  test('de trillizos a mellizos: el collar sigue haciendo falta', () => {
+    const a = guardado();
+    const b = guardado();
+    const c = guardado();
+    expect(partoQuedaUnico([a, b, c], a.id)).toBe(false);
+  });
+
+  test('los anulados anteriores ya no cuentan', () => {
+    const a = guardado();
+    const b = guardado();
+    const viejo = guardado({ anulado_en: '2026-08-01T10:00:00Z' });
+    expect(partoQuedaUnico([a, b, viejo], a.id)).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// R8 — Muerte entre el nacimiento y la señalada
+// ---------------------------------------------------------------------------
+
+describe('R8 — registrar una muerte posterior', () => {
+  test('un cordero sin señalar puede morir', () => {
+    expect(puedeRegistrarMuerte(guardado()).puede).toBe(true);
+  });
+
+  test('uno ya muerto no se vuelve a matar', () => {
+    expect(puedeRegistrarMuerte(guardado({ estado: 'muerto' })).puede).toBe(false);
+  });
+
+  test('uno señalado queda fuera de esta fase', () => {
+    // La muerte de un señalado es otro caso: perdería el hecho de haber sido
+    // señalado, y eso hay que resolverlo desde la web.
+    expect(puedeRegistrarMuerte(guardado({ estado: 'senalado' })).puede).toBe(false);
+  });
+
+  test('un anulado no muere: nunca existió', () => {
+    expect(puedeRegistrarMuerte(guardado({ anulado_en: '2026-08-02T16:42:00Z' })).puede).toBe(false);
   });
 });
 

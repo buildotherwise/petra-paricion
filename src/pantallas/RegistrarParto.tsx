@@ -60,14 +60,15 @@ export function RegistrarParto({ onSalir }: { onSalir: () => void }) {
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Números de collar tomados por partos que todavía tienen corderos sin
-  // señalar (R3). Sale de la réplica local: la validación funciona sin señal.
-  const { data: collaresEnUso } = useQuery<{ collar_numero: string }>(
+  // R3: todo número usado en la temporada queda tomado, sin importar en qué
+  // estado estén los corderos de ese parto. El collar es un objeto que sigue
+  // puesto en la oveja hasta que alguien va y lo saca. Sale de la réplica
+  // local: la validación funciona sin señal.
+  const { data: collaresUsados } = useQuery<{ collar_numero: string }>(
     `SELECT DISTINCT p.collar_numero
        FROM partos p
-       JOIN corderos c ON c.parto_id = p.id
-      WHERE p.collar_numero IS NOT NULL
-        AND c.temporada = ? AND c.estado = 'nacido'`,
+       JOIN ovejas o ON o.id = p.oveja_id
+      WHERE p.collar_numero IS NOT NULL AND o.temporada = ?`,
     [entorno.temporada],
   );
 
@@ -235,7 +236,7 @@ export function RegistrarParto({ onSalir }: { onSalir: () => void }) {
             fechaParto={fecha}
             madreBiologicaId={oveja?.id ?? ''}
             collarNumero={collarNumero}
-            numerosEnUso={collaresEnUso.map((c) => c.collar_numero)}
+            numerosUsados={collaresUsados.map((c) => c.collar_numero)}
             ocupadas={marcasOcupadas(corderos, editando?.id)}
             onGuardar={guardarCordero}
             onCancelar={() => setPaso('corderos')}
@@ -491,7 +492,7 @@ function FormularioCordero({
   fechaParto,
   madreBiologicaId,
   collarNumero,
-  numerosEnUso,
+  numerosUsados,
   ocupadas,
   onGuardar,
   onCancelar,
@@ -502,7 +503,8 @@ function FormularioCordero({
   madreBiologicaId: string;
   /** Número ya asignado al parto. Si es null y el parto es múltiple, se pide. */
   collarNumero: string | null;
-  numerosEnUso: readonly string[];
+  /** Todo collar usado en la temporada: una vez usado no vuelve (R3). */
+  numerosUsados: readonly string[];
   ocupadas: readonly MarcaCollar[];
   onGuardar: (cordero: BorradorCordero, numero: string | null) => void;
   onCancelar: () => void;
@@ -529,7 +531,7 @@ function FormularioCordero({
   // El número solo se pide una vez por parto: si ya está, se muestra fijo.
   const pideNumero = esMultiple && collarNumero === null;
   const numeroLibre =
-    !pideNumero || numero.trim() === '' ? true : collarDisponible(numero, numerosEnUso);
+    !pideNumero || numero.trim() === '' ? true : collarDisponible(numero, numerosUsados);
 
   const validacionMuerte =
     condicion === 'muerto'
@@ -688,7 +690,7 @@ function FormularioCordero({
                 </p>
                 {!numeroLibre && (
                   <p className="aviso aviso--error" style={{ marginTop: 'var(--sp-3)', marginBottom: 0 }}>
-                    Ese collar ya está en otro parto sin señalar. Elegí otro número.
+                    Ese collar ya se usó esta temporada. Elegí otro número.
                   </p>
                 )}
               </>
@@ -788,6 +790,9 @@ function FormularioCordero({
             onGuardar(
               {
                 id: inicial?.id ?? crypto.randomUUID(),
+                // Un borrador nunca está anulado: la anulación es para lo ya
+                // guardado. Va explícito porque las reglas lo piden.
+                anulado_en: null,
                 sexo,
                 condicion,
                 peso_kg: pesoNumero,
