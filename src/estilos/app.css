@@ -585,9 +585,11 @@
 
 /* El logo es lo único que hay en esta pantalla además de dos campos, así que
    ocupa el lugar que le corresponde. El tope en vw evita que se desborde en
-   pantallas angostas. */
+   pantallas angostas.
+   El archivo va recortado al contenido, sin margen propio: la separación la
+   pone el margin, que es donde se puede ajustar. */
 .login img {
   width: min(12rem, 50vw);
   align-self: center;
-  margin-bottom: var(--sp-6);
+  margin-bottom: var(--sp-7);
 }

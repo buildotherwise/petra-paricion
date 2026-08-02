@@ -39,9 +39,17 @@ export default defineConfig({
         background_color: '#F4F0E3',
         theme_color: '#2A2410',
         icons: [
-          { src: '/icono-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icono-512.png', sizes: '512x512', type: 'image/png' },
-          { src: '/icono-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: '/icono-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: '/icono-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          // El maskable es un archivo aparte, con fondo opaco y el logo al 60%:
+          // Android recorta estos íconos a círculo o squircle y se come cerca
+          // del 10% de cada lado. Reusar el de `any` dejaría el logo mordido.
+          {
+            src: '/icono-maskable-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
         ],
       },
     }),
