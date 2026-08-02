@@ -115,6 +115,36 @@ textarea {
   font-family: inherit;
   /* iOS hace zoom automático en cualquier input de menos de 16px. */
   font-size: max(16px, 1rem);
+
+  /* El cursor del sistema viene en su azul de acento, el único color ajeno a
+     la paleta en toda la pantalla. Donde SÍ se edita texto —observaciones, el
+     alta manual de una caravana, el login— se conserva, porque ahí hace falta
+     para ubicarse, pero apagado: color de marca al 40%.
+     Va en rgba literal y no en color-mix porque este último recién existe
+     desde Safari 16.2 y el target de la app es Safari 16. */
+  caret-color: rgba(107, 90, 30, 0.4);
+}
+
+/* Donde solo se agregan dígitos al final y se borra —caravana, peso, collar,
+   tatuaje— el cursor no aporta nada: no se edita por el medio. Lo que confirma
+   que se está escribiendo bien son los propios números y la lista que se
+   filtra debajo, que es una señal mucho más fuerte que una barra parpadeando. */
+input[inputmode='numeric'],
+input[inputmode='decimal'] {
+  caret-color: transparent;
+}
+
+/* Sin cursor, el borde es lo único que dice "el teclado escribe acá": se
+   engrosa para compensar. */
+input[inputmode='numeric']:focus,
+input[inputmode='decimal']:focus {
+  box-shadow: inset 0 0 0 3px var(--marca);
+}
+
+/* La selección también viene en el azul del sistema. */
+::selection {
+  background: var(--marca-tenue);
+  color: var(--tinta);
 }
 
 /* Toda cifra de la app es tabular: al cambiar, la línea no se mueve. */
