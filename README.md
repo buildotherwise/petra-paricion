@@ -179,9 +179,20 @@ VITE_TEMPORADA
 **no van a Vercel**: son de las tareas administrativas locales y ahí quedarían
 expuestas sin ninguna necesidad.
 
-`vercel.json` fija los headers de caché. El service worker se sirve sin caché y
-los assets con hash como inmutables — un service worker cacheado de más deja la
-app congelada en una versión vieja, y desde el campo eso es indiagnosticable.
+### Los headers de `vercel.json`
+
+El archivo no lleva comentarios porque el esquema de Vercel rechaza cualquier
+propiedad que no conozca — ni siquiera un `comment`. La explicación va acá:
+
+| Ruta | Caché | Por qué |
+|---|---|---|
+| `sw.js` | sin caché | Si el navegador sirve un service worker viejo, la app queda congelada en una versión anterior. El síntoma es «actualicé y no cambió nada», que desde el campo no apunta a la causa. |
+| `workbox-*.js`, `registerSW.js`, `manifest.webmanifest` | sin caché | Acompañan al service worker; cachearlos produce el mismo bloqueo. |
+| `assets/*` | inmutable, 1 año | Llevan hash en el nombre: si cambia el contenido cambia la URL. Es lo que hace que la app abra al instante sin señal. |
+
+El `rewrite` a `index.html` deja funcionando cualquier ruta profunda. Hoy la app
+es de una sola pantalla y no lo necesita, pero cuesta nada y evita una sorpresa
+cuando se agregue navegación.
 
 ---
 
