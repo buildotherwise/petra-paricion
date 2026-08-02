@@ -12,14 +12,22 @@ export type MarcaCollar = 'punto_arriba' | 'cruz_al_medio' | 'punto_abajo';
 export interface CorderoDelParto {
   id: string;
   condicion: Condicion;
-  collar_numero: string | null;
+  /** La marca distingue a este cordero de sus hermanos. El NÚMERO es del parto. */
   collar_marca: MarcaCollar | null;
 }
 
-export interface CollarEnUso {
-  collar_numero: string | null;
-  collar_marca: MarcaCollar | null;
-}
+/** Las siete causas de muerte de los formularios Zoho, para poder comparar temporadas. */
+export const CAUSAS_MUERTE = [
+  { valor: 'distocia', etiqueta: 'Distocia' },
+  { valor: 'hambre_exposicion', etiqueta: 'Hambre, exposición' },
+  { valor: 'depredacion_primaria', etiqueta: 'Depredación primaria' },
+  { valor: 'prematuro_intrauterina', etiqueta: 'Prematuro o muerte intrauterina' },
+  { valor: 'infeccion', etiqueta: 'Infección' },
+  { valor: 'accidente', etiqueta: 'Accidente' },
+  { valor: 'sin_diagnostico', etiqueta: 'Sin diagnóstico' },
+] as const;
+
+export type CausaMuerte = (typeof CAUSAS_MUERTE)[number]['valor'];
 
 export type ValidacionPeso =
   | { estado: 'ok' }
@@ -28,11 +36,20 @@ export type ValidacionPeso =
 
 export type ValidacionFecha = { valida: true } | { valida: false; motivo: string };
 
-/** Umbrales de R7, en kg. */
-export const PESO_AVISO_MIN = 2;
-export const PESO_AVISO_MAX = 8;
+/**
+ * Umbrales de R7, en kg, calibrados contra los 468 corderos vivos de 2025:
+ * mediana 4,14 · máximo 6,90.
+ *
+ * El aviso sobre 6 kg salta en 1 de cada 33 partos — raro pero no invisible.
+ * A 5 kg saltaría en 1 de cada 6 y el equipo aprendería a descartarlo, que es
+ * la forma de que un aviso deje de servir.
+ */
+export const PESO_AVISO_MIN = 2.5;
+export const PESO_AVISO_MAX = 6;
 export const PESO_BLOQUEO_MIN = 0.5;
-export const PESO_BLOQUEO_MAX = 15;
+export const PESO_BLOQUEO_MAX = 8;
+/** La balanza da dos decimales; un tercero solo puede ser un dedo de más. */
+export const PESO_DECIMALES = 2;
 
 /**
  * R12: la ventana de parición de una temporada.
@@ -62,28 +79,58 @@ export function tipoNacimiento(corderos: readonly CorderoDelParto[]): number {
 // R2 — Collar solo en partos múltiples
 // ---------------------------------------------------------------------------
 
-function tieneCollarCompleto(cordero: CorderoDelParto): boolean {
-  return cordero.collar_numero !== null && cordero.collar_numero.trim() !== ''
-    ? cordero.collar_marca !== null
-    : false;
-}
-
 /**
- * Corderos a los que todavía les falta collar.
+ * Corderos del parto a los que todavía les falta la marca del collar.
  *
  * Solo aplica a partos múltiples: en un parto único no hay nada que distinguir
- * y los campos de collar ni se muestran. Los muertos al nacer quedan afuera
- * (R5: no pasan por señalada).
+ * y los campos de collar ni se muestran. Los muertos van incluidos — el collar
+ * se pone igual, esté vivo o muerto.
  */
-export function corderosQueRequierenCollar(
+export function corderosQueRequierenMarca(
   corderos: readonly CorderoDelParto[],
 ): CorderoDelParto[] {
   if (corderos.length < 2) return [];
-  return corderos.filter((c) => c.condicion === 'vivo' && !tieneCollarCompleto(c));
+  return corderos.filter((c) => c.collar_marca === null);
+}
+
+/** ¿Este parto necesita número de collar? Solo si es múltiple. */
+export function partoRequiereCollar(corderos: readonly CorderoDelParto[]): boolean {
+  return corderos.length >= 2;
+}
+
+/**
+ * Devuelve el collar que corresponde después de agregar o quitar un cordero.
+ *
+ * El caso que resuelve: se carga un cordero, se agrega un segundo por error con
+ * su collar, y se lo quita. Si el número quedara pegado al parto único, ese
+ * collar quedaría tomado para el resto de la temporada sin que nadie lo lleve
+ * puesto.
+ */
+export function ajustarCollarDelParto<T extends CorderoDelParto>(
+  corderos: readonly T[],
+  collarNumero: string | null,
+): { collarNumero: string | null; corderos: T[] } {
+  if (partoRequiereCollar(corderos)) {
+    return { collarNumero, corderos: [...corderos] };
+  }
+  return {
+    collarNumero: null,
+    corderos: corderos.map((c) => ({ ...c, collar_marca: null })),
+  };
+}
+
+/** Marcas ya tomadas por los hermanos, para no ofrecerlas dos veces. */
+export function marcasOcupadas(
+  corderos: readonly CorderoDelParto[],
+  exceptoId?: string,
+): MarcaCollar[] {
+  return corderos
+    .filter((c) => c.id !== exceptoId && c.collar_marca !== null)
+    .map((c) => c.collar_marca as MarcaCollar);
 }
 
 // ---------------------------------------------------------------------------
-// R3 — Collar activo único
+// R3 — Un número de collar, un parto
 // ---------------------------------------------------------------------------
 
 /**
@@ -95,21 +142,21 @@ function normalizarNumeroCollar(numero: string): string {
 }
 
 /**
- * ¿Está libre este collar? Se compara contra los collares de los corderos en
- * estado `nacido`; al señalar o al morir (R8) el collar se libera y vuelve a
- * estar disponible.
+ * ¿Está libre este número de collar?
+ *
+ * El número identifica al parto entero: lo llevan todos los hermanos y también
+ * la madre. Así que no puede estar en dos partos a la vez. Se compara contra
+ * los partos que todavía tienen corderos sin señalar; al señalar o al morir
+ * (R8) el collar se libera.
  */
 export function collarDisponible(
   numero: string,
-  marca: MarcaCollar,
-  enUso: readonly CollarEnUso[],
+  numerosEnUso: readonly (string | null)[],
 ): boolean {
   const buscado = normalizarNumeroCollar(numero);
-  return !enUso.some(
-    (c) =>
-      c.collar_numero !== null &&
-      c.collar_marca === marca &&
-      normalizarNumeroCollar(c.collar_numero) === buscado,
+  if (buscado === '') return false;
+  return !numerosEnUso.some(
+    (n) => n !== null && normalizarNumeroCollar(n) === buscado,
   );
 }
 
@@ -118,7 +165,7 @@ export function collarDisponible(
 // ---------------------------------------------------------------------------
 
 /**
- * Avisa fuera de 2–8 kg, bloquea fuera de 0,5–15 kg.
+ * Avisa fuera de 2,5–6 kg, bloquea fuera de 0,5–8 kg y con más de dos decimales.
  *
  * `null` es válido: en los muertos al nacer el peso es opcional (R5). Lo que no
  * se admite es 0 — los históricos de Zoho cargaban 0 en los muertos y eso
@@ -129,6 +176,13 @@ export function validarPeso(pesoKg: number | null): ValidacionPeso {
 
   if (!Number.isFinite(pesoKg)) {
     return { estado: 'bloqueo', mensaje: 'El peso no es un número válido.' };
+  }
+
+  if (Number(pesoKg.toFixed(PESO_DECIMALES)) !== pesoKg) {
+    return {
+      estado: 'bloqueo',
+      mensaje: `El peso admite hasta ${PESO_DECIMALES} decimales.`,
+    };
   }
 
   if (pesoKg < PESO_BLOQUEO_MIN || pesoKg > PESO_BLOQUEO_MAX) {
@@ -274,4 +328,42 @@ export function hoyISO(ahora: Date = new Date()): string {
   const mes = String(ahora.getMonth() + 1).padStart(2, '0');
   const dia = String(ahora.getDate()).padStart(2, '0');
   return `${anio}-${mes}-${dia}`;
+}
+
+// ---------------------------------------------------------------------------
+// Fecha de muerte
+// ---------------------------------------------------------------------------
+
+/**
+ * La muerte no puede ser anterior al nacimiento ni posterior a hoy.
+ *
+ * Es obligatoria en todo cordero muerto: sin ella no se puede medir mortalidad
+ * entre el nacimiento y la señalada, que es una de las métricas de la temporada.
+ */
+export function validarFechaMuerte(
+  fechaMuerte: string | null,
+  fechaNacimiento: string,
+  hoy: string,
+): ValidacionFecha {
+  if (fechaMuerte === null || fechaMuerte === '') {
+    return { valida: false, motivo: 'Falta la fecha de muerte.' };
+  }
+
+  const dia = aDiasEpoca(fechaMuerte);
+  if (dia === null) return { valida: false, motivo: 'La fecha no tiene un formato válido.' };
+
+  const nacio = aDiasEpoca(fechaNacimiento);
+  const ahora = aDiasEpoca(hoy);
+  if (nacio === null || ahora === null) {
+    return { valida: false, motivo: 'Las fechas de referencia no son válidas.' };
+  }
+
+  if (dia < nacio) {
+    return { valida: false, motivo: 'La muerte no puede ser anterior al nacimiento.' };
+  }
+  if (dia > ahora) {
+    return { valida: false, motivo: 'La muerte no puede ser posterior a hoy.' };
+  }
+
+  return { valida: true };
 }

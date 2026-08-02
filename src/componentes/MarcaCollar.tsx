@@ -57,25 +57,33 @@ export function DibujoMarca({
 
 export function SelectorMarcaCollar({
   valor,
+  ocupadas = [],
   onChange,
 }: {
   valor: Marca | null;
+  /** Marcas que ya lleva un hermano. Se muestran, pero no se pueden elegir. */
+  ocupadas?: readonly Marca[];
   onChange: (marca: Marca) => void;
 }) {
   return (
     <div className="collar-opciones">
       {MARCAS.map((marca) => {
         const elegida = valor === marca.valor;
+        const tomada = ocupadas.includes(marca.valor);
         return (
           <button
             key={marca.valor}
             type="button"
             className="collar-opcion"
             aria-pressed={elegida}
+            disabled={tomada}
             onClick={() => onChange(marca.valor)}
           >
             <DibujoMarca marca={marca.valor} apagado={!elegida} />
             <span>{marca.etiqueta}</span>
+            {/* Mostrarla en gris en vez de esconderla mantiene las tres en el
+                mismo lugar: el dedo no aprende una posición que después cambia. */}
+            {tomada && <em>en uso</em>}
           </button>
         );
       })}

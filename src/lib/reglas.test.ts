@@ -1,21 +1,24 @@
 import { describe, expect, test } from 'vitest';
 import {
+  ajustarCollarDelParto,
   collarDisponible,
-  corderosQueRequierenCollar,
+  corderosQueRequierenMarca,
+  marcasOcupadas,
   maximoElegible,
+  partoRequiereCollar,
   rangoTemporada,
   tipoNacimiento,
+  validarFechaMuerte,
   validarFechaNacimiento,
   validarPeso,
   type CorderoDelParto,
 } from './reglas';
 
-/** Constructor breve de corderos para los tests. Por defecto: vivo, sin collar. */
+/** Constructor breve de corderos para los tests. Por defecto: vivo, sin marca. */
 function cordero(sobre: Partial<CorderoDelParto> = {}): CorderoDelParto {
   return {
     id: crypto.randomUUID(),
     condicion: 'vivo',
-    collar_numero: null,
     collar_marca: null,
     ...sobre,
   };
@@ -51,43 +54,56 @@ describe('R1 — el tipo de nacimiento se deriva, nunca se tipea', () => {
 
 describe('R2 — el collar se exige solo en partos múltiples', () => {
   test('un parto único no exige collar', () => {
-    expect(corderosQueRequierenCollar([cordero()])).toEqual([]);
+    expect(corderosQueRequierenMarca([cordero()])).toEqual([]);
+    expect(partoRequiereCollar([cordero()])).toBe(false);
   });
 
-  test('en mellizos, ambos corderos vivos sin collar quedan pendientes', () => {
+  test('en mellizos, los dos corderos sin marca quedan pendientes', () => {
     const a = cordero();
     const b = cordero();
-    expect(corderosQueRequierenCollar([a, b]).map((c) => c.id)).toEqual([a.id, b.id]);
+    expect(corderosQueRequierenMarca([a, b]).map((c) => c.id)).toEqual([a.id, b.id]);
+    expect(partoRequiereCollar([a, b])).toBe(true);
   });
 
-  test('un cordero con número y marca ya no queda pendiente', () => {
-    const conCollar = cordero({ collar_numero: '12', collar_marca: 'punto_arriba' });
-    const sinCollar = cordero();
-    expect(corderosQueRequierenCollar([conCollar, sinCollar]).map((c) => c.id)).toEqual([
-      sinCollar.id,
-    ]);
+  test('un cordero con marca ya no queda pendiente', () => {
+    const conMarca = cordero({ collar_marca: 'punto_arriba' });
+    const sinMarca = cordero();
+    expect(corderosQueRequierenMarca([conMarca, sinMarca]).map((c) => c.id)).toEqual([sinMarca.id]);
   });
 
-  test('el número sin marca no alcanza: el collar queda incompleto', () => {
-    const a = cordero({ collar_numero: '12', collar_marca: null });
-    const b = cordero({ collar_numero: '13', collar_marca: 'punto_abajo' });
-    expect(corderosQueRequierenCollar([a, b]).map((c) => c.id)).toEqual([a.id]);
-  });
-
-  test('los corderos muertos al nacer nunca requieren collar', () => {
-    // R5: no pasan por señalada, así que no hay nada que identificar.
-    const vivo = cordero({ collar_numero: '12', collar_marca: 'punto_arriba' });
+  test('los corderos muertos también llevan marca', () => {
+    // Confirmado con el equipo: en un parto múltiple el collar se pone igual,
+    // esté vivo o muerto.
+    const vivo = cordero({ collar_marca: 'punto_arriba' });
     const muerto = cordero({ condicion: 'muerto' });
-    expect(corderosQueRequierenCollar([vivo, muerto])).toEqual([]);
+    expect(corderosQueRequierenMarca([vivo, muerto]).map((c) => c.id)).toEqual([muerto.id]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// El collar es del parto: al volver a parto único hay que soltarlo
+// ---------------------------------------------------------------------------
+
+describe('el collar se suelta cuando el parto deja de ser múltiple', () => {
+  test('quitando un cordero de mellizos, el collar del parto se borra', () => {
+    // Caso real: se carga un cordero, se agrega un segundo por error con su
+    // collar, y se lo quita. El número no puede quedar tomado por un parto
+    // único — bloquearía ese collar para el resto de la temporada.
+    const unico = [cordero({ collar_marca: 'punto_arriba' })];
+    const ajustado = ajustarCollarDelParto(unico, '12');
+    expect(ajustado.collarNumero).toBeNull();
+    expect(ajustado.corderos[0]?.collar_marca).toBeNull();
   });
 
-  test('el sobreviviente de un parto múltiple lleva collar igual', () => {
-    // Confirmado con el equipo: en mellizos se asigna collar siempre, sin
-    // importar que uno haya nacido muerto. El parto sigue siendo múltiple y el
-    // cordero tiene que quedar identificado hasta la señalada.
-    const vivo = cordero();
-    const muerto = cordero({ condicion: 'muerto' });
-    expect(corderosQueRequierenCollar([vivo, muerto]).map((c) => c.id)).toEqual([vivo.id]);
+  test('mientras siga siendo múltiple, el collar se mantiene', () => {
+    const dos = [cordero({ collar_marca: 'punto_arriba' }), cordero({ collar_marca: 'punto_abajo' })];
+    const ajustado = ajustarCollarDelParto(dos, '12');
+    expect(ajustado.collarNumero).toBe('12');
+    expect(ajustado.corderos.map((c) => c.collar_marca)).toEqual(['punto_arriba', 'punto_abajo']);
+  });
+
+  test('un parto sin corderos tampoco conserva collar', () => {
+    expect(ajustarCollarDelParto([], '12').collarNumero).toBeNull();
   });
 });
 
@@ -95,31 +111,43 @@ describe('R2 — el collar se exige solo en partos múltiples', () => {
 // R3 — Collar activo único
 // ---------------------------------------------------------------------------
 
-describe('R3 — un collar activo no puede estar en dos corderos a la vez', () => {
-  test('un collar sin uso está disponible', () => {
-    expect(collarDisponible('12', 'punto_arriba', [])).toBe(true);
+describe('R3 — un número de collar no puede estar en dos partos a la vez', () => {
+  test('un número sin uso está disponible', () => {
+    expect(collarDisponible('12', [])).toBe(true);
   });
 
-  test('un collar en uso por otro cordero nacido no está disponible', () => {
-    const enUso = [{ collar_numero: '12', collar_marca: 'punto_arriba' as const }];
-    expect(collarDisponible('12', 'punto_arriba', enUso)).toBe(false);
+  test('un número tomado por otro parto activo no está disponible', () => {
+    expect(collarDisponible('12', ['12'])).toBe(false);
   });
 
-  test('el mismo número con otra marca es un collar distinto', () => {
-    const enUso = [{ collar_numero: '12', collar_marca: 'punto_arriba' as const }];
-    expect(collarDisponible('12', 'punto_abajo', enUso)).toBe(true);
-  });
-
-  test('distinto número con la misma marca es un collar distinto', () => {
-    const enUso = [{ collar_numero: '12', collar_marca: 'punto_arriba' as const }];
-    expect(collarDisponible('13', 'punto_arriba', enUso)).toBe(true);
+  test('otro número sí está disponible', () => {
+    expect(collarDisponible('13', ['12'])).toBe(true);
   });
 
   test('los ceros a la izquierda no crean un collar distinto', () => {
-    // "012" y "12" son el mismo collar físico; tratarlos como distintos
-    // permitiría asignar el mismo collar dos veces.
-    const enUso = [{ collar_numero: '012', collar_marca: 'punto_arriba' as const }];
-    expect(collarDisponible('12', 'punto_arriba', enUso)).toBe(false);
+    // "012" y "12" son el mismo collar físico.
+    expect(collarDisponible('12', ['012'])).toBe(false);
+  });
+
+  test('los nulos de partos sin collar no estorban', () => {
+    expect(collarDisponible('12', [null, null, '13'])).toBe(true);
+  });
+});
+
+describe('las marcas no se repiten dentro del parto', () => {
+  test('sin corderos con marca, no hay ninguna ocupada', () => {
+    expect(marcasOcupadas([cordero(), cordero()])).toEqual([]);
+  });
+
+  test('la marca de un hermano queda ocupada', () => {
+    const a = cordero({ collar_marca: 'punto_arriba' });
+    expect(marcasOcupadas([a, cordero()])).toEqual(['punto_arriba']);
+  });
+
+  test('al editar un cordero, su propia marca no cuenta como ocupada', () => {
+    const a = cordero({ collar_marca: 'punto_arriba' });
+    const b = cordero({ collar_marca: 'cruz_al_medio' });
+    expect(marcasOcupadas([a, b], a.id)).toEqual(['cruz_al_medio']);
   });
 });
 
@@ -127,41 +155,52 @@ describe('R3 — un collar activo no puede estar en dos corderos a la vez', () =
 // R7 — Rangos de peso
 // ---------------------------------------------------------------------------
 
-describe('R7 — el peso avisa fuera de 2–8 kg y bloquea fuera de 0,5–15 kg', () => {
+describe('R7 — el peso avisa fuera de 2,5–6 kg y bloquea fuera de 0,5–8 kg', () => {
+  // Umbrales calibrados contra los 468 corderos vivos de 2025: mediana 4,14 kg,
+  // máximo 6,90 kg. El aviso sobre 6 kg salta en 1 de cada 33 partos — raro
+  // pero no invisible. A 5 kg saltaría en 1 de cada 6 y el equipo aprendería a
+  // descartarlo.
   test('un peso típico pasa sin observaciones', () => {
-    expect(validarPeso(4.11).estado).toBe('ok');
+    expect(validarPeso(4.14).estado).toBe('ok');
   });
 
   test('los límites del rango normal no avisan', () => {
-    expect(validarPeso(2).estado).toBe('ok');
-    expect(validarPeso(8).estado).toBe('ok');
+    expect(validarPeso(2.5).estado).toBe('ok');
+    expect(validarPeso(6).estado).toBe('ok');
   });
 
-  test('por debajo de 2 kg avisa pero deja guardar', () => {
-    expect(validarPeso(1.9).estado).toBe('aviso');
+  test('por debajo de 2,5 kg avisa pero deja guardar', () => {
+    expect(validarPeso(2.4).estado).toBe('aviso');
   });
 
-  test('por encima de 8 kg avisa pero deja guardar', () => {
-    expect(validarPeso(8.1).estado).toBe('aviso');
+  test('por encima de 6 kg avisa pero deja guardar', () => {
+    // El máximo real de 2025 fue 6,90: existe, pero merece una mirada.
+    expect(validarPeso(6.9).estado).toBe('aviso');
   });
 
-  test('los límites del rango de bloqueo todavía dejan guardar', () => {
-    expect(validarPeso(0.5).estado).toBe('aviso');
-    expect(validarPeso(15).estado).toBe('aviso');
+  test('el tope de 8 kg todavía deja guardar', () => {
+    expect(validarPeso(8).estado).toBe('aviso');
+  });
+
+  test('por encima de 8 kg bloquea', () => {
+    expect(validarPeso(8.01).estado).toBe('bloqueo');
+    expect(validarPeso(45).estado).toBe('bloqueo');
   });
 
   test('por debajo de 0,5 kg bloquea', () => {
     expect(validarPeso(0.49).estado).toBe('bloqueo');
   });
 
-  test('por encima de 15 kg bloquea', () => {
-    expect(validarPeso(15.01).estado).toBe('bloqueo');
+  test('cero bloquea: el peso desconocido va como nulo, no como cero', () => {
+    // Los históricos de Zoho cargaban 0 en los muertos. Eso destruye cualquier
+    // promedio; acá 0 no es un peso válido.
+    expect(validarPeso(0).estado).toBe('bloqueo');
   });
 
-  test('cero bloquea: el peso desconocido va como nulo, no como cero', () => {
-    // Los históricos de Zoho cargaban 0 en los muertos. Eso destruye
-    // cualquier promedio; acá 0 no es un peso válido.
-    expect(validarPeso(0).estado).toBe('bloqueo');
+  test('más de dos decimales bloquea', () => {
+    // La balanza da dos decimales. Un tercero solo puede ser un dedo de más.
+    expect(validarPeso(4.125).estado).toBe('bloqueo');
+    expect(validarPeso(4.12).estado).toBe('ok');
   });
 
   test('el peso ausente es válido: en muertos al nacer es opcional', () => {
@@ -170,6 +209,49 @@ describe('R7 — el peso avisa fuera de 2–8 kg y bloquea fuera de 0,5–15 kg'
 
   test('un valor no numérico bloquea', () => {
     expect(validarPeso(Number.NaN).estado).toBe('bloqueo');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Fecha de muerte
+// ---------------------------------------------------------------------------
+
+describe('la fecha de muerte va entre el nacimiento y hoy', () => {
+  const nacimiento = '2026-08-10';
+  const hoy = '2026-08-20';
+
+  test('el mismo día del parto es válida', () => {
+    expect(validarFechaMuerte('2026-08-10', nacimiento, hoy).valida).toBe(true);
+  });
+
+  test('unos días después es válida', () => {
+    expect(validarFechaMuerte('2026-08-15', nacimiento, hoy).valida).toBe(true);
+  });
+
+  test('hoy es válida', () => {
+    expect(validarFechaMuerte(hoy, nacimiento, hoy).valida).toBe(true);
+  });
+
+  test('antes de nacer no es válida', () => {
+    expect(validarFechaMuerte('2026-08-09', nacimiento, hoy).valida).toBe(false);
+  });
+
+  test('mañana no es válida', () => {
+    expect(validarFechaMuerte('2026-08-21', nacimiento, hoy).valida).toBe(false);
+  });
+
+  test('sin fecha no es válida: en un cordero muerto es obligatoria', () => {
+    expect(validarFechaMuerte(null, nacimiento, hoy).valida).toBe(false);
+  });
+
+  test('los dos motivos de rechazo se distinguen', () => {
+    const antes = validarFechaMuerte('2026-08-09', nacimiento, hoy);
+    const despues = validarFechaMuerte('2026-08-21', nacimiento, hoy);
+    expect(antes.valida).toBe(false);
+    expect(despues.valida).toBe(false);
+    if (!antes.valida && !despues.valida) {
+      expect(antes.motivo).not.toBe(despues.motivo);
+    }
   });
 });
 

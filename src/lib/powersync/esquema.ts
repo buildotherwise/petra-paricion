@@ -38,6 +38,9 @@ const partos = new Table(
     oveja_id: column.text,
     fecha: column.text,
     condicion_corporal: column.real,
+    // El collar es del parto: lo llevan todos los hermanos y también la madre.
+    // Cada cordero se distingue por su collar_marca.
+    collar_numero: column.text,
     observaciones: column.text,
     creado_en: column.text,
     creado_por: column.text,
@@ -46,8 +49,8 @@ const partos = new Table(
     dispositivo: column.text,
   },
   {
-    // Evita duplicar un parto: al elegir la madre se consulta si ya tiene uno.
-    indexes: { por_oveja: ['oveja_id'], por_fecha: ['fecha'] },
+    // por_oveja evita duplicar un parto; por_collar sostiene la validación R3.
+    indexes: { por_oveja: ['oveja_id'], por_fecha: ['fecha'], por_collar: ['collar_numero'] },
   },
 );
 
@@ -61,7 +64,6 @@ const corderos = new Table(
     sexo: column.text,
     condicion: column.text,
     peso_kg: column.real,
-    collar_numero: column.text,
     collar_marca: column.text,
     madre_tipo: column.text,
     madre_crianza_id: column.text,
@@ -93,8 +95,7 @@ const corderos = new Table(
       por_parto: ['parto_id'],
       // Lista de pendientes de señalada.
       por_estado: ['temporada', 'estado'],
-      // Validación R3: collar activo único, consultada en cada alta múltiple.
-      por_collar: ['temporada', 'collar_numero', 'collar_marca'],
+      por_collar: ['temporada', 'collar_marca'],
     },
   },
 );

@@ -109,7 +109,8 @@ create table partos (
   id                  uuid primary key,             -- UUID generado en el dispositivo
   oveja_id            uuid not null references ovejas(id),
   fecha               date not null,
-  condicion_corporal  smallint check (condicion_corporal between 1 and 5),
+  condicion_corporal  numeric(3,2),                 -- escala 1–5 en cuartos
+  collar_numero       text,                         -- solo múltiples; también lo lleva la madre
   observaciones       text,
   creado_en           timestamptz not null default now(),
   creado_por          text not null,                -- id de dispositivo/usuario
@@ -125,9 +126,8 @@ create table corderos (
   -- Etapa 1: parición
   sexo              sexo_t not null,
   condicion         condicion_t not null,           -- vivo/muerto AL NACER
-  peso_kg           numeric(4,2) check (peso_kg > 0 and peso_kg < 15),
-  collar_numero     text,                            -- solo partos múltiples
-  collar_marca      marca_collar_t,
+  peso_kg           numeric(4,2) check (peso_kg > 0 and peso_kg <= 8),
+  collar_marca      marca_collar_t,                  -- el NÚMERO está en partos
   madre_tipo        madre_t not null default 'biologica',
   madre_crianza_id  uuid references ovejas(id),      -- si nodriza
 
@@ -143,9 +143,9 @@ create table corderos (
   pigmentacion      smallint check (pigmentacion between 0 and 4),
   sexo_discrepancia boolean not null default false,  -- ver regla R6
 
-  -- Muerte posterior al nacimiento
+  -- Muerte, al nacer o posterior (R8)
   fecha_muerte      date,
-  causa_muerte      text,
+  causa_muerte      causa_muerte_t,
 
   observaciones     text,
   creado_en         timestamptz not null default now(),
@@ -185,12 +185,12 @@ group by p.id, o.caravana;
 ## 5. Reglas de negocio y validaciones
 
 - **R1 — Tipo de nacimiento derivado:** nunca se ingresa manualmente. Se calcula como cantidad de corderos del parto. En pantalla y exportaciones se muestra el valor derivado (1/2/3).
-- **R2 — Collar solo en múltiples:** al agregar el segundo cordero de un parto, la app exige número + marca de collar para todos los corderos vivos de ese parto. En partos únicos, los campos de collar no se muestran.
-- **R3 — Collar activo único:** no puede haber dos corderos en estado `nacido` con el mismo (número, marca) de collar. Validación en la app contra la base local; la web muestra un panel de duplicados por si dos dispositivos offline asignaron el mismo collar (caso muy improbable con 5 dispositivos: resolver manualmente).
+- **R2 — Collar solo en múltiples:** el **número de collar es del parto**, no del cordero: lo llevan todos los hermanos y también la madre (sin marca). Se pide una sola vez, al agregar el segundo cordero. Lo que distingue a cada hermano es la **marca**, que se exige a todos —vivos y muertos— antes de poder confirmarlos. En partos únicos los campos de collar no se muestran, y si un parto múltiple vuelve a ser único al quitar un cordero, el collar **se libera automáticamente**.
+- **R3 — Collar activo único:** un número de collar no puede estar en dos partos a la vez mientras alguno tenga corderos sin señalar. Dentro del parto, cada marca se usa una sola vez. Validación en la app contra la base local; la web muestra un panel de duplicados por si dos dispositivos offline asignaron el mismo collar (caso muy improbable con 5 dispositivos: resolver manualmente).
 - **R4 — Condición corporal una sola vez:** es atributo del parto, no del cordero. Se pide una vez, con la escala visible (1 muy flaca … 5 muy gorda).
-- **R5 — Corderos muertos al nacer:** solo requieren sexo (si se distingue) y peso opcional. No pasan por señalada. Estado = `muerto`.
+- **R5 — Corderos muertos al nacer:** requieren sexo, **causa de muerte** (lista cerrada de siete motivos, heredada de Zoho) y **fecha de muerte** — que no puede ser anterior al parto ni posterior a hoy. El peso es opcional. En partos múltiples llevan collar y marca igual que los vivos. No pasan por señalada. Estado = `muerto`.
 - **R6 — Confirmación de sexo en la señalada:** la app muestra el sexo registrado al nacer y pide confirmarlo con un toque. Si el operador indica lo contrario, se actualiza el sexo, se marca `sexo_discrepancia = true` y el caso aparece en el panel de revisión web. Así el dato duplicado de Zoho se convierte en una verificación que detecta errores de vínculo en vez de generarlos.
-- **R7 — Rangos de peso:** advertencia (no bloqueo) fuera de 2,0–8,0 kg; bloqueo fuera de 0,5–15 kg. Ajustar umbrales con el equipo.
+- **R7 — Rangos de peso:** advertencia (no bloqueo) fuera de **2,5–6,0 kg**; bloqueo fuera de **0,5–8,0 kg** y con más de dos decimales. Umbrales calibrados contra los 468 corderos vivos de 2025 (mediana 4,14 · máximo 6,90): el aviso sobre 6 kg salta en 1 de cada 33 partos — a 5 kg saltaría en 1 de cada 6 y el equipo aprendería a descartarlo.
 - **R8 — Muerte entre nacimiento y señalada:** acción "Registrar muerte" sobre el cordero → estado `muerto`, `fecha_muerte`, causa opcional. Libera el collar. El parto conserva el conteo de nacidos (tipo de nacimiento no cambia).
 - **R9 — Oveja fuera de la lista:** si una madre no aparece en la búsqueda, alta manual con `precargada = false`. Aparece en el panel de revisión web para verificar la caravana.
 - **R10 — Nodriza:** si un cordero pasa a criarse con otra madre, se registra `madre_tipo = nodriza` y `madre_crianza_id`, conservando siempre el parto (madre biológica) original.
