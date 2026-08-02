@@ -14,6 +14,17 @@ interface Fila {
   id: string;
   caravana: string;
   parto_id: string | null;
+  parto_fecha: string | null;
+}
+
+/** Cuántas bloqueadas se muestran antes de resumir el resto en un contador. */
+const BLOQUEADAS_VISIBLES = 3;
+
+/** '2026-08-02' → '2 ago'. Lo justo para reconocer si el parto es de hoy. */
+function diaCorto(iso: string): string {
+  const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'set', 'oct', 'nov', 'dic'];
+  const [, mes, dia] = iso.split('-');
+  return `${Number(dia)} ${meses[Number(mes) - 1] ?? ''}`;
 }
 
 /**
@@ -27,34 +38,51 @@ interface Fila {
 export function BuscadorCaravana({
   autoFocus = false,
   excluirId,
-  anotarParto = false,
+  bloquearConParto = false,
   onElegir,
 }: {
   autoFocus?: boolean;
   /** Oveja que no debe ofrecerse (la madre biológica no puede ser su propia nodriza). */
   excluirId?: string | undefined;
-  /** Marca las ovejas que ya tienen parto. Solo tiene sentido al elegir la madre. */
-  anotarParto?: boolean;
+  /**
+   * Impide elegir ovejas que ya tienen parto. Solo al elegir la MADRE del
+   * parto: una nodriza casi siempre tiene su propio parto, y bloquearla ahí
+   * haría imposible asignarla.
+   */
+  bloquearConParto?: boolean;
   onElegir: (oveja: OvejaElegida) => void;
 }) {
   const [consulta, setConsulta] = useState('');
   const [altaManual, setAltaManual] = useState(false);
+  const [verTodasBloqueadas, setVerTodasBloqueadas] = useState(false);
 
   // Se traen las ~500 madres de la temporada y se filtra en memoria. El costo
   // es despreciable y a cambio la búsqueda llega a las caravanas alfanuméricas
   // (ver src/lib/busqueda.ts), cosa que un LIKE no logra.
   const { data: ovejas } = useQuery<Fila>(
-    `SELECT o.id, o.caravana, p.id AS parto_id
+    `SELECT o.id, o.caravana, p.id AS parto_id, p.fecha AS parto_fecha
        FROM ovejas o
        LEFT JOIN partos p ON p.oveja_id = o.id
       WHERE o.temporada = ?`,
     [entorno.temporada],
   );
 
-  const resultados = useMemo(
-    () => buscarCaravana(ovejas.filter((o) => o.id !== excluirId), consulta).slice(0, 12),
-    [ovejas, consulta, excluirId],
-  );
+  const { disponibles, bloqueadas } = useMemo(() => {
+    const todas = buscarCaravana(
+      ovejas.filter((o) => o.id !== excluirId),
+      consulta,
+    );
+    if (!bloquearConParto) return { disponibles: todas.slice(0, 12), bloqueadas: [] as Fila[] };
+    return {
+      disponibles: todas.filter((o) => o.parto_id === null).slice(0, 12),
+      bloqueadas: todas.filter((o) => o.parto_id !== null),
+    };
+  }, [ovejas, consulta, excluirId, bloquearConParto]);
+
+  const bloqueadasVisibles = verTodasBloqueadas
+    ? bloqueadas
+    : bloqueadas.slice(0, BLOQUEADAS_VISIBLES);
+  const ocultas = bloqueadas.length - bloqueadasVisibles.length;
 
   if (altaManual) {
     return (
@@ -78,9 +106,9 @@ export function BuscadorCaravana({
         aria-label="Número de caravana"
       />
 
-      {resultados.length > 0 && (
+      {disponibles.length > 0 && (
         <ul className="lista" style={{ marginTop: 'var(--sp-3)' }}>
-          {resultados.map((fila) => {
+          {disponibles.map((fila) => {
             const [antes, coincide, despues] = partirCoincidencia(fila.caravana, consulta);
             return (
               <li key={fila.id}>
@@ -93,9 +121,6 @@ export function BuscadorCaravana({
                     <mark>{coincide}</mark>
                     {despues}
                   </span>
-                  {anotarParto && fila.parto_id !== null && (
-                    <span className="nota nota--alerta">Ya tiene parto</span>
-                  )}
                 </button>
               </li>
             );
@@ -103,7 +128,46 @@ export function BuscadorCaravana({
         </ul>
       )}
 
-      {consulta.trim() !== '' && resultados.length === 0 && (
+      {/* Las que ya parieron se muestran, pero no se pueden elegir.
+          Esconderlas sería peor: el operador supondría que faltan de la lista y
+          las cargaría por alta manual, creando una caravana duplicada que
+          Postgres rechaza igual. La fecha permite distinguir "esta la cargué yo
+          hace un rato" de "alguien la cargó por error". */}
+      {bloqueadas.length > 0 && (
+        <>
+          <p className="grupo-bloqueado">Ya tienen parto registrado</p>
+          <ul className="lista lista--bloqueada">
+            {bloqueadasVisibles.map((fila) => {
+              const [antes, coincide, despues] = partirCoincidencia(fila.caravana, consulta);
+              return (
+                <li key={fila.id}>
+                  <button type="button" disabled>
+                    <span className="numero">
+                      {antes}
+                      <mark>{coincide}</mark>
+                      {despues}
+                    </span>
+                    {fila.parto_fecha !== null && (
+                      <span className="nota">{diaCorto(fila.parto_fecha)}</span>
+                    )}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+          {ocultas > 0 && (
+            <button
+              type="button"
+              className="ver-mas"
+              onClick={() => setVerTodasBloqueadas(true)}
+            >
+              y {ocultas} más
+            </button>
+          )}
+        </>
+      )}
+
+      {consulta.trim() !== '' && disponibles.length === 0 && bloqueadas.length === 0 && (
         <p className="aviso aviso--atencion" style={{ marginTop: 'var(--sp-3)' }}>
           Ninguna caravana de la temporada tiene <strong>{consulta}</strong>.
         </p>

@@ -712,3 +712,45 @@ textarea.entrada {
 textarea.entrada::placeholder {
   color: var(--tinta-tenue);
 }
+
+/* ── Ovejas que ya parieron ─────────────────────────────────────────── */
+
+.grupo-bloqueado {
+  margin: var(--sp-4) 0 var(--sp-2);
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--tinta-tenue);
+}
+
+/* Visibles pero apagadas: el operador tiene que ver que la caravana existe y
+   entender por qué no la puede tocar. */
+.lista--bloqueada {
+  box-shadow: none;
+  background: rgba(252, 250, 246, 0.5);
+}
+
+.lista--bloqueada button {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.lista--bloqueada .numero mark {
+  color: inherit;
+  font-weight: 400;
+}
+
+.ver-mas {
+  width: 100%;
+  min-height: 2.75rem;
+  margin-top: var(--sp-2);
+  padding: var(--sp-2);
+  background: none;
+  border: 0;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  color: var(--tinta-suave);
+  cursor: pointer;
+}

@@ -268,7 +268,7 @@ function PasoMadre({ onElegir }: { onElegir: (oveja: OvejaElegida) => void }) {
     <>
       <h1 className="titulo">¿Qué oveja parió?</h1>
       <p className="subtitulo">Escribí los números de la caravana.</p>
-      <BuscadorCaravana autoFocus anotarParto onElegir={onElegir} />
+      <BuscadorCaravana autoFocus bloquearConParto onElegir={onElegir} />
     </>
   );
 }
