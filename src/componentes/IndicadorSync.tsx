@@ -1,13 +1,21 @@
 import { useQuery, useStatus } from '@powersync/react';
 
 /**
- * Cuántos cambios locales faltan subir.
+ * Cuántas cargas hechas por el operador falta subir.
  *
- * `ps_crud` es la cola de subida de PowerSync. Consultarla con useQuery la hace
- * reactiva: el contador baja solo a medida que la cola se vacía, sin polling.
+ * Se cuentan TRANSACCIONES, no operaciones. `ps_crud` guarda una fila por
+ * escritura, así que un parto de mellizos son tres —el parto y los dos
+ * corderos— y el contador decía "3 sin sincronizar" para algo que la persona
+ * hizo una sola vez. La app guarda cada carga dentro de un `writeTransaction`,
+ * de modo que una transacción es exactamente una acción de guardar.
+ *
+ * El coalesce es por si alguna escritura quedara sin tx_id: así cuenta como
+ * una propia en vez de colapsar todas en una.
  */
 function usarPendientes(): number {
-  const { data } = useQuery<{ n: number }>('SELECT count() AS n FROM ps_crud');
+  const { data } = useQuery<{ n: number }>(
+    'SELECT count(DISTINCT coalesce(tx_id, -id)) AS n FROM ps_crud',
+  );
   return data[0]?.n ?? 0;
 }
 
@@ -15,6 +23,8 @@ function usarRechazados(): number {
   const { data } = useQuery<{ n: number }>('SELECT count() AS n FROM subidas_rechazadas');
   return data[0]?.n ?? 0;
 }
+
+const registros = (n: number) => `${n} ${n === 1 ? 'registro' : 'registros'}`;
 
 /**
  * El indicador de sincronización.
@@ -32,7 +42,7 @@ export function IndicadorSync() {
     return (
       <span className="sync sync--error" role="status">
         <span className="sync-punto" />
-        {rechazados} rechazado{rechazados === 1 ? '' : 's'}
+        {registros(rechazados)} con error
       </span>
     );
   }
@@ -41,7 +51,7 @@ export function IndicadorSync() {
     return (
       <span className="sync sync--pendiente" role="status">
         <span className="sync-punto" />
-        {pendientes} sin sincronizar
+        {registros(pendientes)} sin subir
       </span>
     );
   }
