@@ -699,3 +699,16 @@
   align-self: center;
   margin-bottom: var(--sp-7);
 }
+
+/* Observaciones: el único texto libre del flujo, así que no compite por
+   atención — se ve como un campo más y no invita a llenarlo. */
+textarea.entrada {
+  min-height: 5.5rem;
+  resize: vertical;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+textarea.entrada::placeholder {
+  color: var(--tinta-tenue);
+}

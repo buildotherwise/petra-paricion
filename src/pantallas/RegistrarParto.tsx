@@ -10,7 +10,7 @@ import {
 import { db } from '../lib/powersync/db';
 import { dispositivo, entorno } from '../lib/entorno';
 import { useUsuarioId } from '../lib/sesion';
-import { buscarCaravana, partirCoincidencia } from '../lib/busqueda';
+import { BuscadorCaravana, type OvejaElegida } from '../componentes/BuscadorCaravana';
 import {
   ajustarCollarDelParto,
   CAUSAS_MUERTE,
@@ -37,11 +37,9 @@ interface BorradorCordero extends CorderoDelParto {
   peso_kg: number | null;
   causa_muerte: CausaMuerte | null;
   fecha_muerte: string | null;
-}
-
-interface OvejaElegida {
-  id: string;
-  caravana: string;
+  /** R10: si se cría con otra madre, se conserva siempre el parto biológico. */
+  madre_crianza: OvejaElegida | null;
+  observaciones: string;
 }
 
 const PASOS: Paso[] = ['madre', 'datos', 'corderos', 'resumen'];
@@ -131,9 +129,9 @@ export function RegistrarParto({ onSalir }: { onSalir: () => void }) {
             `INSERT INTO corderos
                (id, parto_id, temporada, estado, sexo, condicion, peso_kg,
                 collar_marca, causa_muerte, fecha_muerte,
-                madre_tipo, sexo_discrepancia,
+                madre_tipo, madre_crianza_id, observaciones, sexo_discrepancia,
                 creado_en, creado_por, actualizado_en, actualizado_por, dispositivo)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'biologica', 0, ?, ?, ?, ?, ?)`,
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?)`,
             [
               cordero.id,
               partoId,
@@ -146,6 +144,9 @@ export function RegistrarParto({ onSalir }: { onSalir: () => void }) {
               cordero.collar_marca,
               cordero.causa_muerte,
               cordero.fecha_muerte,
+              cordero.madre_crianza === null ? 'biologica' : 'nodriza',
+              cordero.madre_crianza?.id ?? null,
+              cordero.observaciones === '' ? null : cordero.observaciones,
               ahora,
               usuarioId,
               ahora,
@@ -232,6 +233,7 @@ export function RegistrarParto({ onSalir }: { onSalir: () => void }) {
             inicial={editando}
             esMultiple={corderos.length >= 1 || editando !== null}
             fechaParto={fecha}
+            madreBiologicaId={oveja?.id ?? ''}
             collarNumero={collarNumero}
             numerosEnUso={collaresEnUso.map((c) => c.collar_numero)}
             ocupadas={marcasOcupadas(corderos, editando?.id)}
@@ -262,176 +264,11 @@ export function RegistrarParto({ onSalir }: { onSalir: () => void }) {
 // ───────────────────────────────────────────────────────────────────────
 
 function PasoMadre({ onElegir }: { onElegir: (oveja: OvejaElegida) => void }) {
-  const [consulta, setConsulta] = useState('');
-  const [altaManual, setAltaManual] = useState(false);
-
-  // Se traen las ~500 madres de la temporada y se filtra en memoria. El costo
-  // es despreciable y a cambio la búsqueda puede llegar a las caravanas
-  // alfanuméricas (ver src/lib/busqueda.ts), cosa que un LIKE no logra.
-  const { data: ovejas } = useQuery<{
-    id: string;
-    caravana: string;
-    parto_id: string | null;
-  }>(
-    `SELECT o.id, o.caravana, p.id AS parto_id
-       FROM ovejas o
-       LEFT JOIN partos p ON p.oveja_id = o.id
-      WHERE o.temporada = ?`,
-    [entorno.temporada],
-  );
-
-  const resultados = useMemo(
-    () => buscarCaravana(ovejas, consulta).slice(0, 12),
-    [ovejas, consulta],
-  );
-
-  if (altaManual) {
-    return (
-      <AltaManual
-        inicial={consulta}
-        onCancelar={() => setAltaManual(false)}
-        onCreada={onElegir}
-      />
-    );
-  }
-
   return (
     <>
       <h1 className="titulo">¿Qué oveja parió?</h1>
       <p className="subtitulo">Escribí los números de la caravana.</p>
-
-      <div className="campo">
-        <input
-          className="entrada entrada--cifra"
-          inputMode="numeric"
-          autoFocus
-          placeholder="0000"
-          value={consulta}
-          onChange={(e) => setConsulta(e.target.value)}
-          aria-label="Número de caravana"
-        />
-      </div>
-
-      {resultados.length > 0 && (
-        <ul className="lista">
-          {resultados.map((fila) => {
-            const [antes, coincide, despues] = partirCoincidencia(fila.caravana, consulta);
-            return (
-              <li key={fila.id}>
-                <button
-                  type="button"
-                  onClick={() => onElegir({ id: fila.id, caravana: fila.caravana })}
-                >
-                  <span className="numero">
-                    {antes}
-                    <mark>{coincide}</mark>
-                    {despues}
-                  </span>
-                  {fila.parto_id !== null && <span className="nota nota--alerta">Ya tiene parto</span>}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-
-      {consulta.trim() !== '' && resultados.length === 0 && (
-        <p className="aviso aviso--atencion">
-          Ninguna caravana de la temporada tiene <strong>{consulta}</strong>.
-        </p>
-      )}
-
-      {/* Siempre visible, no solo cuando la búsqueda no encuentra nada.
-          Con teclado numérico, si existe "PI 138" no hay forma de llegar a
-          cargar "138 V": el buscador siempre devuelve algo y el botón nunca
-          aparecería. Va al pie y no arriba porque en 500 partos el 99% son
-          ovejas que sí están en la lista — tiene que estar disponible, no
-          cómodo. */}
-      <button type="button" className="alta-manual" onClick={() => setAltaManual(true)}>
-        + No está en la lista
-      </button>
-    </>
-  );
-}
-
-/**
- * Alta manual de una madre que no está en la lista (R9).
- *
- * Acá el teclado es común, no numérico: hay caravanas como 'PI 136' o
- * 'T. 319 V' y con un teclado de números serían imposibles de escribir.
- */
-function AltaManual({
-  inicial,
-  onCancelar,
-  onCreada,
-}: {
-  inicial: string;
-  onCancelar: () => void;
-  onCreada: (oveja: OvejaElegida) => void;
-}) {
-  const usuarioId = useUsuarioId();
-  const [caravana, setCaravana] = useState(inicial);
-  const [creando, setCreando] = useState(false);
-
-  async function crear() {
-    const limpia = caravana.trim();
-    if (limpia === '') return;
-    setCreando(true);
-
-    const id = crypto.randomUUID();
-    const ahora = new Date().toISOString();
-
-    await db.execute(
-      `INSERT INTO ovejas
-         (id, temporada, caravana, precargada, creado_en, actualizado_en, actualizado_por, dispositivo)
-       VALUES (?, ?, ?, 0, ?, ?, ?, ?)`,
-      [id, entorno.temporada, limpia, ahora, ahora, usuarioId, dispositivo()],
-    );
-
-    onCreada({ id, caravana: limpia });
-  }
-
-  return (
-    <>
-      <h1 className="titulo">Agregar una madre</h1>
-      <p className="subtitulo">Escribila tal cual figura en la caravana.</p>
-
-      <div className="campo">
-        <label className="etiqueta" htmlFor="caravana-nueva">
-          Caravana
-        </label>
-        <input
-          id="caravana-nueva"
-          className="entrada entrada--cifra"
-          type="text"
-          inputMode="text"
-          autoCapitalize="characters"
-          autoCorrect="off"
-          spellCheck={false}
-          autoFocus
-          placeholder="PI 136"
-          value={caravana}
-          onChange={(e) => setCaravana(e.target.value)}
-        />
-      </div>
-
-      <p className="aviso aviso--atencion">
-        Queda marcada para revisar la caravana desde la web antes de cerrar la temporada.
-      </p>
-
-      <div className="barra-accion">
-        <button type="button" className="boton boton--secundario" onClick={onCancelar}>
-          Cancelar
-        </button>
-        <button
-          type="button"
-          className="boton boton--principal"
-          onClick={crear}
-          disabled={creando || caravana.trim() === ''}
-        >
-          Agregar
-        </button>
-      </div>
+      <BuscadorCaravana autoFocus anotarParto onElegir={onElegir} />
     </>
   );
 }
@@ -619,6 +456,7 @@ function FilaCordero({
             : collarNumero !== null
               ? `Collar ${collarNumero}`
               : 'Vivo'}
+          {cordero.madre_crianza !== null && ` · nodriza ${cordero.madre_crianza.caravana}`}
         </small>
       </div>
       {onEditar !== undefined && (
@@ -651,6 +489,7 @@ function FormularioCordero({
   inicial,
   esMultiple,
   fechaParto,
+  madreBiologicaId,
   collarNumero,
   numerosEnUso,
   ocupadas,
@@ -660,6 +499,7 @@ function FormularioCordero({
   inicial: BorradorCordero | null;
   esMultiple: boolean;
   fechaParto: string;
+  madreBiologicaId: string;
   /** Número ya asignado al parto. Si es null y el parto es múltiple, se pide. */
   collarNumero: string | null;
   numerosEnUso: readonly string[];
@@ -679,6 +519,9 @@ function FormularioCordero({
   const [marca, setMarca] = useState<MarcaCollar | null>(inicial?.collar_marca ?? null);
   const [causa, setCausa] = useState<CausaMuerte | ''>(inicial?.causa_muerte ?? '');
   const [fechaMuerte, setFechaMuerte] = useState(inicial?.fecha_muerte ?? fechaParto);
+  const [nodriza, setNodriza] = useState<OvejaElegida | null>(inicial?.madre_crianza ?? null);
+  const [buscandoNodriza, setBuscandoNodriza] = useState(false);
+  const [observaciones, setObservaciones] = useState(inicial?.observaciones ?? '');
 
   const pesoNumero = peso.trim() === '' ? null : Number(peso.replace(',', '.'));
   const validacionPeso = validarPeso(pesoNumero);
@@ -699,6 +542,8 @@ function FormularioCordero({
     // R2: en parto múltiple no se confirma un cordero sin collar Y marca.
     (!esMultiple || (marca !== null && (collarNumero !== null || numero.trim() !== ''))) &&
     numeroLibre &&
+    // R10: elegir nodriza sin decir cuál dejaría el dato a medias.
+    (!buscandoNodriza || nodriza !== null) &&
     (condicion === 'vivo' || (causa !== '' && validacionMuerte.valida));
 
   return (
@@ -866,6 +711,70 @@ function FormularioCordero({
         </>
       )}
 
+      {/* R10: la nodriza no reemplaza a la madre biológica — el parto sigue
+          siendo de la oveja que parió. Solo dice con quién se cría. */}
+      <div className="campo">
+        <span className="etiqueta">Se cría con</span>
+        <div className="opciones">
+          <button
+            type="button"
+            className="opcion"
+            aria-pressed={!buscandoNodriza}
+            onClick={() => {
+              setBuscandoNodriza(false);
+              setNodriza(null);
+            }}
+          >
+            Su madre
+          </button>
+          <button
+            type="button"
+            className="opcion"
+            aria-pressed={buscandoNodriza}
+            onClick={() => setBuscandoNodriza(true)}
+          >
+            Nodriza
+          </button>
+        </div>
+
+        {buscandoNodriza && (
+          <div style={{ marginTop: 'var(--sp-3)' }}>
+            {nodriza === null ? (
+              <>
+                <span className="etiqueta">Caravana de la nodriza</span>
+                <BuscadorCaravana excluirId={madreBiologicaId} onElegir={setNodriza} />
+              </>
+            ) : (
+              <div className="collar-asignado">
+                <Caravana numero={nodriza.caravana} grande />
+                <button
+                  type="button"
+                  className="boton--texto"
+                  style={{ marginLeft: 'auto' }}
+                  onClick={() => setNodriza(null)}
+                >
+                  Cambiar
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="campo">
+        <label className="etiqueta" htmlFor="observaciones">
+          Observaciones · opcional
+        </label>
+        <textarea
+          id="observaciones"
+          className="entrada"
+          rows={3}
+          placeholder="Algo que valga la pena recordar de este cordero"
+          value={observaciones}
+          onChange={(e) => setObservaciones(e.target.value)}
+        />
+      </div>
+
       <div className="barra-accion">
         <button type="button" className="boton boton--secundario" onClick={onCancelar}>
           Cancelar
@@ -885,6 +794,8 @@ function FormularioCordero({
                 collar_marca: esMultiple ? marca : null,
                 causa_muerte: condicion === 'muerto' && causa !== '' ? causa : null,
                 fecha_muerte: condicion === 'muerto' ? fechaMuerte : null,
+                madre_crianza: nodriza,
+                observaciones: observaciones.trim(),
               },
               pideNumero && numero.trim() !== '' ? numero.trim() : null,
             );
