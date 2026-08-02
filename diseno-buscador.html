@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="es-UY">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Petra · Ovejas que ya parieron</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300..700&family=Manrope:wght@400..800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#12110C;color:#E8E2D0;font-family:'Manrope',sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1240px;margin:0 auto;padding:0 24px}
+.intro{padding:72px 0 40px;border-bottom:1px solid #2C2819}
+.kicker{font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:#8C7A2E;font-weight:800;margin:0 0 18px}
+h1{font-family:'Newsreader',serif;font-weight:400;font-size:clamp(32px,5vw,52px);line-height:1.05;margin:0 0 18px;color:#F6F2E4}
+.lede{font-size:16px;max-width:66ch;color:#B3AB92;margin:0 0 12px}
+.lede strong{color:#E8E2D0;font-weight:700}
+.alerta{margin:26px 0 0;padding:15px 18px;border-left:2px solid #C25E00;background:rgba(194,94,0,.12);font-size:15px;color:#E8D9C4;max-width:66ch}
+.alerta b{color:#F0A868}
+section{padding:56px 0;border-bottom:1px solid #2C2819}
+.grid{display:flex;gap:30px;overflow-x:auto;padding:8px 0 20px}
+.op{flex:none;width:340px}
+.num{font-family:'Newsreader',serif;font-size:12px;letter-spacing:.28em;color:#8C7A2E;font-weight:700}
+h2{font-family:'Newsreader',serif;font-weight:400;font-size:26px;line-height:1.15;margin:6px 0 10px;color:#F6F2E4}
+.op p{color:#B3AB92;font-size:14px;margin:0 0 10px}
+.op p strong{color:#E8E2D0}
+.pro{font-size:13.5px;color:#9FD8AE;margin:0 0 4px}
+.con{font-size:13.5px;color:#E8A867;margin:0 0 14px}
+
+.tel{width:340px;height:600px;border-radius:32px;overflow:hidden;display:flex;flex-direction:column;
+     box-shadow:0 0 0 1px rgba(255,255,255,.10),0 26px 56px -20px rgba(0,0,0,.8);
+     background:#EFEAE0;color:#2B2519;margin-top:16px}
+.tel *{box-sizing:border-box}
+.top{display:flex;align-items:center;justify-content:space-between;padding:15px 18px 10px}
+.volver{font-size:14px;font-weight:800;color:#6B5A1E}
+.sync{font-size:11px;font-weight:800;color:#2E6B3F;background:#FCFAF6;border-radius:99px;padding:5px 11px;box-shadow:0 1px 3px rgba(43,37,25,.08)}
+.body{padding:2px 18px 18px;flex:1;overflow:hidden}
+.prog{display:flex;gap:4px;margin-bottom:12px}
+.prog i{flex:1;height:4px;border-radius:2px;background:#E4DDCE}
+.prog i.on{background:#6B5A1E}
+h3{font-family:'Newsreader',serif;font-weight:400;font-size:27px;line-height:1.06;margin:0 0 3px}
+.sub{font-size:12.5px;color:#7C7362;font-weight:600;margin:0 0 14px}
+.inp{background:#FCFAF6;border-radius:16px;padding:13px;box-shadow:inset 0 0 0 2px rgba(43,37,25,.09);
+     font-family:'Newsreader',serif;font-size:28px;text-align:center;letter-spacing:.05em;margin-bottom:12px}
+.lista{background:#FCFAF6;border-radius:18px;padding:0 15px;box-shadow:0 1px 2px rgba(43,37,25,.05),0 12px 26px -14px rgba(43,37,25,.22)}
+.fila{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0}
+.fila+.fila{border-top:1px solid rgba(43,37,25,.09)}
+.n{font-family:'Newsreader',serif;font-size:22px;letter-spacing:.03em}
+.n mark{background:none;color:#6B5A1E;font-weight:600}
+.nota{font-size:11px;font-weight:800;color:#9A9182}
+.grupo{font-size:10px;font-weight:800;letter-spacing:.11em;text-transform:uppercase;color:#9A9182;margin:16px 0 7px}
+.bloq{opacity:.5}
+.bloq .n{color:#7C7362}
+.bloq .n mark{color:#7C7362;font-weight:400}
+.candado{font-size:11px;font-weight:800;color:#C25E00;white-space:nowrap}
+.agregar{display:flex;align-items:center;justify-content:center;margin-top:11px;padding:14px;border-radius:16px;
+         background:#E4DDCE;font-size:14px;font-weight:800;color:#5C5342}
+.desplegar{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding:12px 15px;border-radius:14px;
+           background:rgba(43,37,25,.05);font-size:13px;font-weight:700;color:#7C7362}
+.cierre{padding:56px 0 100px}
+.cierre p{color:#B3AB92;font-size:15.5px;max-width:66ch}
+.cierre strong{color:#E8E2D0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="intro">
+  <p class="kicker">Petra · Parición · Buscador de la madre</p>
+  <h1>Las ovejas que ya parieron</h1>
+  <p class="lede">Tenés razón en que no tiene sentido ofrecerlas. Pero antes de elegir cómo mostrarlas, lo importante:</p>
+  <div class="alerta">
+    <b>Hoy esto pierde datos.</b> La app deja elegir una oveja que ya tiene parto y deja completar todo. Recién al subir, Postgres lo rechaza por la restricción de un parto por oveja; el cliente lo clasifica como error de dato y <b>descarta el parto</b>. El operador ve «Todo sincronizado» y el registro no está en ningún lado.
+    <br><br>
+    Cualquiera de las tres opciones lo arregla, porque las tres impiden seleccionarla. Lo que se elige es cómo se ve.
+  </div>
+  <p class="lede" style="margin-top:24px"><strong>Por qué no alcanza con esconderlas:</strong> si el operador busca la 0181 y no aparece, va a suponer que falta de la lista y va a usar «No está en la lista». Eso crea una caravana duplicada que Postgres también rechaza — el mismo problema, disfrazado.</p>
+</div>
+
+<section>
+  <div class="grid">
+
+    <!-- A -->
+    <div class="op">
+      <div class="num">A</div>
+      <h2>Dos grupos</h2>
+      <p>Primero las disponibles, después las que ya parieron, en gris y sin poder tocarse. Cada una dice cuándo se registró.</p>
+      <p class="pro">+ Se entiende de inmediato por qué no se puede elegir.</p>
+      <p class="con">− Sobre el final de la temporada casi todo va a caer en el segundo grupo y la lista se hace larga.</p>
+      <div class="tel">
+        <div class="top"><span class="volver">‹ Volver</span><span class="sync">● Todo sincronizado</span></div>
+        <div class="body">
+          <div class="prog"><i class="on"></i><i></i><i></i><i></i></div>
+          <h3>¿Qué oveja parió?</h3>
+          <p class="sub">Escribí los números de la caravana.</p>
+          <div class="inp">018</div>
+          <div class="lista">
+            <div class="fila"><span class="n"><mark>018</mark>0</span></div>
+            <div class="fila"><span class="n"><mark>018</mark>5</span></div>
+          </div>
+          <p class="grupo">Ya tienen parto registrado</p>
+          <div class="lista">
+            <div class="fila bloq"><span class="n"><mark>018</mark>1</span><span class="candado">2 ago</span></div>
+            <div class="fila bloq"><span class="n"><mark>018</mark>3</span><span class="candado">1 ago</span></div>
+          </div>
+          <div class="agregar">+ No está en la lista</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- B -->
+    <div class="op">
+      <div class="num">B</div>
+      <h2>Una sola lista</h2>
+      <p>Todo junto, en el orden de siempre. Las que ya parieron van en gris con la fecha al costado.</p>
+      <p class="pro">+ Una sola lista: el orden no cambia según el estado y la posición es predecible.</p>
+      <p class="con">− Con muchas bloqueadas hay que leer cada fila para saber cuál sirve.</p>
+      <div class="tel">
+        <div class="top"><span class="volver">‹ Volver</span><span class="sync">● Todo sincronizado</span></div>
+        <div class="body">
+          <div class="prog"><i class="on"></i><i></i><i></i><i></i></div>
+          <h3>¿Qué oveja parió?</h3>
+          <p class="sub">Escribí los números de la caravana.</p>
+          <div class="inp">018</div>
+          <div class="lista">
+            <div class="fila"><span class="n"><mark>018</mark>0</span></div>
+            <div class="fila bloq"><span class="n"><mark>018</mark>1</span><span class="candado">ya parió · 2 ago</span></div>
+            <div class="fila bloq"><span class="n"><mark>018</mark>3</span><span class="candado">ya parió · 1 ago</span></div>
+            <div class="fila"><span class="n"><mark>018</mark>5</span></div>
+          </div>
+          <div class="agregar">+ No está en la lista</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- C -->
+    <div class="op">
+      <div class="num">C</div>
+      <h2>Solo las disponibles</h2>
+      <p>Se muestran únicamente las que pueden elegirse. Las otras quedan detrás de una línea que dice cuántas son y se abre al tocarla.</p>
+      <p class="pro">+ La lista se mantiene corta toda la temporada, incluso en noviembre.</p>
+      <p class="con">− Un toque más para confirmar que la oveja que buscás ya está cargada.</p>
+      <div class="tel">
+        <div class="top"><span class="volver">‹ Volver</span><span class="sync">● Todo sincronizado</span></div>
+        <div class="body">
+          <div class="prog"><i class="on"></i><i></i><i></i><i></i></div>
+          <h3>¿Qué oveja parió?</h3>
+          <p class="sub">Escribí los números de la caravana.</p>
+          <div class="inp">018</div>
+          <div class="lista">
+            <div class="fila"><span class="n"><mark>018</mark>0</span></div>
+            <div class="fila"><span class="n"><mark>018</mark>5</span></div>
+          </div>
+          <div class="desplegar"><span>2 más ya tienen parto</span><span>▾</span></div>
+          <div class="agregar">+ No está en la lista</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div class="cierre">
+  <div class="num">Mi recomendación</div>
+  <h2>La A, con un detalle de la C</h2>
+  <p>Arrancaría con <strong>dos grupos</strong>: es la que menos exige leer, y la única en la que el operador entiende sin pensarlo por qué una caravana que ve en pantalla no se puede tocar.</p>
+  <p style="margin-top:14px">El problema que señala la C es real —en noviembre la mayoría va a haber parido— pero se resuelve <strong>limitando el grupo bloqueado a las tres primeras</strong> y agregando «y 12 más» abajo. Así la lista no crece sin control y la información sigue estando.</p>
+  <p style="margin-top:14px">La <strong>fecha del parto</strong> al costado no es decorativa: es lo que le permite al operador distinguir «esta ya la cargué hace un rato» de «alguien la cargó por error». Cuando exista la ficha del parto (fase 2), esa fila se vuelve tocable para abrirlo, que es lo que pide la spec §7.</p>
+</div>
+
+</div>
+</body>
+</html>
