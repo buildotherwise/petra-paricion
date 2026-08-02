@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="es-UY">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Petra · El cursor de texto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300..700&family=Manrope:wght@400..800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#12110C;color:#E8E2D0;font-family:'Manrope',sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1240px;margin:0 auto;padding:0 24px}
+.intro{padding:68px 0 36px;border-bottom:1px solid #2C2819}
+.kicker{font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:#8C7A2E;font-weight:800;margin:0 0 16px}
+h1{font-family:'Newsreader',serif;font-weight:400;font-size:clamp(32px,5vw,50px);line-height:1.05;margin:0 0 16px;color:#F6F2E4}
+.lede{font-size:16px;max-width:66ch;color:#B3AB92;margin:0 0 12px}
+.lede strong{color:#E8E2D0;font-weight:700}
+.probar{display:inline-block;margin-top:18px;padding:11px 18px;border-radius:99px;background:rgba(140,122,46,.18);
+        border:1px solid #8C7A2E;color:#E8C86A;font-size:14px;font-weight:800}
+section{padding:52px 0;border-bottom:1px solid #2C2819}
+.grid{display:flex;gap:30px;overflow-x:auto;padding:6px 0 18px}
+.op{flex:none;width:340px}
+.num{font-family:'Newsreader',serif;font-size:12px;letter-spacing:.28em;color:#8C7A2E;font-weight:700}
+h2{font-family:'Newsreader',serif;font-weight:400;font-size:25px;line-height:1.15;margin:6px 0 10px;color:#F6F2E4}
+.op p{color:#B3AB92;font-size:14px;margin:0 0 10px}
+.op p strong{color:#E8E2D0}
+.pro{font-size:13.5px;color:#9FD8AE;margin:0 0 4px}
+.con{font-size:13.5px;color:#E8A867;margin:0 0 14px}
+
+.tel{width:340px;height:430px;border-radius:32px;overflow:hidden;display:flex;flex-direction:column;
+     box-shadow:0 0 0 1px rgba(255,255,255,.10),0 26px 56px -20px rgba(0,0,0,.8);
+     background:#EFEAE0;color:#2B2519;margin-top:14px}
+.tel *{box-sizing:border-box}
+.top{display:flex;align-items:center;justify-content:space-between;padding:15px 18px 8px}
+.volver{font-size:14px;font-weight:800;color:#6B5A1E}
+.sync{font-size:11px;font-weight:800;color:#2E6B3F;background:#FCFAF6;border-radius:99px;padding:5px 11px}
+.body{padding:2px 18px 18px;flex:1}
+h3{font-family:'Newsreader',serif;font-weight:400;font-size:25px;line-height:1.06;margin:0 0 3px}
+.sub{font-size:12.5px;color:#7C7362;font-weight:600;margin:0 0 14px}
+
+/* ── campo base ── */
+.campo{width:100%;min-height:3.5rem;padding:12px;background:#FCFAF6;border:0;border-radius:16px;
+       box-shadow:inset 0 0 0 2px rgba(43,37,25,.09);color:#2B2519;
+       font-family:'Newsreader',serif;font-size:32px;font-weight:400;text-align:center;letter-spacing:.06em;
+       font-variant-numeric:tabular-nums;outline:none;display:block}
+.campo::placeholder{color:#9A9182;opacity:.5}
+.campo:focus{box-shadow:inset 0 0 0 2px #6B5A1E}
+
+/* A · sin cursor */
+.a .campo{caret-color:transparent}
+.a .campo:focus{box-shadow:inset 0 0 0 3px #6B5A1E}
+
+/* B · casilleros */
+.b .cajas{display:flex;gap:8px;justify-content:center;cursor:text}
+.b .caja{flex:1;max-width:64px;height:66px;display:flex;align-items:center;justify-content:center;
+         background:#FCFAF6;border-radius:14px;box-shadow:inset 0 0 0 2px rgba(43,37,25,.09);
+         font-family:'Newsreader',serif;font-size:30px;font-variant-numeric:tabular-nums;color:#2B2519}
+.b .caja.activa{box-shadow:inset 0 0 0 2px #6B5A1E}
+.b .caja .guia{width:18px;height:2px;border-radius:1px;background:#6B5A1E;animation:respira 1.4s ease-in-out infinite}
+@keyframes respira{0%,100%{opacity:.85}50%{opacity:.2}}
+.b input{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}
+
+/* C · cursor tenue */
+.c .campo{caret-color:rgba(107,90,30,.35)}
+
+.lista{background:#FCFAF6;border-radius:18px;padding:0 15px;margin-top:12px;
+       box-shadow:0 1px 2px rgba(43,37,25,.05),0 12px 26px -14px rgba(43,37,25,.22)}
+.fila{padding:11px 0;font-family:'Newsreader',serif;font-size:21px;letter-spacing:.03em}
+.fila+.fila{border-top:1px solid rgba(43,37,25,.09)}
+.fila mark{background:none;color:#6B5A1E;font-weight:600}
+.vacio{margin-top:12px;font-size:12.5px;color:#7C7362;font-weight:700;text-align:center}
+
+.cierre{padding:52px 0 100px}
+.cierre p{color:#B3AB92;font-size:15.5px;max-width:66ch;margin:0 0 14px}
+.cierre strong{color:#E8E2D0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="intro">
+  <p class="kicker">Petra · Parición · El cursor de texto</p>
+  <h1>Tres formas de sacar<br>la barra azul</h1>
+  <p class="lede">En un cursor lo que importa es <strong>cómo se siente al escribir</strong>, no cómo se ve quieto. Los tres campos de abajo funcionan de verdad: tocá y escribí números en cada uno.</p>
+  <p class="lede">La búsqueda por caravana es donde más se nota, porque el campo está vacío casi siempre y la barra queda parpadeando sola en el medio.</p>
+  <p class="probar">↓ Tocá los campos y escribí</p>
+</div>
+
+<section>
+  <div class="grid">
+
+    <!-- A -->
+    <div class="op a">
+      <div class="num">A</div>
+      <h2>Sin cursor</h2>
+      <p>La barra desaparece del todo. Lo que indica que el campo está activo es <strong>el borde</strong>, que se engrosa al enfocarlo. La confirmación de lo que escribís son los propios números y la lista que se filtra abajo.</p>
+      <p class="pro">+ Nada parpadea. Es lo más limpio y no agrega ninguna pieza nueva.</p>
+      <p class="con">− En un campo vacío hay que fiarse del borde para saber que el teclado va a escribir ahí.</p>
+      <div class="tel">
+        <div class="top"><span class="volver">‹ Volver</span><span class="sync">● Todo sincronizado</span></div>
+        <div class="body">
+          <h3>¿Qué oveja parió?</h3>
+          <p class="sub">Escribí los números de la caravana.</p>
+          <input class="campo" inputmode="numeric" placeholder="0000" data-buscador>
+          <div data-resultados></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- B -->
+    <div class="op b">
+      <div class="num">B</div>
+      <h2>Casilleros</h2>
+      <p>Una casilla por dígito, como los códigos de verificación. La casilla que sigue se marca con <strong>un guion suave que late</strong>, en vez de una barra entre caracteres.</p>
+      <p class="pro">+ Se ve de un vistazo cuántos dígitos van y cuántos faltan. Es la más cuidada.</p>
+      <p class="con">− Las caravanas no siempre tienen cuatro dígitos: hay de cinco y alfanuméricas. Las casillas crecen, pero el ritmo visual se pierde.</p>
+      <div class="tel">
+        <div class="top"><span class="volver">‹ Volver</span><span class="sync">● Todo sincronizado</span></div>
+        <div class="body">
+          <h3>¿Qué oveja parió?</h3>
+          <p class="sub">Escribí los números de la caravana.</p>
+          <div class="cajas" data-cajas></div>
+          <input inputmode="numeric" data-buscador data-oculto>
+          <div data-resultados></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- C -->
+    <div class="op c">
+      <div class="num">C</div>
+      <h2>Cursor tenue</h2>
+      <p>La barra sigue estando, pero en el color de marca y a un tercio de intensidad. Se percibe si la buscás y no molesta si no.</p>
+      <p class="pro">+ Conserva el comportamiento que todo el mundo conoce, sin el azul.</p>
+      <p class="con">− Sigue parpadeando. Si lo que te molesta es el movimiento, esto no lo resuelve.</p>
+      <div class="tel">
+        <div class="top"><span class="volver">‹ Volver</span><span class="sync">● Todo sincronizado</span></div>
+        <div class="body">
+          <h3>¿Qué oveja parió?</h3>
+          <p class="sub">Escribí los números de la caravana.</p>
+          <input class="campo" inputmode="numeric" placeholder="0000" data-buscador>
+          <div data-resultados></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div class="cierre">
+  <div class="num">Mi recomendación</div>
+  <h2>La A</h2>
+  <p>El campo de caravana no se edita por el medio: se escriben dígitos al final y se borra. <strong>El cursor no aporta información que el operador necesite</strong> — lo que confirma que va bien es la lista filtrándose debajo, que es una señal mucho más fuerte que una barra.</p>
+  <p>La B es la más linda de las tres, pero paga un precio real: de las 502 caravanas de la temporada, <strong>20 son alfanuméricas y 4 tienen cinco dígitos</strong>. El casillero fijo de cuatro deja de cerrar justo en los casos raros, que son los que más atención necesitan.</p>
+  <p>Si elegís la A, la aplico a <strong>todos</strong> los campos de la app, no solo a este: peso, collar, tatuaje y observaciones. En observaciones —el único donde se edita texto de verdad— dejaría el cursor visible, porque ahí sí hace falta para ubicarse.</p>
+</div>
+
+</div>
+
+<script>
+const OVEJAS = ['0001','0013','0131','0178','0181','0185','1300','1700','1701','1703','1742','2373','2385','PI 136','PI 1164','T. 096 V (2096)','T. 319 V'];
+
+function compactar(s){ return s.toUpperCase().replace(/[^0-9A-Z]/g,''); }
+function digitos(s){ return s.replace(/\D/g,''); }
+
+function buscar(q){
+  const b = compactar(q);
+  if(!b) return [];
+  const rango = (c) => {
+    const cp = compactar(c), d = digitos(c);
+    if(cp.startsWith(b)) return 0;
+    if(d.startsWith(b)) return 1;
+    if(cp.includes(b)) return 2;
+    if(d.includes(b)) return 3;
+    return null;
+  };
+  return OVEJAS.map(c => ({c, r: rango(c)})).filter(x => x.r !== null)
+    .sort((a,b2) => a.r - b2.r || a.c.length - b2.c.length).slice(0,3).map(x => x.c);
+}
+
+function resaltar(caravana, q){
+  const b = compactar(q); if(!b) return caravana;
+  const pos = []; let comp = '';
+  for(let i=0;i<caravana.length;i++){
+    const ch = caravana[i].toUpperCase();
+    if(/[0-9A-Z]/.test(ch)){ comp += ch; pos.push(i); }
+  }
+  let d = comp.indexOf(b);
+  if(d === -1){
+    const pd = []; let dg = '';
+    for(let i=0;i<comp.length;i++){ if(comp[i]>='0'&&comp[i]<='9'){ dg+=comp[i]; pd.push(pos[i]); } }
+    const k = dg.indexOf(b); if(k === -1) return caravana;
+    const ini = pd[k], fin = pd[k+b.length-1]+1;
+    return caravana.slice(0,ini)+'<mark>'+caravana.slice(ini,fin)+'</mark>'+caravana.slice(fin);
+  }
+  const ini = pos[d], fin = pos[d+b.length-1]+1;
+  return caravana.slice(0,ini)+'<mark>'+caravana.slice(ini,fin)+'</mark>'+caravana.slice(fin);
+}
+
+function pintarResultados(cont, q){
+  const r = buscar(q);
+  if(!q.trim()){ cont.innerHTML=''; return; }
+  cont.innerHTML = r.length
+    ? '<div class="lista">'+r.map(c=>'<div class="fila">'+resaltar(c,q)+'</div>').join('')+'</div>'
+    : '<p class="vacio">Ninguna caravana tiene «'+q+'»</p>';
+}
+
+document.querySelectorAll('.op').forEach(op => {
+  const input = op.querySelector('[data-buscador]');
+  const salida = op.querySelector('[data-resultados]');
+  const cajas = op.querySelector('[data-cajas]');
+
+  const pintarCajas = () => {
+    const v = input.value;
+    const total = Math.max(4, v.length + (v.length >= 4 ? 1 : 0));
+    cajas.innerHTML = '';
+    for(let i=0;i<total;i++){
+      const d = document.createElement('div');
+      d.className = 'caja' + (i === v.length && document.activeElement === input ? ' activa' : '');
+      if(v[i]) d.textContent = v[i];
+      else if(i === v.length && document.activeElement === input){
+        const g = document.createElement('div'); g.className='guia'; d.appendChild(g);
+      }
+      cajas.appendChild(d);
+    }
+  };
+
+  if(cajas){
+    cajas.addEventListener('click', () => input.focus());
+    input.addEventListener('focus', pintarCajas);
+    input.addEventListener('blur', pintarCajas);
+    pintarCajas();
+  }
+
+  input.addEventListener('input', () => {
+    pintarResultados(salida, input.value);
+    if(cajas) pintarCajas();
+  });
+});
+</script>
+</body>
+</html>

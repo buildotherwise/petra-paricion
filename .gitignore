@@ -39,3 +39,7 @@ pnpm-debug.log*
 # Agent skills de terceros: se instalan con `npx skills add powersync-ja/agent-skills`
 .agents/
 .claude/skills/
+
+# Sesión temporal que uso para inspeccionar la app con el navegador.
+# Lleva un token de acceso: nunca al repo.
+public/sesion-temp.json
