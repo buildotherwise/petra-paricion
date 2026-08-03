@@ -186,8 +186,6 @@ const CAMPOS: Readonly<Record<string, readonly (readonly [string, string, Format
   ],
   ovejas: [
     ['caravana', 'Caravana', texto],
-    ['fecha_inseminacion', 'Inseminación', fecha],
-    ['padre', 'Padre', texto],
     ['observaciones', 'Observaciones', texto],
   ],
 };

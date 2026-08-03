@@ -18,8 +18,9 @@ const ovejas = new Table(
   {
     temporada: column.integer,
     caravana: column.text,
-    fecha_inseminacion: column.text,
-    padre: column.text,
+    // La inseminación y el padre NO viven acá: son hasta cuatro hechos por
+    // oveja, con padres distintos, y viven en `servicios` — que no se replica
+    // (ver migración 0010). El teléfono no muestra el padre en ningún flujo.
     precargada: column.integer,
     observaciones: column.text,
     creado_en: column.text,
