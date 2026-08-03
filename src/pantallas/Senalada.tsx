@@ -3,8 +3,7 @@ import { useQuery, useStatus } from '@powersync/react';
 import { Encabezado } from '../componentes/Encabezado';
 import { entorno } from '../lib/entorno';
 import { buscarPorCaravanaOCollar, partirCoincidencia } from '../lib/busqueda';
-import { nombreTipo } from '../lib/parto';
-import { hoyISO } from '../lib/reglas';
+import { antiguedad, nombreTipo } from '../lib/parto';
 
 /**
  * La entrada a la señalada.
@@ -228,12 +227,6 @@ function useDatosViejos(): string | null {
   return `hace ${Math.floor(horas)} horas`;
 }
 
-/** '2026-08-02' → '8 días', contra hoy. Es la antigüedad que decide qué urge. */
-export function antiguedad(fecha: string, hoy: string = hoyISO()): string {
-  const dias = Math.round(
-    (Date.parse(`${hoy}T12:00:00Z`) - Date.parse(`${fecha.slice(0, 10)}T12:00:00Z`)) / 86_400_000,
-  );
-  if (dias <= 0) return 'hoy';
-  if (dias === 1) return '1 día';
-  return `${dias} días`;
-}
+// `antiguedad` se mudó a lib/parto.ts: la tabla de corderos y el panel de
+// revisión necesitan el mismo cálculo, y la antigüedad de un cordero tiene que
+// decir lo mismo en las tres pantallas.

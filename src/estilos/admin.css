@@ -211,6 +211,28 @@
   }
 }
 
+/* Y en pantalla de teléfono cede lo decorativo, que es la misma regla del
+   encabezado de campo (CLAUDE.md §3): la línea de la raza y la temporada se
+   esconden antes que nada, y el indicador de sincronización no se toca nunca.
+   Sin esto la barra superior mide 516px y arrastra la página entera de
+   costado — que es peor que cualquier cosa que se pueda esconder. */
+@media (max-width: 34rem) {
+  .admin-marca .raza,
+  .admin-temporada,
+  .admin-quien {
+    display: none;
+  }
+
+  .admin-lateral {
+    width: 132px;
+    padding: 0.75rem 0.5rem;
+  }
+
+  .admin-lienzo {
+    padding: 0.875rem;
+  }
+}
+
 /* ── Los filtros ───────────────────────────────────────────────────────
    Van sobre la tabla y se ven aplicados. Un filtro escondido en un panel
    plegado es un filtro que alguien va a olvidarse puesto, y entonces la tabla
@@ -226,8 +248,10 @@
 }
 
 .admin-buscar {
-  flex: 1;
-  min-width: 210px;
+  /* min-width 0 y no 210px: con un mínimo duro, en pantalla angosta el
+     buscador empuja la página entera de costado en vez de encogerse. */
+  flex: 1 1 13rem;
+  min-width: 0;
   background: var(--superficie);
   border: 0;
   border-radius: 11px;
@@ -241,6 +265,53 @@
 .admin-buscar::placeholder {
   color: var(--tinta-tenue);
   font-weight: 600;
+}
+
+/* Un <select> nativo y no una pastilla con menú propio: muestra el valor
+   elegido en vez del nombre del filtro, así que decir «Sin señalar» ya es decir
+   que está puesto. Y trae gratis el teclado y la rueda del teléfono. */
+.admin-filtro {
+  appearance: none;
+  background: var(--superficie);
+  border: 0;
+  border-radius: 11px;
+  padding: 0.5625rem 1.75rem 0.5625rem 0.8125rem;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--tinta-suave);
+  box-shadow: 0 1px 3px rgba(43, 37, 25, 0.08);
+  cursor: pointer;
+
+  /* La flechita, dibujada acá porque `appearance: none` se lleva la del
+     sistema y sin ninguna el select no se distingue de una etiqueta. */
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position:
+    right 0.875rem center,
+    right 0.6rem center;
+  background-size:
+    4px 4px,
+    4px 4px;
+  background-repeat: no-repeat;
+}
+
+.admin-filtro--on {
+  background-color: var(--marca);
+  color: #fff;
+  box-shadow: 0 6px 14px -8px rgba(107, 90, 30, 0.7);
+}
+
+.admin-limpiar {
+  border: 0;
+  background: none;
+  padding: 0.5rem 0.25rem;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--marca);
+  cursor: pointer;
+  white-space: nowrap;
 }
 
 .admin-conteo {
@@ -376,6 +447,43 @@
 .admin-tabla .chip--pendiente {
   background: rgba(163, 75, 0, 0.12);
   color: #7d3a00;
+}
+
+.admin-tabla .chip--senalado {
+  background: rgba(46, 107, 63, 0.13);
+  color: #215030;
+}
+
+.admin-tabla .chip--muerto {
+  background: rgba(43, 37, 25, 0.09);
+  color: #5c5342;
+}
+
+.admin-tabla .chip--anulado {
+  background: rgba(43, 37, 25, 0.07);
+  color: var(--tinta-tenue);
+}
+
+.admin-tabla .chip + .chip {
+  margin-left: 0.25rem;
+}
+
+/* En un cordero señalado el tatuaje es su nombre a partir de ese momento. */
+.admin-tabla .tatuaje {
+  font-family: var(--serif);
+  font-size: 16px;
+  color: var(--marca);
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+/* Las observaciones son la única columna que puede ser larga. Se recorta con
+   puntos suspensivos en vez de ensanchar la tabla: lo que dice completo se lee
+   en la ficha. */
+.admin-tabla td:last-child {
+  max-width: 18rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ── Estados vacíos y de espera ────────────────────────────────────────

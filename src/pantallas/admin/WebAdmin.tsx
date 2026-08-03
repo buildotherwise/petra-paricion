@@ -4,6 +4,7 @@ import { entorno } from '../../lib/entorno';
 import type { SeccionAdmin } from '../../lib/navegacion';
 import type { Perfil } from '../../lib/powersync/esquema';
 import { TablaPartos } from './TablaPartos';
+import { TablaCorderos } from './TablaCorderos';
 import '../../estilos/admin.css';
 
 /**
@@ -40,6 +41,7 @@ export default function WebAdmin({
   onSalirAlCampo,
   onVerRechazados,
   onAbrirParto,
+  onAbrirCordero,
 }: {
   seccion: SeccionAdmin;
   perfil: Perfil;
@@ -47,6 +49,7 @@ export default function WebAdmin({
   onSalirAlCampo: () => void;
   onVerRechazados: () => void;
   onAbrirParto: (partoId: string) => void;
+  onAbrirCordero: (corderoId: string) => void;
 }) {
   const { data } = useQuery<Contadores>(
     `SELECT
@@ -110,7 +113,11 @@ export default function WebAdmin({
         </nav>
 
         <main className="admin-lienzo">
-          <Seccion seccion={seccion} onAbrirParto={onAbrirParto} />
+          <Seccion
+            seccion={seccion}
+            onAbrirParto={onAbrirParto}
+            onAbrirCordero={onAbrirCordero}
+          />
         </main>
       </div>
     </div>
@@ -127,9 +134,11 @@ const TITULOS: Record<SeccionAdmin, string> = {
 function Seccion({
   seccion,
   onAbrirParto,
+  onAbrirCordero,
 }: {
   seccion: SeccionAdmin;
   onAbrirParto: (partoId: string) => void;
+  onAbrirCordero: (corderoId: string) => void;
 }) {
   return (
     <>
@@ -137,9 +146,9 @@ function Seccion({
       <p className="admin-bajada">
         Temporada {entorno.temporada} · lo que este navegador tiene sincronizado
       </p>
-      {seccion === 'partos' ? (
-        <TablaPartos onAbrir={onAbrirParto} />
-      ) : (
+      {seccion === 'partos' && <TablaPartos onAbrir={onAbrirParto} />}
+      {seccion === 'corderos' && <TablaCorderos onAbrir={onAbrirCordero} />}
+      {(seccion === 'revision' || seccion === 'exportar') && (
         <p className="admin-espera">Todavía no está construida.</p>
       )}
     </>

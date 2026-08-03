@@ -114,6 +114,7 @@ function Ruteo() {
           // teléfono muestran el mismo registro porque son el mismo componente,
           // no porque alguien mantenga dos vistas parecidas.
           onAbrirParto={(partoId) => ir({ nombre: 'ficha-parto', partoId })}
+          onAbrirCordero={(corderoId) => ir({ nombre: 'ficha-cordero', corderoId })}
         />
       );
 
@@ -148,12 +149,14 @@ function PuertaAdmin({
   onSalirAlCampo,
   onVerRechazados,
   onAbrirParto,
+  onAbrirCordero,
 }: {
   seccion: SeccionAdmin;
   onSeccion: (seccion: SeccionAdmin) => void;
   onSalirAlCampo: () => void;
   onVerRechazados: () => void;
   onAbrirParto: (partoId: string) => void;
+  onAbrirCordero: (corderoId: string) => void;
 }) {
   const perfil = usePerfil();
 
@@ -193,6 +196,7 @@ function PuertaAdmin({
         onSalirAlCampo={onSalirAlCampo}
         onVerRechazados={onVerRechazados}
         onAbrirParto={onAbrirParto}
+        onAbrirCordero={onAbrirCordero}
       />
     </Suspense>
   );

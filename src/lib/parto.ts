@@ -7,6 +7,8 @@
  * hace dudar de si se está mirando el mismo registro.
  */
 
+import { hoyISO } from './reglas';
+
 export const NOMBRE_TIPO: Record<number, string> = {
   0: 'Sin corderos',
   1: 'Único',
@@ -34,4 +36,31 @@ export function fechaLarga(iso: string): string {
     month: 'long',
     year: 'numeric',
   });
+}
+
+/**
+ * Días cumplidos entre una fecha y hoy.
+ *
+ * Al mediodía UTC las dos puntas, para que el cambio de horario no corra un
+ * día. Es el número que decide qué urge: un cordero sin señalar de 18 días
+ * tiene el collar puesto en la madre desde hace 18 días.
+ */
+export function diasDesde(fecha: string, hoy: string = hoyISO()): number {
+  return Math.round(
+    (Date.parse(`${hoy}T12:00:00Z`) - Date.parse(`${fecha.slice(0, 10)}T12:00:00Z`)) / 86_400_000,
+  );
+}
+
+/**
+ * '2026-08-02' → '8 días', contra hoy.
+ *
+ * Vivía en `Senalada.tsx`. Se subió acá cuando la tabla de corderos necesitó el
+ * mismo cálculo: la antigüedad de un cordero tiene que decir lo mismo en la
+ * lista de pendientes, en la tabla y en el panel de revisión.
+ */
+export function antiguedad(fecha: string, hoy: string = hoyISO()): string {
+  const dias = diasDesde(fecha, hoy);
+  if (dias <= 0) return 'hoy';
+  if (dias === 1) return '1 día';
+  return `${dias} días`;
 }
