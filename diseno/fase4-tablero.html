@@ -1,0 +1,742 @@
+<!doctype html>
+<html lang="es-UY">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Petra · Fase 4 — El tablero y los servicios</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300..700&family=Manrope:wght@400..800&display=swap" rel="stylesheet">
+<style>
+/* ═══ La página de presentación ════════════════════════════════════════ */
+*{box-sizing:border-box}
+body{margin:0;background:#12110C;color:#E8E2D0;font-family:'Manrope',sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased}
+
+/* Mismo ancho que fase4-pantallas.html y por el mismo motivo: adentro va un
+   monitor de 1160 con sus márgenes. La prosa sigue atada a 66ch. */
+.wrap{max-width:1400px;margin:0 auto;padding:0 24px}
+.intro{padding:72px 0 44px;border-bottom:1px solid #2C2819}
+.kicker{font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:#8C7A2E;font-weight:800;margin:0 0 18px}
+h1{font-family:'Newsreader',serif;font-weight:400;font-size:clamp(32px,5vw,52px);line-height:1.04;margin:0 0 18px;color:#F6F2E4}
+.lede{font-size:16px;max-width:66ch;color:#B3AB92;margin:0 0 12px}
+.lede strong{color:#E8E2D0;font-weight:700}
+
+.decisiones{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:20px;margin-top:38px}
+.dec{border-top:1px solid #2C2819;padding-top:13px}
+.dec b{display:block;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:#8C7A2E;margin-bottom:6px}
+.dec span{font-size:13.5px;color:#B3AB92}
+.dec span em{color:#E8E2D0;font-style:normal;font-weight:700}
+
+section{padding:58px 0;border-bottom:1px solid #2C2819}
+.num{font-family:'Newsreader',serif;font-size:12px;letter-spacing:.28em;color:#8C7A2E;font-weight:700}
+h2{font-family:'Newsreader',serif;font-weight:400;font-size:clamp(26px,3.2vw,34px);line-height:1.1;margin:7px 0 13px;color:#F6F2E4}
+section > .intro-sec p{color:#B3AB92;font-size:15px;max-width:66ch;margin:0 0 12px}
+section p strong{color:#E8E2D0}
+.nota{margin:20px 0 0;padding:13px 16px;border-left:2px solid #8C7A2E;background:rgba(140,122,46,.10);font-size:14px;color:#D6CFB8;max-width:66ch}
+.nota b{color:#E8C86A}
+.nota.mal{border-left-color:#A34B00;background:rgba(163,75,0,.10)}
+.nota.mal b{color:#E8A867}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9em;color:#D8C98A}
+
+.grid{display:flex;gap:30px;overflow-x:auto;padding:26px 0 20px;align-items:flex-start}
+.op{flex:none;width:340px}
+.op .titulo-op{display:block;font-family:'Newsreader',serif;font-size:23px;color:#F6F2E4;margin:0 0 9px}
+.op > p{color:#B3AB92;font-size:13.5px;margin:0 0 9px}
+.pro{font-size:13px;color:#9FD8AE;margin:0 0 3px}
+.con{font-size:13px;color:#E8A867;margin:0 0 12px}
+.costo{font-size:12px;color:#7A7259;margin:0 0 14px;font-weight:700}
+.cap{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:#7A7259;margin:16px 0 10px;font-weight:700}
+
+/* Cuando las opciones traen monitor, se apilan — fase4-pantallas.html:53. */
+.grid.apilado{flex-direction:column;overflow-x:visible;gap:44px}
+.grid.apilado .op{width:100%;max-width:1180px}
+
+.elegida{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
+         color:#12110C;background:#E8C86A;border-radius:99px;padding:3px 10px;margin-left:9px;vertical-align:2px}
+.op.si{border-top:2px solid #E8C86A;padding-top:16px}
+.op.no{border-top:1px solid #2C2819;padding-top:17px}
+.op.no .titulo-op{color:#B3AB92}
+
+/* SQL en la página oscura: la decisión del modelo ES la tabla, así que la
+   tabla se muestra como se va a escribir, no descrita en prosa. */
+pre{background:#181610;border:1px solid #2C2819;border-radius:10px;padding:14px 16px;overflow-x:auto;
+    font-size:12.5px;line-height:1.6;color:#C9C1A6;max-width:760px}
+pre b{color:#E8C86A;font-weight:400}
+
+/* ═══ El monitor ═══════════════════════════════════════════════════════
+   Calcado de fase4-pantallas.html: 1160 px a escala 1:1, con el cromo del
+   navegador porque la URL sigue siendo parte de la decisión (/admin/tableros
+   es una sección nueva de SECCIONES, no un invento). */
+.mon{width:1160px;border-radius:14px;overflow:hidden;flex:none;
+     box-shadow:0 0 0 1px rgba(255,255,255,.10),0 30px 64px -24px rgba(0,0,0,.85);
+     background:#EFEAE0;color:#2B2519;font-size:13.5px}
+.mon *{box-sizing:border-box}
+.cromo{display:flex;align-items:center;gap:10px;background:#221F17;padding:9px 14px}
+.cromo i{width:9px;height:9px;border-radius:50%;background:#3C372A;display:block;font-style:normal;flex:none}
+.url{flex:1;background:#12110C;border-radius:7px;padding:5px 12px;font-size:11.5px;color:#8B8271;
+     font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.url b{color:#D8C98A;font-weight:400}
+.flechas{display:flex;gap:9px;color:#6A6353;font-size:13px;flex:none}
+.barra-sup{display:flex;align-items:center;gap:14px;background:#FCFAF6;padding:11px 20px;
+           border-bottom:1px solid rgba(43,37,25,.09)}
+.lockup{display:flex;align-items:center;gap:10px;flex:none}
+.lockup img{height:34px;width:auto;display:block}
+.lockup .nom{font-family:'Newsreader',serif;font-size:21px;line-height:1;color:#2B2519}
+.lockup .raza{font-size:8px;letter-spacing:.2em;text-transform:uppercase;color:#9A9182;font-weight:800;margin-top:3px}
+.temporada-sup{font-size:12px;font-weight:800;color:#7C7362;letter-spacing:.04em}
+.espacio{flex:1}
+.sync{font-size:10.5px;font-weight:800;color:#2E6B3F;background:#FCFAF6;border-radius:99px;padding:5px 10px;box-shadow:0 1px 3px rgba(43,37,25,.08)}
+.quien{font-size:12px;font-weight:800;color:#7C7362}
+.marco{display:flex;height:700px}
+.lateral{width:196px;flex:none;background:#E7E1D5;padding:14px 10px;display:flex;flex-direction:column;
+         border-right:1px solid rgba(43,37,25,.09)}
+.nav{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-radius:11px;
+     font-size:13.5px;font-weight:700;color:#5C5342}
+.nav.on{background:#6B5A1E;color:#fff;box-shadow:0 6px 14px -8px rgba(107,90,30,.7)}
+.nav .cuenta{font-family:'Newsreader',serif;font-size:14px;color:#9A9182;font-variant-numeric:tabular-nums}
+.nav .cuenta.viva{background:#A34B00;color:#fff;border-radius:99px;padding:1px 7px;font-family:'Manrope',sans-serif;
+                  font-size:11px;font-weight:800}
+.lateral .sep{margin-top:auto;padding-top:12px;border-top:1px solid rgba(43,37,25,.09)}
+.lienzo{flex:1;padding:18px 22px;overflow:hidden;min-width:0}
+.titulo-vista{font-family:'Newsreader',serif;font-size:25px;margin:0 0 2px;line-height:1.1}
+.bajada{font-size:12px;color:#7C7362;font-weight:600;margin:0 0 14px}
+
+/* ═══ Las tarjetas del tablero ═════════════════════════════════════════
+   Tres columnas como el panel de revisión, y por el mismo motivo: siete
+   tarjetas en dos columnas dejan una fila desperdiciada. La de avance ocupa
+   dos porque es la que se mira todos los días. */
+.tablero{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-items:start}
+.tarj{background:#FCFAF6;border-radius:14px;padding:11px 14px;box-shadow:0 1px 2px rgba(43,37,25,.05),0 12px 26px -14px rgba(43,37,25,.22)}
+.tarj.ancha{grid-column:span 2}
+.tarj .qh{font-size:12.5px;font-weight:800;margin:0}
+.tarj .porque{font-size:10.5px;color:#7C7362;font-weight:600;margin:2px 0 0}
+.tarj .cab{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.cifra-g{font-family:'Newsreader',serif;font-size:29px;line-height:1;color:#2B2519;font-variant-numeric:tabular-nums;white-space:nowrap}
+.cifra-g small{font-family:'Manrope',sans-serif;font-size:10.5px;font-weight:800;color:#9A9182;letter-spacing:.04em}
+.cifra-g.mala{color:#B3261E}
+.leyenda{display:flex;gap:14px;margin-top:8px;font-size:10.5px;font-weight:700;color:#7C7362;flex-wrap:wrap}
+.leyenda i{display:inline-block;width:9px;height:9px;border-radius:3px;background:#6B5A1E;margin-right:5px;vertical-align:-1px;font-style:normal}
+.leyenda i.esp{background:none;border-top:2px dashed #7C7362;height:0;width:13px;border-radius:0;vertical-align:2px}
+.leyenda i.champan{background:#EFE8CF;box-shadow:inset 0 0 0 1.5px #2B2519}
+.leyenda i.roja{background:#B3261E}
+.tarj svg{display:block;width:100%;height:auto;margin-top:8px}
+.tarj svg text{font-family:'Manrope',sans-serif;font-size:8.5px;font-weight:700;fill:#9A9182}
+.tarj svg text.eje-y{text-anchor:end}
+.tarj svg text.dato{fill:#5C5342;text-anchor:middle}
+.tarj svg text.serif{font-family:'Newsreader',serif;font-size:12px;fill:#2B2519}
+.tarj .pie-tarj{font-size:10.5px;color:#7C7362;font-weight:600;margin:8px 0 0}
+.tarj .pie-tarj b{color:#2B2519}
+
+/* La matriz de canela y lunar: la misma del campo, no un gráfico. */
+.matriz{display:grid;grid-template-columns:auto 1fr 1fr;gap:4px;margin-top:9px;font-size:10px;font-weight:700;color:#7C7362}
+.matriz .celda{background:#F6F2E8;border-radius:8px;padding:7px 4px;text-align:center}
+.matriz .celda b{display:block;font-family:'Newsreader',serif;font-size:16px;font-weight:600;color:#2B2519;font-variant-numeric:tabular-nums}
+.matriz .rot{display:flex;align-items:center;justify-content:flex-end;padding-right:4px;text-align:right}
+.matriz .enc{text-align:center;align-self:end;padding-bottom:2px}
+
+/* El estado vacío es una tarjeta renderizada, jamás un hueco. */
+.vacio{font-size:11.5px;color:#7C7362;font-weight:600;background:#F6F2E8;border-radius:10px;padding:12px;margin-top:9px;text-align:center}
+.vacio b{display:block;font-family:'Newsreader',serif;font-size:22px;font-weight:400;color:#2B2519;margin-bottom:2px}
+
+.aviso-tab{border-radius:12px;padding:10px 13px;font-size:12px;font-weight:600;margin-top:9px;background:rgba(163,75,0,.10);color:#7d3a00}
+
+.cierre{padding:56px 0 110px}
+.cierre p{color:#B3AB92;font-size:15.5px;max-width:68ch;margin:0 0 14px}
+.cierre strong{color:#E8E2D0}
+.tabla-caja{overflow-x:auto;margin:26px 0 8px}
+.tabla{width:100%;max-width:980px;border-collapse:collapse;font-size:14px}
+.tabla th{text-align:left;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:#7A7259;font-weight:800;padding:0 14px 9px 0;border-bottom:1px solid #2C2819}
+.tabla td{padding:11px 14px 11px 0;border-bottom:1px solid #201D13;color:#B3AB92;vertical-align:top}
+.tabla td b{color:#E8C86A;font-weight:700}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="intro">
+  <p class="kicker">Petra · Fase 4 · Tanda 2 — El tablero y los servicios</p>
+  <h1>La temporada, contestada con números que nadie tipeó</h1>
+  <p class="lede">La primera tanda dejó la web admin mirando registros de a uno: tablas, revisión, historial, exportación. Lo que falta es la otra mitad de la promesa de la Fase 4 — <strong>los tableros</strong> — y en el camino apareció algo más grande: <code>datos/inseminacion_2026.xlsx</code> tiene <strong>1.359 hechos reproductivos sobre 503 ovejas</strong>, hasta cuatro por oveja, con padres distintos, y uno de ellos con rango de fechas en vez de fecha. Las dos columnas que el modelo reservó para esto —<code>ovejas.fecha_inseminacion</code> y <code>ovejas.padre</code>, un date y un text— nunca pudieron decirlo.</p>
+  <p class="lede">De ese archivo salen dos regalos. El primero: con gestación de 145–155 días <strong>ninguna oveja tiene dos servicios de padres distintos con ventanas de parto solapadas</strong> — el par más ajustado quedó a 11 días —, así que <strong>el padre de cada cordero se deriva de la fecha del parto</strong>, no se carga. El segundo: la curva de partos esperados del tablero de avance, que hasta ahora no tenía de dónde salir.</p>
+  <p class="lede">Acá están las decisiones, con las alternativas que se compararon. <strong>Lo elegido lleva su chapa dorada</strong>; lo descartado queda a la vista, porque en dos semanas nadie se acuerda de qué se comparó y esa es la mitad de la decisión.</p>
+
+  <div class="decisiones">
+    <div class="dec"><b>Los servicios son una tabla</b><span>Una fila por hecho —inseminación o encarnerada— con <em>rango de fechas uniforme</em>. Las dos columnas de ovejas se eliminan.</span></div>
+    <div class="dec"><b>El padre se deriva</b><span>Una vista lo calcula desde la fecha del parto. <em>Nunca se guarda</em>: si se corrige la fecha, el padre se corrige solo.</span></div>
+    <div class="dec"><b>La carga es una sola vez</b><span>Un script hermano de <em>importar-madres.py</em>. Sin pantalla de importación: para una carga única, una pantalla es mantenimiento sin uso.</span></div>
+    <div class="dec"><b>El tablero es online</b><span>Siete vistas SQL en el servidor, leídas por la web. <em>servicios no se replica</em> a los teléfonos, y un BI externo futuro lee las mismas vistas.</span></div>
+  </div>
+
+  <div class="nota mal">
+    <b>El riesgo propio de esta tanda:</b> es la primera que <strong>elimina columnas de una tabla en producción y replicada</strong>, a días de la parición real. El drop es seguro para las escrituras —ningún flujo de la app escribe esas dos columnas; está verificado archivo por archivo— pero <code>ovejas</code> está en la publicación de PowerSync, así que la migración se aplica <strong>en un momento sin actividad</strong> y después se mira un dispositivo re-sincronizar con el indicador de pendientes en cero. Y el segundo riesgo hereda de la nota de la tanda 1: el chunk de Recharts <strong>tiene que quedar fuera del precache</strong>, y el patrón de <code>globIgnores</code> que no matchea nada falla en silencio — por eso el procedimiento de verificación del build es parte del commit, no una buena intención.
+  </div>
+</div>
+
+<!-- ═══════════ 01 · Los servicios son hechos de la oveja, no columnas ═══════════ -->
+<section>
+  <div class="intro-sec">
+    <div class="num">01</div>
+    <h2>Los servicios son hechos de la oveja, no columnas</h2>
+    <p>El vocabulario primero, porque el Excel lo trae mezclado: <strong>servicio</strong> es la inseminación artificial — fecha puntual, padre cierto en ese acto; hasta tres por oveja, en tandas separadas ~15 días, que son las que volvieron a entrar en celo. <strong>Encarnerada</strong> es el repaso: el carnero suelto con el lote para levantar las que no quedaron preñadas — un rango de fechas, no una fecha. Y la <strong>cabaña</strong> (PETRA / PETRA POLL) es del padre, no de la madre.</p>
+    <p>487 ovejas inseminadas, 460 en la encarnerada, 444 en las dos. <strong>446 ovejas fueron servidas por más de un padre.</strong> Eso es lo que un <code>date</code> y un <code>text</code> por oveja no pueden decir de ninguna manera.</p>
+  </div>
+
+  <div class="grid">
+    <div class="op si">
+      <span class="titulo-op">A · Una tabla, con el rango uniforme <span class="elegida">Elegida</span></span>
+      <p>Una fila por hecho, con <code>tipo</code> y <strong>siempre</strong> <code>fecha_inicio</code>/<code>fecha_fin</code>: la inseminación es un rango de un día. La ventana de parto esperado es una sola fórmula, <code>[inicio+145, fin+155]</code>, sin ramas.</p>
+      <p class="pro">+ Las vistas de paternidad y de avance tratan los dos tipos igual. Cero <code>case</code> por tipo en todo el SQL.</p>
+      <p class="pro">+ La restricción <code>unique (oveja_id, tipo, fecha_inicio, padre)</code> hace la importación reejecutable: el servidor garantiza el no-op, no el cliente.</p>
+      <p class="con">− <code>fecha_inicio = fecha_fin</code> en 899 filas parece redundante hasta que se lee la fórmula.</p>
+      <p class="costo"><code>0010_servicios.sql</code>: enum, tabla, RLS, trigger de auditoría, y el entierro de las dos columnas de <code>ovejas</code>.</p>
+    </div>
+
+    <div class="op no">
+      <span class="titulo-op">B · Seguir en columnas de ovejas</span>
+      <p>Lo que existe hoy: <code>fecha_inseminacion date</code>, <code>padre text</code>.</p>
+      <p class="pro">+ Cero migración.</p>
+      <p class="con">− No puede decir «tres servicios», ni «padres distintos», ni «rango». Con las 503 filas en null, no es un modelo: es un lugar donde un dato mentiría con formato válido.</p>
+      <p class="costo">—</p>
+    </div>
+
+    <div class="op no">
+      <span class="titulo-op">C · Dos tablas, una por tipo</span>
+      <p><code>inseminaciones</code> con fecha puntual y <code>encarneradas</code> con rango: cada tipo con su forma «natural».</p>
+      <p class="pro">+ Ninguna fila con un rango de un día.</p>
+      <p class="con">− Todas las consultas que importan —paternidad, avance— necesitan un <code>union all</code> que las vuelva a juntar, porque la pregunta siempre es «los servicios de esta oveja», nunca «sus inseminaciones».</p>
+      <p class="costo">Dos tablas, dos RLS, dos triggers, para separar lo que el SQL va a unir en la primera línea.</p>
+    </div>
+  </div>
+
+  <pre>create type <b>servicio_t</b> as enum ('inseminacion', 'encarnerada');
+
+create table <b>servicios</b> (
+  id              uuid primary key default gen_random_uuid(),
+  oveja_id        uuid not null references ovejas(id),
+  tipo            servicio_t not null,
+  fecha_inicio    date not null,   <b>-- la IA es un rango de un día (inicio = fin):</b>
+  fecha_fin       date not null,   <b>-- la ventana de parto es SIEMPRE [inicio+145, fin+155]</b>
+  padre           text not null,   <b>-- texto, como caravana: '3050', '32'</b>
+  cabana          text,            <b>-- del padre, no de la madre</b>
+  creado_en       timestamptz not null default now(),
+  actualizado_en  timestamptz not null default now(),
+  actualizado_por uuid references auth.users(id),   <b>-- nullable, como en ovejas</b>
+  dispositivo     text,
+  constraint servicio_bien_ordenado check (fecha_fin >= fecha_inicio),
+  constraint inseminacion_puntual   check (tipo &lt;&gt; 'inseminacion' or fecha_fin = fecha_inicio),
+  constraint padre_no_vacio         check (btrim(padre) &lt;&gt; ''),
+  constraint servicios_idempotencia unique (oveja_id, tipo, fecha_inicio, padre)
+);</pre>
+
+  <div class="nota">
+    <b>Quién la lee: solo un admin, y no se replica.</b> Los teléfonos no muestran el padre en ningún flujo de campo, así que <code>servicios</code> queda <strong>fuera de la publicación de PowerSync, del YAML y de <code>esquema.ts</code></strong> — como <code>cambios</code>, y con el mismo RLS de lectura <code>es_admin()</code>. Es la segunda tabla que el servidor protege de verdad por rol. La web admin la consume online a través de las vistas, por el mismo camino que ya usa el historial.
+  </div>
+
+  <div class="nota">
+    <b>El entierro de las columnas viejas va en la misma migración.</b> <code>alter table ovejas drop column fecha_inseminacion, drop column padre</code> — están en null en las 503 filas, ninguna pantalla las muestra y ningún flujo las escribe (el alta manual R9 inserta una lista explícita de columnas que no las incluye). Dejarlas «por las dudas» crearía la pregunta que ningún modelo debe permitir: ¿la verdad está en la columna o en la tabla? En el cliente se limpian sus dos únicos rastros: <code>esquema.ts</code> y el mapa de etiquetas de <code>rechazos.ts</code>.
+  </div>
+</section>
+
+<!-- ═══════════ 02 · El padre se deriva ═══════════ -->
+<section>
+  <div class="intro-sec">
+    <div class="num">02</div>
+    <h2>El padre del cordero se deriva de la fecha del parto</h2>
+    <p>La regla R1 dice que el tipo de nacimiento no se tipea porque se puede contar. El padre es el mismo caso con mejor disfraz: <strong>se puede calcular</strong>. Un parto el 20 de agosto y un servicio el 27 de marzo están a 146 días — dentro de la gestación de 145–155. Si un solo servicio de esa oveja cae en la ventana, ese es el padre.</p>
+    <p>Y esta temporada es un solo servicio <strong>siempre</strong>: se midió contra las 1.149 combinaciones y no existe una sola oveja con dos padres posibles para una misma fecha — la mediana de separación entre ventanas es de 32 días.</p>
+  </div>
+
+  <div class="grid">
+    <div class="op si">
+      <span class="titulo-op">A · Derivado en una vista <span class="elegida">Elegida</span></span>
+      <p><code>v_paternidad</code>: una fila por parto, con <code>candidatos</code> (cuántos servicios caen en la ventana) y el padre <strong>solo si candidatos = 1</strong>.</p>
+      <p class="pro">+ Si se corrige la fecha del parto, el padre se corrige solo. Un dato guardado quedaría viejo sin avisar.</p>
+      <p class="pro">+ Una ambigüedad futura da null, no un dato dudoso con cara de cierto. <code>candidatos</code> distingue «sin servicio compatible» (0) de «más de uno» (2+).</p>
+      <p class="con">− El padre no está en la tabla <code>corderos</code>: quien lo quiera en una exportación lo saca de la vista.</p>
+      <p class="costo">Una vista más en <code>0011</code>, con los 145/155 viviendo solo ahí, comentados.</p>
+    </div>
+
+    <div class="op no">
+      <span class="titulo-op">B · Guardado como columna</span>
+      <p>Un <code>corderos.padre</code> que alguien —¿la importación?, ¿un trigger?, ¿la app?— escribe al nacer.</p>
+      <p class="pro">+ Exportación y consultas directas, sin join.</p>
+      <p class="con">− Queda viejo si se corrige la fecha del parto, que es exactamente la corrección que la web admin existe para hacer.</p>
+      <p class="con">− Hay que decidir quién lo escribe y cuándo, y auditar ese quién. La vista no tiene quién: es aritmética.</p>
+      <p class="costo">Una columna, un trigger, y un panel de revisión para cuando divergen. Todo para ahorrar un join.</p>
+    </div>
+  </div>
+
+  <div class="nota">
+    <b>Nunca se adivina.</b> Con <code>candidatos = 0</code> —un parto fuera de toda ventana— el padre es null y no hay heurística de «el más cercano». Un cordero con padre equivocado en un plantel de cabaña es peor que un cordero sin padre asignado: el segundo se investiga, el primero se hereda.
+  </div>
+</section>
+
+<!-- ═══════════ 03 · La carga, una sola vez ═══════════ -->
+<section>
+  <div class="intro-sec">
+    <div class="num">03</div>
+    <h2>Mil trescientos servicios, cargados una vez</h2>
+    <p>La especificación original pedía una pantalla de importación en la web admin. La realidad la corrigió: <strong>esta carga se hace una sola vez</strong> — no una por temporada; una. Las madres ya están en la base (503, cruzando perfecto contra los tres orígenes), y si el proyecto se reutiliza el año próximo, cómo entran los datos del año próximo es una decisión del año próximo.</p>
+    <p>Para una carga única, la pregunta correcta no es «¿qué pantalla?» sino <strong>«¿cuál es el camino más corto que ya está probado?»</strong>. Y ese camino existe: <code>importar-madres.py</code> ya leyó un Excel con openpyxl, ya normalizó caravanas con ceros a la izquierda y ya escribió por PostgREST. Cargar servicios es el mismo viaje con dos hojas.</p>
+  </div>
+
+  <div class="grid">
+    <div class="op si">
+      <span class="titulo-op">A · Un script hermano <span class="elegida">Elegida</span></span>
+      <p><code>scripts/importar-servicios.py</code>: openpyxl, la <code>normalizar()</code> de su hermano con sus 8 casos de test, <code>--dry-run</code> primero, y PostgREST con <code>service_role</code>.</p>
+      <p class="pro">+ Reusa la normalización ya probada — que acá es crítica: la hoja «Servicios» trae las caravanas como texto (<code>'0001'</code>) y la «Encarnerada» como número (<code>1034</code>), y 0040 y 40 son ovejas distintas.</p>
+      <p class="pro">+ openpyxl ya convierte los seriales de fecha de Excel. En el navegador habría que hacerlo a mano, con el huso horario acechando.</p>
+      <p class="pro">+ Reejecutarlo es inocuo: <code>Prefer: resolution=ignore-duplicates</code> sobre el <code>unique</code> de la tabla.</p>
+      <p class="con">− La carga no queda en la tabla <code>cambios</code> — igual que las 503 madres, y por la misma razón: es dato de referencia, no trabajo de campo.</p>
+      <p class="costo">Un script con <code>--test</code> y <code>--dry-run</code>, como su hermano. Se corre una vez con el OK a la vista.</p>
+    </div>
+
+    <div class="op no">
+      <span class="titulo-op">B · Una pantalla Importar.tsx</span>
+      <p>Sección nueva del admin: elegir archivo, vista previa, importar.</p>
+      <p class="pro">+ Auditada con sesión de admin, y utilizable el año próximo.</p>
+      <p class="con">− «El año próximo» es exactamente lo que la decisión descartó. Una pantalla que se usa una vez es mantenimiento sin uso: parser de xlsx en el navegador (una dependencia con CVEs en su versión de npm, o un lector propio), seriales de fecha a mano, chunk nuevo fuera del precache.</p>
+      <p class="costo">La opción con más código nuevo de las tres, para el mismo resultado: 1.359 filas insertadas una vez.</p>
+    </div>
+
+    <div class="op no">
+      <span class="titulo-op">C · Exportar a CSV primero</span>
+      <p>Convertir las dos hojas a CSV a mano y cargar eso.</p>
+      <p class="pro">+ Sin parser de xlsx en ningún lado.</p>
+      <p class="con">− Las fechas dejan de ser seriales inequívocos y pasan a ser texto localizado: ¿9/3 es marzo o septiembre? Ese es justo el tipo de error que este sistema vino a eliminar.</p>
+      <p class="costo">Dos archivos intermedios por cada corrección del origen, sin dueño ni historial.</p>
+    </div>
+  </div>
+
+  <div class="nota">
+    <b>El informe antes que la escritura.</b> <code>--dry-run</code> imprime todo lo que el script decidió: cuántas filas van a entrar por hoja, qué caravanas no cruzaron contra <code>ovejas</code> —se reportan y <strong>no se insertan</strong>; jamás se auto-crea una madre ni se rellenan ceros—, qué filas vienen vacías o con el rango al revés, y qué duplicados internos trae el archivo. La carga real se corre después de leer ese informe, y al final verifica contra el servidor: <code>count(*)</code> esperado, 1.359.
+  </div>
+</section>
+
+<!-- ═══════════ 04 · El tablero lee del servidor ═══════════ -->
+<section>
+  <div class="intro-sec">
+    <div class="num">04</div>
+    <h2>El tablero lee del servidor, no de la réplica</h2>
+    <p>Toda la web admin calcula sobre la réplica local — es la decisión de la tanda 1, y sigue firme para tablas, revisión y exportación. El tablero es distinto por un hecho y una promesa. El hecho: <strong>la curva esperada sale de <code>servicios</code>, que no se replica</strong>. La promesa, escrita en la especificación desde el día uno: <strong>cada métrica se define como una vista SQL en Postgres</strong>, para que un BI externo futuro lea las mismas vistas sin rehacer nada.</p>
+  </div>
+
+  <div class="grid">
+    <div class="op si">
+      <span class="titulo-op">A · Siete vistas SQL, leídas online <span class="elegida">Elegida</span></span>
+      <p><code>v_avance_paricion</code>, <code>v_tipo_nacimiento</code>, <code>v_mortalidad</code>, <code>v_peso_promedio</code>, <code>v_senaladas_pendientes</code>, <code>v_prevalencias_fenotipicas</code>, <code>v_condicion_corporal</code> — más <code>v_paternidad</code>. La web las lee con el mismo <code>useConsultaOnline</code> del historial.</p>
+      <p class="pro">+ La lógica de cálculo vive en un solo lugar, auditable, y el BI externo ya está habilitado.</p>
+      <p class="pro">+ Cada tarjeta hace su propia consulta: una vista caída no arrastra a las otras seis, y degrada con error en castellano y botón Reintentar.</p>
+      <p class="con">− Es la segunda sección de la web admin que no funciona sin señal, después del historial. La bajada lo dice: «calculado en el servidor, ahora».</p>
+      <p class="costo"><code>0011_vistas_metricas.sql</code>, cada vista con su <code>grant select</code> y su <code>security_invoker</code> — la barrera de <code>vistas.test.sql</code> las recorre todas y no perdona ninguna.</p>
+    </div>
+
+    <div class="op no">
+      <span class="titulo-op">B · Calcular sobre la réplica</span>
+      <p>Como todo lo demás: SQL contra SQLite local, tablero offline.</p>
+      <p class="pro">+ Funciona sin señal, coherente con el resto.</p>
+      <p class="con">− Sin <code>servicios</code> no hay curva esperada ni paternidad — habría que replicar una tabla que ningún teléfono necesita, a cinco aparatos, para una pantalla de escritorio.</p>
+      <p class="con">− La lógica quedaría en TypeScript del cliente: el BI externo de la especificación tendría que reimplementarla, y las dos copias divergirían en silencio.</p>
+      <p class="costo">Duplicar en el cliente lo que Postgres hace mejor, y romper una promesa escrita de la spec.</p>
+    </div>
+  </div>
+
+  <div class="nota mal">
+    <b>Recharts queda fuera del precache, y eso se verifica, no se espera.</b> El tablero va detrás de su propio <code>lazy()</code> anidado en el chunk admin, con Recharts adentro (~400 kB que los cinco teléfonos del campo no tienen por qué bajar para una pantalla que sin señal no muestra nada). <code>globIgnores: ['**/assets/Tablero-*.js']</code> — y el procedimiento del commit: <code>pnpm build</code>, confirmar que <code>dist/assets</code> tiene un <code>Tablero-*.js</code> pesado (Recharts quedó adentro y no se izó a otro chunk), confirmar que <code>dist/sw.js</code> no lo menciona. El patrón que no matchea nada <strong>falla en silencio</strong>, en la dirección de gastar datos ajenos.
+  </div>
+</section>
+
+<!-- ═══════════ 05 · La curva que faltaba ═══════════ -->
+<section>
+  <div class="intro-sec">
+    <div class="num">05</div>
+    <h2>La curva que faltaba: lo esperado contra lo real</h2>
+    <p>Cada servicio define una ventana de parto: <code>[inicio+145, fin+155]</code>. Once días para una inseminación, el rango más diez para la encarnerada. La pregunta es cómo se convierte eso en una curva comparable con los partos reales, y la trampa es contar ovejas de más: <strong>una oveja con tres servicios va a parir una vez, no tres</strong>.</p>
+    <p>La respuesta elegida: cada oveja pesa exactamente <strong>1</strong>, repartido en partes iguales entre el conjunto <em>deduplicado</em> de sus días posibles. La suma de toda la curva esperada da el total de inseminadas — 503 — siempre. Esa igualdad es una aserción del test SQL, no una esperanza: si alguien toca la vista y la curva se infla, el test lo dice antes que el tablero.</p>
+    <p>Y la curva cuenta una historia real: <strong>las tandas de la inseminación se ven</strong>. Tres olas separadas ~15 días —las repeticiones sobre las que volvieron a entrar en celo— y la cola larga de la encarnerada hasta mediados de octubre.</p>
+  </div>
+
+  <div class="grid apilado">
+    <div class="op si">
+      <span class="titulo-op">A · Barras diarias y la línea esperada encima <span class="elegida">Elegida</span></span>
+      <p style="max-width:66ch">Los partos de cada día como barras en el oro de la marca; lo esperado como línea punteada gris, porque es un modelo, no una medida — la referencia callada contra la que se lee la realidad. El % parido va como cifra grande, con su denominador.</p>
+      <p class="pro">+ «¿Ayer parieron las que tenían que parir?» se contesta mirando una barra contra un punto de la línea. Es la pregunta diaria.</p>
+      <p class="pro">+ Las tres olas y la cola son visibles: la forma de la curva es información sobre el manejo, no decoración.</p>
+      <p class="con">− El final de la temporada se lee peor que en acumulado: las barras de la cola son bajitas.</p>
+      <p class="costo"><code>ComposedChart</code> de Recharts: <code>Bar</code> + <code>Line</code> punteada. La serie sale de <code>v_avance_paricion</code> tal cual, sin transformar.</p>
+      <p class="cap">Tableros · mediados de agosto, con la primera ola pasada</p>
+      <div class="mon">
+        <div class="cromo"><i></i><i></i><i></i><span class="flechas"><span>‹</span><span>›</span></span><span class="url">petra-paricion.vercel.app<b>/admin/tableros</b></span></div>
+        <div class="barra-sup">
+          <div class="lockup">
+            <img src="../public/emblema.png" alt="">
+            <div><div class="nom">Petra</div><div class="raza">Merino Australiano</div></div>
+          </div>
+          <span class="temporada-sup">TEMPORADA 2026</span>
+          <span class="espacio"></span>
+          <span class="sync">● Todo sincronizado</span>
+          <span class="quien">Carlos</span>
+        </div>
+        <div class="marco">
+          <div class="lateral">
+            <div class="nav"><span>Partos</span><span class="cuenta">96</span></div>
+            <div class="nav"><span>Corderos</span><span class="cuenta">138</span></div>
+            <div class="nav"><span>Revisión</span><span class="cuenta viva">7</span></div>
+            <div class="nav on"><span>Tableros</span></div>
+            <div class="nav"><span>Exportar</span></div>
+            <div class="sep"><div class="nav"><span>← A la app de campo</span></div></div>
+          </div>
+          <div class="lienzo">
+            <h4 class="titulo-vista">Tableros</h4>
+            <p class="bajada">Temporada 2026 · calculado en el servidor, ahora</p>
+            <div class="tablero">
+
+              <div class="tarj ancha">
+                <div class="cab">
+                  <div>
+                    <p class="qh">Avance de la parición</p>
+                    <p class="porque">Partos por día, contra lo esperado según gestación 145–155</p>
+                  </div>
+                  <div class="cifra-g">19,1 % <small>· 96 de 503</small></div>
+                </div>
+                <svg viewBox="0 0 640 132">
+                  <!-- rejilla -->
+                  <line x1="34" y1="12" x2="628" y2="12" stroke="rgba(43,37,25,.07)"/>
+                  <line x1="34" y1="59" x2="628" y2="59" stroke="rgba(43,37,25,.07)"/>
+                  <line x1="34" y1="106" x2="628" y2="106" stroke="rgba(43,37,25,.14)"/>
+                  <text class="eje-y" x="29" y="15">14</text>
+                  <text class="eje-y" x="29" y="62">7</text>
+                  <text class="eje-y" x="29" y="109">0</text>
+                  <!-- barras reales: 1–17 ago, la primera ola -->
+                  <g fill="#6B5A1E">
+                    <rect x="36"  y="92"  width="6" height="14" rx="2"/>
+                    <rect x="44"  y="79"  width="6" height="27" rx="2"/>
+                    <rect x="52"  y="65"  width="6" height="41" rx="2"/>
+                    <rect x="60"  y="45"  width="6" height="61" rx="2"/>
+                    <rect x="68"  y="38"  width="6" height="68" rx="2"/>
+                    <rect x="76"  y="25"  width="6" height="81" rx="2"/>
+                    <rect x="84"  y="32"  width="6" height="74" rx="2"/>
+                    <rect x="92"  y="42"  width="6" height="64" rx="2"/>
+                    <rect x="100" y="52"  width="6" height="54" rx="2"/>
+                    <rect x="108" y="72"  width="6" height="34" rx="2"/>
+                    <rect x="116" y="85"  width="6" height="21" rx="2"/>
+                    <rect x="124" y="92"  width="6" height="14" rx="2"/>
+                    <rect x="132" y="99"  width="6" height="7"  rx="2"/>
+                    <rect x="140" y="96"  width="6" height="10" rx="2"/>
+                    <rect x="148" y="99"  width="6" height="7"  rx="2"/>
+                    <rect x="156" y="102" width="6" height="4"  rx="2"/>
+                    <rect x="164" y="99"  width="6" height="7"  rx="2"/>
+                  </g>
+                  <!-- esperada: tres olas y la cola de la encarnerada -->
+                  <path d="M36,104 C48,68 60,34 78,30 C96,26 106,62 122,88 C138,102 146,98 158,84
+                           C172,66 182,60 196,62 C210,64 222,84 238,96 C252,104 262,100 274,92
+                           C288,82 300,78 314,80 C328,82 340,92 356,98 C380,105 420,100 448,96
+                           C480,92 520,96 556,100 C584,103 610,105 626,105"
+                        fill="none" stroke="#7C7362" stroke-width="2" stroke-dasharray="5 4"/>
+                  <!-- hoy -->
+                  <line x1="170" y1="10" x2="170" y2="108" stroke="#A34B00" stroke-width="1.5" stroke-dasharray="2 3"/>
+                  <text x="176" y="18" fill="#A34B00">hoy</text>
+                  <!-- eje x -->
+                  <text x="36"  y="122">1 ago</text>
+                  <text x="196" y="122">1 sep</text>
+                  <text x="436" y="122">1 oct</text>
+                  <text x="596" y="122">15 oct</text>
+                </svg>
+                <div class="leyenda"><span><i></i>Partos por día</span><span><i class="esp"></i>Esperados (gestación 145–155)</span></div>
+              </div>
+
+              <div class="tarj">
+                <div class="cab">
+                  <div>
+                    <p class="qh">Señaladas pendientes</p>
+                    <p class="porque">Corderos vivos sin señalar, por fecha de parto</p>
+                  </div>
+                  <div class="cifra-g">57</div>
+                </div>
+                <svg viewBox="0 0 200 82">
+                  <g fill="#6B5A1E">
+                    <rect x="10"  y="56" width="9" height="14" rx="2"/>
+                    <rect x="22"  y="42" width="9" height="28" rx="2"/>
+                    <rect x="34"  y="28" width="9" height="42" rx="2"/>
+                    <rect x="46"  y="14" width="9" height="56" rx="2"/>
+                    <rect x="58"  y="7"  width="9" height="63" rx="2"/>
+                    <rect x="70"  y="21" width="9" height="49" rx="2"/>
+                    <rect x="82"  y="35" width="9" height="35" rx="2"/>
+                    <rect x="94"  y="49" width="9" height="21" rx="2"/>
+                    <rect x="106" y="56" width="9" height="14" rx="2"/>
+                    <rect x="118" y="63" width="9" height="7"  rx="2"/>
+                  </g>
+                  <line x1="6" y1="70" x2="194" y2="70" stroke="rgba(43,37,25,.14)"/>
+                  <text x="10" y="80">5 ago</text>
+                  <text x="106" y="80">15 ago</text>
+                </svg>
+                <p class="pie-tarj">La más vieja espera hace <b>12 días</b></p>
+              </div>
+
+              <div class="tarj">
+                <div class="cab">
+                  <div>
+                    <p class="qh">Tipo de nacimiento</p>
+                    <p class="porque">Sin contar anulados</p>
+                  </div>
+                  <div class="cifra-g">39,6 % <small>· mellizos o más</small></div>
+                </div>
+                <svg viewBox="0 0 200 70">
+                  <text x="8" y="17">Únicos</text>
+                  <rect x="62" y="7"  width="112" height="13" rx="4" fill="#6B5A1E"/>
+                  <text class="dato" x="182" y="17">58</text>
+                  <text x="8" y="41">Mellizos</text>
+                  <rect x="62" y="31" width="70"  height="13" rx="4" fill="#6B5A1E"/>
+                  <text class="dato" x="140" y="41">36</text>
+                  <text x="8" y="65">Trillizos</text>
+                  <rect x="62" y="55" width="6"   height="13" rx="4" fill="#6B5A1E"/>
+                  <text class="dato" x="76" y="65">2</text>
+                </svg>
+              </div>
+
+              <div class="tarj">
+                <div class="cab">
+                  <div>
+                    <p class="qh">Mortalidad</p>
+                    <p class="porque">Con fecha de muerte, nunca por estado</p>
+                  </div>
+                  <div class="cifra-g mala">3,6 % <small>· al nacer</small></div>
+                </div>
+                <svg viewBox="0 0 200 70">
+                  <text x="8" y="17">Al nacer</text>
+                  <rect x="88" y="7"  width="50" height="13" rx="4" fill="#B3261E"/>
+                  <text class="dato" x="146" y="17">5</text>
+                  <text x="8" y="41">Antes de señalar</text>
+                  <rect x="88" y="31" width="30" height="13" rx="4" fill="#B3261E"/>
+                  <text class="dato" x="126" y="41">3</text>
+                  <text x="8" y="65">Después</text>
+                  <rect x="88" y="55" width="10" height="13" rx="4" fill="#B3261E"/>
+                  <text class="dato" x="106" y="65">1</text>
+                </svg>
+              </div>
+
+              <div class="tarj">
+                <div class="cab">
+                  <div>
+                    <p class="qh">Peso al nacer</p>
+                    <p class="porque">Promedio de vivos con peso, en kg</p>
+                  </div>
+                </div>
+                <svg viewBox="0 0 200 88">
+                  <g>
+                    <text class="dato" x="24" y="20">4,4</text>
+                    <rect x="18" y="26" width="12" height="48" rx="3" fill="#6B5A1E"/>
+                    <text class="dato" x="42" y="25">4,1</text>
+                    <rect x="36" y="31" width="12" height="43" rx="3" fill="#EFE8CF" stroke="#2B2519" stroke-width="1.5"/>
+                    <text class="dato" x="94" y="28">3,9</text>
+                    <rect x="88"  y="34" width="12" height="40" rx="3" fill="#6B5A1E"/>
+                    <text class="dato" x="112" y="32">3,7</text>
+                    <rect x="106" y="38" width="12" height="36" rx="3" fill="#EFE8CF" stroke="#2B2519" stroke-width="1.5"/>
+                    <text class="dato" x="164" y="40">3,3</text>
+                    <rect x="158" y="46" width="12" height="28" rx="3" fill="#6B5A1E"/>
+                    <text class="dato" x="182" y="42">3,2</text>
+                    <rect x="176" y="48" width="12" height="26" rx="3" fill="#EFE8CF" stroke="#2B2519" stroke-width="1.5"/>
+                  </g>
+                  <line x1="6" y1="74" x2="194" y2="74" stroke="rgba(43,37,25,.14)"/>
+                  <text x="16" y="84">Únicos</text>
+                  <text x="86" y="84">Mellizos</text>
+                  <text x="156" y="84">Trillizos</text>
+                </svg>
+                <div class="leyenda"><span><i></i>Machos</span><span><i class="champan"></i>Hembras</span></div>
+              </div>
+
+              <div class="tarj">
+                <div class="cab">
+                  <div>
+                    <p class="qh">Condición corporal</p>
+                    <p class="porque">De las madres, al parto</p>
+                  </div>
+                  <div class="cifra-g">3,1 <small>· mediana</small></div>
+                </div>
+                <svg viewBox="0 0 200 76">
+                  <g fill="#6B5A1E">
+                    <rect x="14"  y="58" width="16" height="6"  rx="2"/>
+                    <rect x="36"  y="46" width="16" height="18" rx="2"/>
+                    <rect x="58"  y="28" width="16" height="36" rx="2"/>
+                    <rect x="80"  y="10" width="16" height="54" rx="2"/>
+                    <rect x="102" y="21" width="16" height="43" rx="2"/>
+                    <rect x="124" y="43" width="16" height="21" rx="2"/>
+                    <rect x="146" y="54" width="16" height="10" rx="2"/>
+                    <rect x="168" y="62" width="16" height="2"  rx="1"/>
+                  </g>
+                  <line x1="6" y1="64" x2="194" y2="64" stroke="rgba(43,37,25,.14)"/>
+                  <text x="14" y="74">1,5</text>
+                  <text x="82" y="74">3,0</text>
+                  <text x="166" y="74">4,5</text>
+                </svg>
+                <p class="pie-tarj">Sin dato: <b>2 partos</b></p>
+              </div>
+
+              <div class="tarj">
+                <div class="cab">
+                  <div>
+                    <p class="qh">Prevalencias fenotípicas</p>
+                    <p class="porque">Sobre 41 corderos señalados</p>
+                  </div>
+                </div>
+                <div class="matriz">
+                  <span class="enc"></span><span class="enc">Vellón</span><span class="enc">No vellón</span>
+                  <span class="rot">Canela</span>
+                  <div class="celda"><b>3</b>7,3 %</div>
+                  <div class="celda"><b>5</b>12,2 %</div>
+                  <span class="rot">Lunar</span>
+                  <div class="celda"><b>1</b>2,4 %</div>
+                  <div class="celda"><b>4</b>9,8 %</div>
+                </div>
+                <p class="pie-tarj">Halo hair <b>4</b> · entropión <b>1</b> · pigmentación 2+ <b>6</b></p>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="op no">
+      <span class="titulo-op">B · Curvas acumuladas con banda esperada</span>
+      <p style="max-width:66ch">El acumulado de partos como línea llena y lo esperado como banda sombreada entre el escenario de 145 y el de 155 días.</p>
+      <p class="pro">+ El final de temporada se lee mejor: «¿vamos a llegar a 503?» es una pregunta de acumulado.</p>
+      <p class="con">− La pregunta diaria desaparece: un día flojo se vuelve un cambio de pendiente que solo se ve entrecerrando los ojos. Las tandas de la inseminación —la estructura real del manejo— se planchan en una S suave.</p>
+      <p class="con">− La banda sugiere un intervalo de confianza que no es: son los extremos de la gestación, no percentiles. Un lector de tableros va a leerla mal.</p>
+      <p class="costo">El acumulado ya viene en la vista (<code>partos_acumulados</code>, <code>esperados_acumulados</code>): si el final de temporada lo pide, es un toggle después, no un rediseño.</p>
+    </div>
+  </div>
+
+  <div class="nota">
+    <b>Los colores de las gráficas se validaron, no se tantearon.</b> El oro del logo (<code>#8C7A2E</code>) contra el oro oscurecido de la marca (<code>#6B5A1E</code>) tiene ΔE 11: indistinguibles hasta con visión normal, así que <strong>lo esperado no va en oro: va en gris punteado</strong> (<code>--tinta-suave</code>) — que además dice lo correcto: es un modelo, la referencia callada. Para macho/hembra no se buscó un segundo tono que la paleta no tiene: se usó el lenguaje de la chapa del collar — <strong>relleno pleno contra champán con borde de tinta</strong>, contraste de luminosidad que sobrevive a cualquier daltonismo. El rojo semántico (<code>--error</code>) aparece solo en mortalidad, que es exactamente lo que ese rojo significa en toda la app. Identidad nunca a color solo: toda serie lleva su leyenda o su etiqueta directa.
+  </div>
+</section>
+
+<!-- ═══════════ 06 · El cero se muestra ═══════════ -->
+<section>
+  <div class="intro-sec">
+    <div class="num">06</div>
+    <h2>Siete tarjetas, y el cero se muestra</h2>
+    <p>La regla del panel de revisión vale acá con más razón: <strong>«ninguno» es una respuesta, y una tarjeta vacía parece una consulta rota</strong>. El tablero se va a abrir por primera vez con la temporada sin arrancar — cero partos, cero corderos — y ese primer vistazo decide si el equipo vuelve a abrirlo.</p>
+    <p>Cada tarjeta tiene su cero escrito: qué dice cuando todavía no hay nada que contar. Y el error es un tercer estado, distinto del cero: <strong>sin señal no hay tablero</strong>, y la tarjeta lo dice en castellano con su botón de reintentar, en vez de mostrar un cero que sería mentira.</p>
+  </div>
+
+  <div class="grid apilado">
+    <div class="op si" style="border-top:none;padding-top:0">
+      <p class="cap">Tableros · 1 de agosto, antes del primer parto</p>
+      <div class="mon" style="height:auto">
+        <div class="cromo"><i></i><i></i><i></i><span class="flechas"><span>‹</span><span>›</span></span><span class="url">petra-paricion.vercel.app<b>/admin/tableros</b></span></div>
+        <div class="barra-sup">
+          <div class="lockup">
+            <img src="../public/emblema.png" alt="">
+            <div><div class="nom">Petra</div><div class="raza">Merino Australiano</div></div>
+          </div>
+          <span class="temporada-sup">TEMPORADA 2026</span>
+          <span class="espacio"></span>
+          <span class="sync">● Todo sincronizado</span>
+          <span class="quien">Carlos</span>
+        </div>
+        <div class="marco" style="height:auto">
+          <div class="lateral" style="min-height:330px">
+            <div class="nav"><span>Partos</span><span class="cuenta">0</span></div>
+            <div class="nav"><span>Corderos</span><span class="cuenta">0</span></div>
+            <div class="nav"><span>Revisión</span><span class="cuenta">0</span></div>
+            <div class="nav on"><span>Tableros</span></div>
+            <div class="nav"><span>Exportar</span></div>
+            <div class="sep"><div class="nav"><span>← A la app de campo</span></div></div>
+          </div>
+          <div class="lienzo" style="padding-bottom:22px">
+            <h4 class="titulo-vista">Tableros</h4>
+            <p class="bajada">Temporada 2026 · calculado en el servidor, ahora</p>
+            <div class="tablero">
+
+              <div class="tarj ancha">
+                <div class="cab">
+                  <div>
+                    <p class="qh">Avance de la parición</p>
+                    <p class="porque">Partos por día, contra lo esperado según gestación 145–155</p>
+                  </div>
+                  <div class="cifra-g">0 % <small>· 0 de 503</small></div>
+                </div>
+                <svg viewBox="0 0 640 108">
+                  <line x1="34" y1="12" x2="628" y2="12" stroke="rgba(43,37,25,.07)"/>
+                  <line x1="34" y1="47" x2="628" y2="47" stroke="rgba(43,37,25,.07)"/>
+                  <line x1="34" y1="82" x2="628" y2="82" stroke="rgba(43,37,25,.14)"/>
+                  <path d="M36,80 C48,53 60,28 78,25 C96,22 106,49 122,68 C138,79 146,76 158,66
+                           C172,52 182,47 196,49 C210,51 222,66 238,74 C252,80 262,77 274,71
+                           C288,64 300,61 314,62 C328,64 340,71 356,76 C380,81 420,78 448,75
+                           C480,72 520,75 556,78 C584,80 610,81 626,81"
+                        fill="none" stroke="#7C7362" stroke-width="2" stroke-dasharray="5 4"/>
+                  <text x="36"  y="98">1 ago</text>
+                  <text x="196" y="98">1 sep</text>
+                  <text x="436" y="98">1 oct</text>
+                  <text x="596" y="98">15 oct</text>
+                </svg>
+                <p class="pie-tarj">Todavía sin partos. La primera ola se espera <b>en estos días</b>: la línea es la inseminación del 9 de marzo.</p>
+              </div>
+
+              <div class="tarj">
+                <div class="cab">
+                  <div>
+                    <p class="qh">Señaladas pendientes</p>
+                    <p class="porque">Corderos vivos sin señalar, por fecha de parto</p>
+                  </div>
+                  <div class="cifra-g">0</div>
+                </div>
+                <div class="vacio"><b>Ninguna</b>No hay corderos sin señalar.</div>
+              </div>
+
+              <div class="tarj">
+                <div class="cab">
+                  <div>
+                    <p class="qh">Mortalidad</p>
+                    <p class="porque">Con fecha de muerte, nunca por estado</p>
+                  </div>
+                  <div class="cifra-g">0 <small>· de 0 nacidos</small></div>
+                </div>
+                <div class="vacio"><b>Ninguna</b>Sin nacimientos todavía, no hay qué contar.</div>
+              </div>
+
+              <div class="tarj">
+                <div class="cab">
+                  <div>
+                    <p class="qh">Prevalencias fenotípicas</p>
+                    <p class="porque">Sobre corderos señalados</p>
+                  </div>
+                </div>
+                <div class="aviso-tab">Sin conexión ahora. El tablero se calcula en el servidor — <b>Reintentar</b></div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="costo" style="margin-top:14px">La última tarjeta muestra a propósito el tercer estado: el error de red no es un cero, y decir «0 %» sin poder consultar sería mentir con precisión. Cada transformación cliente tiene su test de entrada vacía: «el cero se muestra» es una aserción, no una intención.</p>
+    </div>
+  </div>
+</section>
+
+<div class="cierre wrap" style="padding-left:0;padding-right:0">
+  <h2>Qué quedó decidido</h2>
+  <p>Seis decisiones. Las tres primeras son del modelo y de la carga —el suelo que las tarjetas pisan—, las tres últimas son del tablero. El orden de construcción es el de las secciones: primero la maqueta (este archivo), después el SQL, después el script, y el tablero al final.</p>
+
+  <div class="tabla-caja">
+  <table class="tabla">
+    <tr><th>Sección</th><th>Decisión</th><th>Qué implica construir</th></tr>
+    <tr><td>01 · El modelo</td><td><b>Una tabla <code>servicios</code>, con rango uniforme.</b> La IA es un rango de un día; la ventana de parto es una sola fórmula. Las dos columnas de <code>ovejas</code> se eliminan. No se replica; lectura solo admin.</td><td><code>0010_servicios.sql</code> (enum, tabla, RLS, trigger, drop) + limpieza de <code>esquema.ts</code> y <code>rechazos.ts</code> + bloques de <code>servicios.test.sql</code>.</td></tr>
+    <tr><td>02 · La paternidad</td><td><b>Derivada, nunca guardada.</b> <code>candidatos = 1</code> asigna; 0 o 2+ dan null. Los 145/155 viven solo en la migración.</td><td><code>v_paternidad</code> en <code>0011</code>, con tests de las cuatro situaciones (única, ninguna, ambigua fabricada, encarnerada).</td></tr>
+    <tr><td>03 · La carga</td><td><b>Un script, una vez.</b> Sin pantalla de importación: la decisión de Carlos — esta carga no se repite; el año próximo se verá. <code>--dry-run</code> antes, <code>unique</code> como red.</td><td><code>scripts/importar-servicios.py</code> con <code>--test</code> y <code>--dry-run</code>, reusando <code>normalizar()</code>.</td></tr>
+    <tr><td>04 · La arquitectura</td><td><b>Siete vistas SQL, leídas online.</b> La lógica en Postgres, el BI externo habilitado, cada tarjeta con su consulta y su error propio.</td><td><code>0011_vistas_metricas.sql</code> — cada vista con <code>grant</code> + <code>security_invoker</code> — y la ampliación de <code>consultas-online.ts</code>.</td></tr>
+    <tr><td>05 · La tarjeta de avance</td><td><b>Barras diarias + línea esperada punteada.</b> Lo esperado en gris: es un modelo. Peso 1 por oveja, repartido en sus días posibles deduplicados; <code>sum(esperados) = inseminadas</code> es una aserción del test.</td><td><code>v_avance_paricion</code> con <code>generate_series</code> + ventana, y el <code>ComposedChart</code> que la lee tal cual.</td></tr>
+    <tr><td>06 · Las tarjetas</td><td><b>Grilla de tres, avance al doble, el cero se muestra.</b> Colores validados: real en marca, esperado en gris, sexos por luminosidad (pleno vs champán), rojo solo en mortalidad. Canela/lunar como matriz, no gráfico.</td><td><code>Tablero.tsx</code> tras su <code>lazy()</code>, <code>tablero.ts</code> puro con test por transformación, <code>.admin-tablero</code> en <code>admin.css</code>, <code>globIgnores</code> verificado.</td></tr>
+  </table>
+  </div>
+
+  <p style="margin-top:26px"><strong>Lo que esta tanda deja pedido y no resuelve.</strong> Los tableros no tienen filtros cruzados —la nota de la tanda 1 lo dejaba a reconsiderar—: las siete tarjetas responden la temporada activa entera, y cortar por fecha o por lote es una conversación para cuando haya una temporada completa mirada. La comparación entre temporadas tampoco: recién va a haber dos en 2027. Y la importación del año próximo queda sin decidir a propósito — es la decisión de Carlos hecha método: no diseñar hoy, con datos de una temporada, la herramienta de otra.</p>
+
+  <p>Una cosa más que la maqueta fija sin sección propia: <strong><code>/admin/tableros</code> pasa a ser una URL real</strong>. <code>SECCIONES</code> suma <code>'tableros'</code>, y el test de <code>historial.ts</code> que hoy usa esa ruta como ejemplo de «URL desconocida cae a partos» pasa a necesitar otro ejemplo — el costo exacto de que una promesa se cumpla.</p>
+</div>
+
+</div>
+</body>
+</html>
