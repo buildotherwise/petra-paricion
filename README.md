@@ -13,16 +13,16 @@ formularios de Zoho. La especificación funcional completa está en
 | ✅ Reglas de negocio | R1–R14 como funciones puras, con 225 tests |
 | ✅ App PWA | registro de parto, fichas, corrección, muerte, nodriza, anulación y rechazados |
 | ✅ Instancia de PowerSync | replicando por IPv6; slot activo y WAL al día |
-| ✅ Las 502 madres | importadas y verificadas contra el archivo original |
+| ✅ Las 503 madres | importadas y verificadas contra el archivo original |
 | ✅ Deploy en Vercel | desde `main`, con los headers de caché del service worker |
 | ✅ Protocolo §11 | corrido en dispositivos reales |
 | ✅ Auditoría por campo | en uso: cada edición deja su diff en `cambios` |
 | ✅ **Fase 3** | señalada — buscador de pendientes, fenotipo, confirmación de sexo y tatuaje correlativo |
 | ⏳ Cuentas del equipo | quedan para el final, a pedido del usuario |
 | ✅ **Fase 4 · 1.ª tanda** | web admin — tablas con filtros, panel de revisión, historial de cambios y exportación |
-| ⏳ **Fase 4 · 2.ª tanda** | importación de inseminadas y tableros (vistas SQL + Recharts) |
+| ✅ **Fase 4 · 2.ª tanda** | servicios, paternidad derivada y tableros (8 vistas SQL + Recharts) |
 
-> **Los datos de la temporada 2026 son de prueba.** Las 502 madres son reales, pero
+> **Los datos de la temporada 2026 son de prueba.** Las 503 madres son reales, pero
 > los partos cargados hasta ahora se hicieron para probar la app. `scripts/limpiar-datos-de-prueba.sql`
 > muestra cómo borrarlos: hay que correrlo desde el SQL Editor de Supabase, porque el
 > `delete` está revocado hasta para `service_role` y ese es el único lugar con permiso.
@@ -256,6 +256,74 @@ Edge Function con la llave de administración.
 python3 scripts/crear-cuenta.py --email X --nombre "Y" --rol operador
 ```
 
+## Fase 4 — qué quedó hecho (segunda tanda)
+
+Los servicios reproductivos y los tableros. Maquetas y decisiones —con las
+alternativas descartadas— en [`diseno/fase4-tablero.html`](diseno/fase4-tablero.html).
+
+El archivo real de la temporada rompió una suposición del modelo original:
+`ovejas.fecha_inseminacion` (un `date`) y `ovejas.padre` (un `text`) no podían
+contener **1.359 hechos reproductivos sobre 503 ovejas**, hasta cuatro por oveja,
+con padres distintos y uno de ellos con rango en vez de fecha. Las dos columnas
+se eliminaron y su contenido pasó a la tabla `servicios` (migración `0010`).
+
+- **`servicios`** — inseminaciones y encarneradas. La IA se guarda como un rango
+  de un día para que la ventana de parto sea una sola fórmula sin ramas. No se
+  replica a los dispositivos y su lectura es solo para admin: es la segunda tabla
+  del esquema que el servidor protege por rol, después de `cambios`.
+- **Ocho vistas de métricas** (`0011`), una por tarjeta más `v_paternidad`.
+- **Tableros** en `/admin/tableros`, con Recharts detrás de su propio `lazy()`.
+- **La carga**, en `scripts/importar-servicios.py`. Se corre una vez.
+
+### Tres decisiones que conviene no deshacer
+
+**El padre del cordero se deriva, no se guarda.** Un parto cae en la ventana
+`[servicio + 145, servicio + 155]` de a lo sumo un servicio. Se verificó contra
+el archivo real —1.149 comparaciones entre padres distintos— y no hay **ninguna**
+paternidad ambigua esta temporada. Aun así `v_paternidad` cuenta los candidatos
+en vez de asumir: con 0 o con 2+, el padre queda en `null`. Guardarlo como
+columna lo dejaría viejo apenas alguien corrigiera la fecha del parto, que es
+justamente una de las correcciones para las que existe la web.
+
+**La curva esperada reparte peso 1 por oveja.** Una oveja con tres servicios va a
+parir una vez, no tres. Cada una aporta 1 repartido entre sus días posibles
+deduplicados, y por eso `sum(esperados) = inseminadas` — está como aserción en
+`supabase/tests/metricas.test.sql`. Sin eso la curva diría 1.359 y el porcentaje
+de avance no llegaría nunca a nada.
+
+**La importación no tiene pantalla.** Es una carga que se hace *una vez*, no una
+por temporada. Una pantalla usada una sola vez cuesta un parser de xlsx en el
+navegador, los seriales de fecha convertidos a mano y un chunk más fuera del
+precache, para el mismo resultado. El script reusa la normalización de
+`importar-madres.py` —los ceros a la izquierda son significativos: `0040` y `40`
+son ovejas distintas— y es reejecutable: `Prefer: resolution=ignore-duplicates`
+sobre el `unique` de la tabla, así que el no-op lo garantiza el servidor.
+
+```bash
+python3 scripts/importar-servicios.py --test      # 26 verificaciones, sin red
+python3 scripts/importar-servicios.py --dry-run   # informe, sin tocar la base
+python3 scripts/importar-servicios.py             # importa
+```
+
+Una caravana que no cruza contra `ovejas` **se reporta y no se inserta**: que
+falte una madre es una pregunta para alguien, no un dato para inventar.
+
+### El chunk de Recharts
+
+Son ~400 kB que solo sirven en esta pantalla, y la pantalla no funciona sin señal
+—lee vistas del servidor—, así que su chunk queda fuera del precache con
+`globIgnores: ['**/assets/Tablero-*.js']`. **Un patrón que no coincide con nada no
+da error**, y la falla es en la dirección cara: los cinco aparatos del campo se
+bajarían el archivo en silencio. Después de cada `pnpm build`:
+
+```bash
+ls -la dist/assets | grep -i tablero   # existe y pesa ~380 kB
+grep -c Tablero dist/sw.js             # 0
+```
+
+Si Recharts apareciera en otro chunk, es que algún módulo más lo importó:
+`Tablero.tsx` tiene que seguir siendo el único.
+
 ## Deploy
 
 El proyecto de Vercel se conecta al repo de GitHub, así que cada push a `main`
@@ -301,8 +369,9 @@ pnpm verificar        # typecheck + tests + migraciones y auditoría contra Post
 ```
 
 `scripts/verificar-sql.sh` levanta una base desechable (Postgres local si hay
-uno corriendo, si no Docker), aplica las cuatro migraciones y corre los tests
-del trigger de auditoría. No toca el proyecto real.
+uno corriendo, si no Docker), aplica todas las migraciones y corre todos los
+tests SQL —auditoría, anulación, señalada, servicios, métricas y vistas—. No
+toca el proyecto real.
 
 Antes del día 1 hay que correr además el **protocolo de sincronización** de
 CLAUDE.md §11, con los dispositivos reales. Es el criterio de salida de la
