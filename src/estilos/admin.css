@@ -211,6 +211,173 @@
   }
 }
 
+/* ── Los filtros ───────────────────────────────────────────────────────
+   Van sobre la tabla y se ven aplicados. Un filtro escondido en un panel
+   plegado es un filtro que alguien va a olvidarse puesto, y entonces la tabla
+   miente sobre cuántos partos hay — en la pantalla que existe justamente para
+   saber cuántos hay. */
+
+.admin-filtros {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.admin-buscar {
+  flex: 1;
+  min-width: 210px;
+  background: var(--superficie);
+  border: 0;
+  border-radius: 11px;
+  padding: 0.5625rem 0.8125rem;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tinta);
+  box-shadow: inset 0 0 0 1.5px var(--linea);
+}
+
+.admin-buscar::placeholder {
+  color: var(--tinta-tenue);
+  font-weight: 600;
+}
+
+.admin-conteo {
+  margin-left: auto;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--tinta-tenue);
+  letter-spacing: 0.02em;
+}
+
+/* ── La tabla ──────────────────────────────────────────────────────────
+   Fila de 38px: catorce entran sin scrollear en una laptop de 1440×900
+   maximizada, que es una jornada de parición completa. */
+
+.admin-tabla-caja {
+  overflow-x: auto;
+  border-radius: 14px;
+  box-shadow: var(--sombra);
+}
+
+.admin-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--superficie);
+}
+
+.admin-tabla th {
+  text-align: left;
+  font-size: 9.5px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--tinta-tenue);
+  font-weight: 800;
+  padding: 0;
+  background: #f6f2e8;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--linea);
+
+  /* Tres líneas, y la diferencia entre una tabla usable y una que hay que
+     scrollear hacia arriba para recordar qué columna era. */
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.admin-tabla th button {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: none;
+  padding: 0.5625rem 0.75rem;
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  text-align: inherit;
+  cursor: pointer;
+}
+
+.admin-tabla th button:hover {
+  color: var(--marca);
+}
+
+.admin-tabla th:not(:has(button)) {
+  padding: 0.5625rem 0.75rem;
+}
+
+.admin-tabla th.der,
+.admin-tabla th.der button {
+  text-align: right;
+}
+
+.admin-tabla th .flecha {
+  color: var(--marca);
+  margin-left: 0.25rem;
+}
+
+.admin-tabla td {
+  padding: 0.4375rem 0.75rem;
+  font-size: 13px;
+  border-bottom: 1px solid rgba(43, 37, 25, 0.07);
+  white-space: nowrap;
+}
+
+.admin-tabla tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-tabla .der {
+  text-align: right;
+}
+
+.admin-tabla .cifra {
+  font-family: var(--serif);
+  font-size: 15px;
+  letter-spacing: 0.02em;
+}
+
+.admin-tabla .apagado {
+  color: var(--tinta-tenue);
+}
+
+.admin-tabla tr.abrible {
+  cursor: pointer;
+}
+
+.admin-tabla tr.abrible:hover td {
+  background: rgba(107, 90, 30, 0.05);
+}
+
+/* El botón de la primera celda existe para el teclado y el lector de pantalla;
+   visualmente no tiene que parecer un botón, porque la fila entera ya se abre. */
+.admin-tabla .abrir-fila {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  display: block;
+}
+
+.admin-tabla .chip {
+  display: inline-block;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: var(--r-pastilla);
+  padding: 2px 8px;
+}
+
+.admin-tabla .chip--pendiente {
+  background: rgba(163, 75, 0, 0.12);
+  color: #7d3a00;
+}
+
 /* ── Estados vacíos y de espera ────────────────────────────────────────
    «Sincronizando» y «no hay resultados» NO son lo mismo, y confundirlos en
    una tabla se lee como pérdida de datos. Es el mismo error que resolver el

@@ -3,6 +3,7 @@ import { IndicadorSync } from '../../componentes/IndicadorSync';
 import { entorno } from '../../lib/entorno';
 import type { SeccionAdmin } from '../../lib/navegacion';
 import type { Perfil } from '../../lib/powersync/esquema';
+import { TablaPartos } from './TablaPartos';
 import '../../estilos/admin.css';
 
 /**
@@ -38,12 +39,14 @@ export default function WebAdmin({
   onSeccion,
   onSalirAlCampo,
   onVerRechazados,
+  onAbrirParto,
 }: {
   seccion: SeccionAdmin;
   perfil: Perfil;
   onSeccion: (seccion: SeccionAdmin) => void;
   onSalirAlCampo: () => void;
   onVerRechazados: () => void;
+  onAbrirParto: (partoId: string) => void;
 }) {
   const { data } = useQuery<Contadores>(
     `SELECT
@@ -107,28 +110,38 @@ export default function WebAdmin({
         </nav>
 
         <main className="admin-lienzo">
-          <Seccion seccion={seccion} />
+          <Seccion seccion={seccion} onAbrirParto={onAbrirParto} />
         </main>
       </div>
     </div>
   );
 }
 
-function Seccion({ seccion }: { seccion: SeccionAdmin }) {
-  const titulos: Record<SeccionAdmin, string> = {
-    partos: 'Partos',
-    corderos: 'Corderos',
-    revision: 'Revisión',
-    exportar: 'Exportar',
-  };
+const TITULOS: Record<SeccionAdmin, string> = {
+  partos: 'Partos',
+  corderos: 'Corderos',
+  revision: 'Revisión',
+  exportar: 'Exportar',
+};
 
+function Seccion({
+  seccion,
+  onAbrirParto,
+}: {
+  seccion: SeccionAdmin;
+  onAbrirParto: (partoId: string) => void;
+}) {
   return (
     <>
-      <h1 className="admin-titulo">{titulos[seccion]}</h1>
+      <h1 className="admin-titulo">{TITULOS[seccion]}</h1>
       <p className="admin-bajada">
         Temporada {entorno.temporada} · lo que este navegador tiene sincronizado
       </p>
-      <p className="admin-espera">Todavía no está construida.</p>
+      {seccion === 'partos' ? (
+        <TablaPartos onAbrir={onAbrirParto} />
+      ) : (
+        <p className="admin-espera">Todavía no está construida.</p>
+      )}
     </>
   );
 }

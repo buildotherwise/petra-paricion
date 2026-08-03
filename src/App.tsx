@@ -110,6 +110,10 @@ function Ruteo() {
           onSeccion={(seccion) => reemplazar({ nombre: 'admin', seccion })}
           onSalirAlCampo={alInicio}
           onVerRechazados={() => ir({ nombre: 'rechazados' })}
+          // Se apila la ficha que ya existe, sin rehacerla: la web y el
+          // teléfono muestran el mismo registro porque son el mismo componente,
+          // no porque alguien mantenga dos vistas parecidas.
+          onAbrirParto={(partoId) => ir({ nombre: 'ficha-parto', partoId })}
         />
       );
 
@@ -143,11 +147,13 @@ function PuertaAdmin({
   onSeccion,
   onSalirAlCampo,
   onVerRechazados,
+  onAbrirParto,
 }: {
   seccion: SeccionAdmin;
   onSeccion: (seccion: SeccionAdmin) => void;
   onSalirAlCampo: () => void;
   onVerRechazados: () => void;
+  onAbrirParto: (partoId: string) => void;
 }) {
   const perfil = usePerfil();
 
@@ -186,6 +192,7 @@ function PuertaAdmin({
         onSeccion={onSeccion}
         onSalirAlCampo={onSalirAlCampo}
         onVerRechazados={onVerRechazados}
+        onAbrirParto={onAbrirParto}
       />
     </Suspense>
   );
