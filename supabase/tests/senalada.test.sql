@@ -1,4 +1,5 @@
--- Tests de la señalada: R11 (completa o nada) y el tatuaje único por temporada.
+-- Tests de la señalada: R11 (completa o nada), el tatuaje único por temporada,
+-- y qué pasa cuando un cordero ya señalado se muere.
 --
 --   psql "$DIRECT_CONNECTION_STRING" -f supabase/tests/senalada.test.sql
 --
@@ -150,6 +151,72 @@ begin
   ok := ok + 1;
 
   raise notice 'señalada: %/6 OK', ok;
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- La muerte de un cordero ya señalado (R8, el caso que el teléfono no hace).
+--
+-- R8 dice que la muerte de un señalado «perdería el hecho de haberlo sido y se
+-- corrige desde la web». La forma correcta de corregirla es no tocar `estado`:
+-- se escriben la fecha y la causa, y el cordero sigue siendo un señalado —con
+-- su tatuaje, que es un animal que existe y está marcado— que además murió.
+-- Poner `estado = 'muerto'` borraría el tatuaje del relato.
+--
+-- La base ya lo permite sin ninguna migración, porque con `condicion = 'vivo'`
+-- la primera rama de `muerte_documentada` es verdadera. Eso es una casualidad
+-- afortunada del esquema, no una decisión que alguien haya escrito — así que se
+-- fija acá antes de que la web dependa de ella.
+--
+-- CONSECUENCIA para las vistas de métricas de la tanda 2: la mortalidad se
+-- cuenta con `fecha_muerte is not null`, NUNCA con `estado = 'muerto'`. Con
+-- este cordero, la segunda forma da cero muertos.
+-- ---------------------------------------------------------------------------
+
+do $$
+declare
+  c  record;
+  r  record;
+  ok int := 0;
+begin
+  select * into c from ctx;
+
+  -- cordero_a quedó señalado con el tatuaje 001 en el bloque anterior.
+  update corderos
+     set fecha_muerte    = date '2026-08-15',
+         causa_muerte    = 'infeccion',
+         actualizado_en  = now(),
+         actualizado_por = c.usuario
+   where id = c.cordero_a;
+  ok := ok + 1;
+
+  select estado, tatuaje, fecha_senalada, condicion, fecha_muerte
+    into r
+    from corderos where id = c.cordero_a;
+
+  if r.estado <> 'senalado' then
+    raise exception 'la muerte no debe sacar al cordero de señalado (quedó %)', r.estado;
+  end if;
+  ok := ok + 1;
+
+  if r.tatuaje is null or r.fecha_senalada is null then
+    raise exception 'la muerte se llevó puesto el tatuaje o la fecha de señalada';
+  end if;
+  ok := ok + 1;
+
+  -- `condicion` sigue diciendo cómo nació, como en toda muerte posterior.
+  if r.condicion <> 'vivo' then
+    raise exception 'la muerte posterior no debe cambiar cómo nació el cordero';
+  end if;
+  ok := ok + 1;
+
+  -- Y la consecuencia, escrita como aserción para que no se pueda ignorar.
+  if (select count(*) from corderos
+       where id = c.cordero_a and estado = 'muerto') <> 0 then
+    raise exception 'este cordero NO figura con estado muerto: contarlo así daría cero';
+  end if;
+  ok := ok + 1;
+
+  raise notice 'muerte de un señalado: %/5 OK', ok;
 end $$;
 
 -- ---------------------------------------------------------------------------
