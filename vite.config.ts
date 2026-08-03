@@ -23,6 +23,22 @@ export default defineConfig({
           '**/*-cyrillic*-wght-normal*.woff2',
           '**/*-greek*-wght-normal*.woff2',
           '**/*-vietnamese-wght-normal*.woff2',
+          // El chunk del tablero, que se lleva a Recharts entero (~400 kB).
+          //
+          // El resto del admin SÍ se precachea aunque los teléfonos no lo usen:
+          // son 30–50 kB y compran que la web admin funcione sin señal. Acá el
+          // trato se da vuelta —es diez veces más grande y la pantalla no puede
+          // mostrar nada sin conexión, porque lee vistas del servidor— así que
+          // pagarlo en cinco aparatos del campo sería regalar los datos de
+          // otro.
+          //
+          // OJO: un patrón que no coincide con nada NO da error, y la falla es
+          // en la dirección cara. Después de `pnpm build`, verificar:
+          //   ls -la dist/assets | grep -i tablero   → existe y pesa ~400 kB
+          //   grep -c Tablero dist/sw.js             → 0
+          // Si Recharts apareciera en otro chunk, es que algún módulo más lo
+          // importó y hay que devolverlo a `Tablero.tsx`.
+          '**/assets/Tablero-*.js',
         ],
         maximumFileSizeToCacheInBytes: 12 * 1024 * 1024,
         cleanupOutdatedCaches: true,

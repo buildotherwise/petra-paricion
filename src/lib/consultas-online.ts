@@ -2,6 +2,15 @@ import { useCallback, useEffect, useState } from 'react';
 import type { PostgrestError } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { mensajeDeLectura } from './rechazos';
+import type {
+  FilaAvance,
+  FilaCondicion,
+  FilaMortalidad,
+  FilaPendientes,
+  FilaPeso,
+  FilaPrevalencia,
+  FilaTipoNacimiento,
+} from './tablero';
 
 /**
  * Lo poco que la web admin lee por internet.
@@ -153,3 +162,56 @@ export function edicionesRecientes(limite = 60) {
     return { data: data as Cambio[] | null, error };
   };
 }
+
+// ---------------------------------------------------------------------------
+// Las vistas de métricas
+// ---------------------------------------------------------------------------
+
+/**
+ * El segundo bloque que viaja por internet, y por un motivo distinto al de
+ * `cambios`: las métricas se calculan en Postgres a propósito (CLAUDE.md §9),
+ * para que un BI externo lea exactamente lo mismo que el tablero sin
+ * reimplementar nada. Además `v_avance_paricion` necesita `servicios`, que no se
+ * replica a los dispositivos.
+ *
+ * Los tipos de las filas viven en `tablero.ts` y no acá, al revés que `Cambio`:
+ * así el módulo de transformaciones —que es el que tiene tests— no arrastra el
+ * cliente de Supabase ni sus variables de entorno para poder correr.
+ *
+ * Cada tarjeta llama a la suya. Una consulta por vista y no un pedido único:
+ * siete consultas chicas contra vistas ya agregadas cuestan menos que la
+ * alternativa de que una vista caída deje la pantalla entera en blanco.
+ *
+ * Todas devuelven pocas filas —la más grande, el avance, son ~120 días— así que
+ * ninguna se acerca al tope de 1.000 de PostgREST. Vale tenerlo presente para
+ * la próxima vista que no cumpla eso.
+ */
+function deLaVista<T>(vista: string, temporada: number, orden?: string) {
+  return async () => {
+    let consulta = supabase.from(vista).select('*').eq('temporada', temporada);
+    if (orden !== undefined) consulta = consulta.order(orden);
+    const { data, error } = await consulta;
+    return { data: data as T[] | null, error };
+  };
+}
+
+export const avanceParicion = (temporada: number) =>
+  deLaVista<FilaAvance>('v_avance_paricion', temporada, 'dia');
+
+export const tipoDeNacimiento = (temporada: number) =>
+  deLaVista<FilaTipoNacimiento>('v_tipo_nacimiento', temporada, 'tipo_nacimiento');
+
+export const mortalidad = (temporada: number) =>
+  deLaVista<FilaMortalidad>('v_mortalidad', temporada);
+
+export const pesoAlNacer = (temporada: number) =>
+  deLaVista<FilaPeso>('v_peso_promedio', temporada, 'tipo_nacimiento');
+
+export const senaladasPendientes = (temporada: number) =>
+  deLaVista<FilaPendientes>('v_senaladas_pendientes', temporada, 'fecha_parto');
+
+export const prevalenciasFenotipicas = (temporada: number) =>
+  deLaVista<FilaPrevalencia>('v_prevalencias_fenotipicas', temporada, 'rasgo');
+
+export const condicionCorporal = (temporada: number) =>
+  deLaVista<FilaCondicion>('v_condicion_corporal', temporada, 'condicion_corporal');

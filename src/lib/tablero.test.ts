@@ -1,0 +1,304 @@
+import { describe, expect, test } from 'vitest';
+import {
+  distribucionTipos,
+  histogramaCondicion,
+  matrizCanelaLunar,
+  pendientesConAntiguedad,
+  pesosPorSexoYTipo,
+  prevalenciaDe,
+  resumenAvance,
+  serieAvance,
+  tasasMortalidad,
+  type FilaAvance,
+  type FilaCondicion,
+  type FilaMortalidad,
+  type FilaPendientes,
+  type FilaPeso,
+  type FilaPrevalencia,
+  type FilaTipoNacimiento,
+} from './tablero';
+
+/**
+ * Las transformaciones de las vistas a lo que dibuja cada tarjeta.
+ *
+ * La mitad de estos tests prueban lo mismo desde ángulos distintos: **qué pasa
+ * cuando no hay datos**. No es exceso de celo. El tablero se va a abrir por
+ * primera vez con la temporada sin arrancar, y una tarjeta en blanco parece una
+ * consulta rota; «0 %, de 0 de 503» es una respuesta. La regla de la casa —el
+ * cero se muestra— vale acá como aserción, no como intención.
+ */
+
+const avance = (filas: Partial<FilaAvance>[]): FilaAvance[] =>
+  filas.map((f) => ({
+    temporada: 2026,
+    dia: '2026-08-01',
+    partos: 0,
+    esperados: 0,
+    en_ventana: 0,
+    partos_acumulados: 0,
+    esperados_acumulados: 0,
+    paridas_acumuladas: 0,
+    inseminadas: 503,
+    ...f,
+  }));
+
+describe('resumenAvance: el porcentaje grande', () => {
+  test('sale de la última fila, que es la que acumula todo', () => {
+    const r = resumenAvance(
+      avance([
+        { dia: '2026-08-01', paridas_acumuladas: 40 },
+        { dia: '2026-08-02', paridas_acumuladas: 96 },
+      ]),
+    );
+    expect(r.paridas).toBe(96);
+    expect(r.inseminadas).toBe(503);
+    expect(r.porcentaje).toBeCloseTo(19.09, 1);
+  });
+
+  test('sin datos no explota ni divide por cero', () => {
+    expect(resumenAvance([])).toEqual({ paridas: 0, inseminadas: 0, porcentaje: 0 });
+  });
+
+  test('sin servicios cargados el denominador es cero y el porcentaje también', () => {
+    const r = resumenAvance(avance([{ inseminadas: 0, paridas_acumuladas: 0 }]));
+    expect(r.porcentaje).toBe(0);
+  });
+
+  test('las filas llegan ordenadas, pero no se confía en eso', () => {
+    const r = resumenAvance(
+      avance([
+        { dia: '2026-08-02', paridas_acumuladas: 96 },
+        { dia: '2026-08-01', paridas_acumuladas: 40 },
+      ]),
+    );
+    expect(r.paridas).toBe(96);
+  });
+});
+
+describe('serieAvance: la curva', () => {
+  test('conserva un punto por día, con su etiqueta corta', () => {
+    const serie = serieAvance(
+      avance([
+        { dia: '2026-08-01', partos: 3, esperados: 4.2 },
+        { dia: '2026-08-02', partos: 0, esperados: 5.1 },
+      ]),
+    );
+    expect(serie).toHaveLength(2);
+    expect(serie[0]).toEqual({ dia: '2026-08-01', etiqueta: '1 ago', partos: 3, esperados: 4.2 });
+  });
+
+  test('los días vacíos se conservan: son el ritmo de la parición', () => {
+    const serie = serieAvance(avance([{ dia: '2026-06-15', partos: 0, esperados: 0 }]));
+    expect(serie).toHaveLength(1);
+  });
+
+  test('sin datos, una serie vacía y no un undefined', () => {
+    expect(serieAvance([])).toEqual([]);
+  });
+});
+
+describe('distribucionTipos: únicos, mellizos y trillizos', () => {
+  const filas: FilaTipoNacimiento[] = [
+    { temporada: 2026, tipo_nacimiento: 1, partos: 58, corderos: 58 },
+    { temporada: 2026, tipo_nacimiento: 2, partos: 36, corderos: 72 },
+    { temporada: 2026, tipo_nacimiento: 3, partos: 2, corderos: 6 },
+  ];
+
+  test('nombra cada tipo y ordena de menor a mayor', () => {
+    const d = distribucionTipos(filas);
+    expect(d.barras.map((b) => b.etiqueta)).toEqual(['Únicos', 'Mellizos', 'Trillizos']);
+    expect(d.barras[0]).toMatchObject({ partos: 58, corderos: 58 });
+  });
+
+  test('la mellicería es el porcentaje de partos de dos o más', () => {
+    // 38 de 96 partos.
+    expect(distribucionTipos(filas).melliceria).toBeCloseTo(39.58, 1);
+  });
+
+  test('sin partos, cero por ciento y no NaN', () => {
+    const d = distribucionTipos([]);
+    expect(d.melliceria).toBe(0);
+    expect(d.partos).toBe(0);
+    expect(d.barras).toEqual([]);
+  });
+});
+
+describe('tasasMortalidad: siempre con fecha de muerte', () => {
+  const fila: FilaMortalidad = {
+    temporada: 2026,
+    nacidos: 138,
+    nacidos_vivos: 133,
+    muertos_al_nacer: 5,
+    muertos_antes_de_senalar: 3,
+    muertos_despues_de_senalar: 1,
+  };
+
+  test('cada muerte con su denominador correcto', () => {
+    const m = tasasMortalidad([fila]);
+    expect(m.alNacer).toBe(5);
+    // Al nacer, sobre todos los nacidos.
+    expect(m.tasaAlNacer).toBeCloseTo(3.62, 1);
+    // Entre el nacimiento y la señalada, sobre los que NACIERON VIVOS: un
+    // muerto al nacer nunca estuvo en riesgo de morirse después.
+    expect(m.tasaAntesDeSenalar).toBeCloseTo(2.26, 1);
+  });
+
+  test('el señalado que murió después se cuenta aparte, no se pierde', () => {
+    expect(tasasMortalidad([fila]).despuesDeSenalar).toBe(1);
+  });
+
+  test('sin corderos la vista no devuelve ninguna fila, y aun así hay tarjeta', () => {
+    const m = tasasMortalidad([]);
+    expect(m).toEqual({
+      nacidos: 0,
+      nacidosVivos: 0,
+      alNacer: 0,
+      antesDeSenalar: 0,
+      despuesDeSenalar: 0,
+      tasaAlNacer: 0,
+      tasaAntesDeSenalar: 0,
+    });
+  });
+});
+
+describe('pesosPorSexoYTipo', () => {
+  const filas: FilaPeso[] = [
+    { temporada: 2026, sexo: 'macho', tipo_nacimiento: 1, con_peso: 30, promedio_kg: 4.4, minimo_kg: 3, maximo_kg: 6 },
+    { temporada: 2026, sexo: 'hembra', tipo_nacimiento: 1, con_peso: 28, promedio_kg: 4.1, minimo_kg: 3, maximo_kg: 5.5 },
+    { temporada: 2026, sexo: 'macho', tipo_nacimiento: 2, con_peso: 36, promedio_kg: 3.9, minimo_kg: 2.5, maximo_kg: 5 },
+  ];
+
+  test('agrupa por tipo con una columna por sexo', () => {
+    const g = pesosPorSexoYTipo(filas);
+    expect(g).toHaveLength(2);
+    expect(g[0]).toEqual({ etiqueta: 'Únicos', macho: 4.4, hembra: 4.1, n: 58 });
+  });
+
+  test('un sexo sin datos queda en null, no en cero: cero kilos sería mentira', () => {
+    expect(pesosPorSexoYTipo(filas)[1]).toEqual({
+      etiqueta: 'Mellizos',
+      macho: 3.9,
+      hembra: null,
+      n: 36,
+    });
+  });
+
+  test('sin pesos, sin barras', () => {
+    expect(pesosPorSexoYTipo([])).toEqual([]);
+  });
+});
+
+describe('pendientesConAntiguedad', () => {
+  const filas: FilaPendientes[] = [
+    { temporada: 2026, fecha_parto: '2026-08-01', pendientes: 12 },
+    { temporada: 2026, fecha_parto: '2026-08-10', pendientes: 45 },
+  ];
+
+  test('suma el total y mide la espera más larga contra el hoy que se le pasa', () => {
+    const p = pendientesConAntiguedad(filas, '2026-08-13');
+    expect(p.total).toBe(57);
+    expect(p.masViejaDias).toBe(12);
+  });
+
+  test('las barras van por fecha de parto, de la más vieja a la más nueva', () => {
+    const p = pendientesConAntiguedad(filas, '2026-08-13');
+    expect(p.barras.map((b) => b.etiqueta)).toEqual(['1 ago', '10 ago']);
+  });
+
+  test('sin pendientes el total es cero y no hay «la más vieja»', () => {
+    const p = pendientesConAntiguedad([], '2026-08-13');
+    expect(p.total).toBe(0);
+    expect(p.masViejaDias).toBeNull();
+  });
+});
+
+describe('matrizCanelaLunar: la misma matriz que en el campo', () => {
+  const filas: FilaPrevalencia[] = [
+    { temporada: 2026, rasgo: 'canela_vellon', valor: '1', corderos: 3, senalados: 41 },
+    { temporada: 2026, rasgo: 'canela_vellon', valor: '0', corderos: 38, senalados: 41 },
+    { temporada: 2026, rasgo: 'canela_no_vellon', valor: '1', corderos: 5, senalados: 41 },
+    { temporada: 2026, rasgo: 'lunar_vellon', valor: '1', corderos: 1, senalados: 41 },
+    { temporada: 2026, rasgo: 'lunar_no_vellon', valor: '1', corderos: 4, senalados: 41 },
+  ];
+
+  test('cuenta los que SÍ tienen el rasgo, con su porcentaje', () => {
+    const m = matrizCanelaLunar(filas);
+    expect(m.canela.vellon).toEqual({ corderos: 3, porcentaje: expect.closeTo(7.32, 1) });
+    expect(m.lunar.noVellon).toEqual({ corderos: 4, porcentaje: expect.closeTo(9.76, 1) });
+    expect(m.senalados).toBe(41);
+  });
+
+  test('una casilla que la vista no trajo es cero, no un hueco', () => {
+    const m = matrizCanelaLunar([]);
+    expect(m.canela.vellon).toEqual({ corderos: 0, porcentaje: 0 });
+    expect(m.lunar.noVellon).toEqual({ corderos: 0, porcentaje: 0 });
+    expect(m.senalados).toBe(0);
+  });
+});
+
+describe('prevalenciaDe: un rasgo, sus valores en orden', () => {
+  const filas: FilaPrevalencia[] = [
+    { temporada: 2026, rasgo: 'pigmentacion', valor: '2', corderos: 6, senalados: 41 },
+    { temporada: 2026, rasgo: 'pigmentacion', valor: '0', corderos: 30, senalados: 41 },
+    { temporada: 2026, rasgo: 'pigmentacion', valor: '1', corderos: 5, senalados: 41 },
+    { temporada: 2026, rasgo: 'halo_hair', valor: '1', corderos: 4, senalados: 41 },
+  ];
+
+  test('filtra por rasgo y ordena por valor', () => {
+    const p = prevalenciaDe(filas, 'pigmentacion');
+    expect(p.map((b) => b.etiqueta)).toEqual(['0', '1', '2']);
+    expect(p[2]).toMatchObject({ corderos: 6 });
+  });
+
+  test('los ceros que trae la vista se conservan: son la mitad de la respuesta', () => {
+    const conCero: FilaPrevalencia[] = [
+      ...filas,
+      { temporada: 2026, rasgo: 'pigmentacion', valor: '4', corderos: 0, senalados: 41 },
+    ];
+    const p = prevalenciaDe(conCero, 'pigmentacion');
+    expect(p).toHaveLength(4);
+    expect(p[3]).toMatchObject({ etiqueta: '4', corderos: 0 });
+  });
+
+  test('el entropión se traduce a palabras, que es como se dice', () => {
+    const p = prevalenciaDe(
+      [{ temporada: 2026, rasgo: 'entropion', valor: 'ojo_derecho', corderos: 1, senalados: 41 }],
+      'entropion',
+    );
+    expect(p[0]).toMatchObject({ etiqueta: 'Ojo derecho' });
+  });
+});
+
+describe('histogramaCondicion: los cuartos de la escala', () => {
+  const filas: FilaCondicion[] = [
+    { temporada: 2026, condicion_corporal: 3, partos: 30 },
+    { temporada: 2026, condicion_corporal: 3.25, partos: 24 },
+    { temporada: 2026, condicion_corporal: null, partos: 2 },
+  ];
+
+  test('rellena los cuartos vacíos entre 1 y 5', () => {
+    const h = histogramaCondicion(filas);
+    // 1,00 · 1,25 … 5,00 son 17 escalones, y todos existen aunque den cero.
+    expect(h.barras).toHaveLength(17);
+    expect(h.barras[0]).toEqual({ etiqueta: '1', valor: 1, partos: 0 });
+    expect(h.barras.find((b) => b.valor === 3.25)).toMatchObject({ partos: 24 });
+  });
+
+  test('el «sin dato» sale aparte y no se mezcla con el histograma', () => {
+    const h = histogramaCondicion(filas);
+    expect(h.sinDato).toBe(2);
+    expect(h.barras.some((b) => b.partos === 2)).toBe(false);
+  });
+
+  test('la mediana se calcula sobre los partos medidos', () => {
+    expect(histogramaCondicion(filas).mediana).toBe(3);
+  });
+
+  test('sin partos: escala completa en cero y sin mediana', () => {
+    const h = histogramaCondicion([]);
+    expect(h.barras).toHaveLength(17);
+    expect(h.barras.every((b) => b.partos === 0)).toBe(true);
+    expect(h.mediana).toBeNull();
+    expect(h.sinDato).toBe(0);
+  });
+});

@@ -50,7 +50,13 @@ export function urlDe(pila: Pantalla[]): string {
   return '/admin/partos';
 }
 
-const SECCIONES: readonly SeccionAdmin[] = ['partos', 'corderos', 'revision', 'exportar'];
+const SECCIONES: readonly SeccionAdmin[] = [
+  'partos',
+  'corderos',
+  'revision',
+  'tableros',
+  'exportar',
+];
 
 /**
  * La pila con la que arranca la app según la dirección tipeada.

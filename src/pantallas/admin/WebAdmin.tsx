@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { useQuery } from '@powersync/react';
 import { IndicadorSync } from '../../componentes/IndicadorSync';
 import { entorno } from '../../lib/entorno';
@@ -8,6 +9,17 @@ import { TablaCorderos } from './TablaCorderos';
 import { Revision } from './Revision';
 import { Exportar } from './Exportar';
 import '../../estilos/admin.css';
+
+/**
+ * El tablero va detrás de su propio `lazy()`, anidado dentro del chunk admin.
+ *
+ * No es por el peso de la pantalla sino por el de Recharts: son ~400 kB que solo
+ * hacen falta acá. Workbox precachea `**\/*.js`, así que sin este corte los
+ * cinco aparatos del campo se los bajarían para una sección que ni siquiera
+ * pueden abrir. El `globIgnores` de vite.config.ts lo saca del precache, y para
+ * eso necesita que el chunk exista y se llame `Tablero-*`.
+ */
+const Tablero = lazy(() => import('./Tablero'));
 
 /**
  * El armazón de la web admin.
@@ -33,6 +45,7 @@ const SECCIONES: readonly { clave: SeccionAdmin; titulo: string }[] = [
   { clave: 'partos', titulo: 'Partos' },
   { clave: 'corderos', titulo: 'Corderos' },
   { clave: 'revision', titulo: 'Revisión' },
+  { clave: 'tableros', titulo: 'Tableros' },
   { clave: 'exportar', titulo: 'Exportar' },
 ];
 
@@ -130,6 +143,7 @@ const TITULOS: Record<SeccionAdmin, string> = {
   partos: 'Partos',
   corderos: 'Corderos',
   revision: 'Revisión',
+  tableros: 'Tableros',
   exportar: 'Exportar',
 };
 
@@ -146,12 +160,23 @@ function Seccion({
     <>
       <h1 className="admin-titulo">{TITULOS[seccion]}</h1>
       <p className="admin-bajada">
-        Temporada {entorno.temporada} · lo que este navegador tiene sincronizado
+        Temporada {entorno.temporada} ·{' '}
+        {/* Los tableros son la única sección que no sale de la réplica, así que
+            es la única que no puede prometer «lo sincronizado»: sus números son
+            del servidor y son de ahora. */}
+        {seccion === 'tableros'
+          ? 'calculado en el servidor, ahora'
+          : 'lo que este navegador tiene sincronizado'}
       </p>
       {seccion === 'partos' && <TablaPartos onAbrir={onAbrirParto} />}
       {seccion === 'corderos' && <TablaCorderos onAbrir={onAbrirCordero} />}
       {seccion === 'revision' && (
         <Revision onAbrirParto={onAbrirParto} onAbrirCordero={onAbrirCordero} />
+      )}
+      {seccion === 'tableros' && (
+        <Suspense fallback={<p className="admin-espera">Cargando los tableros…</p>}>
+          <Tablero />
+        </Suspense>
       )}
       {seccion === 'exportar' && <Exportar />}
     </>

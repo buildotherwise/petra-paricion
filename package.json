@@ -20,7 +20,8 @@
     "@powersync/web": "^2.0.0",
     "@supabase/supabase-js": "^2.111.0",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "recharts": "^3.10.1"
   },
   "devDependencies": {
     "@types/react": "^19.2.0",

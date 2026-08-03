@@ -718,3 +718,210 @@
   color: var(--tinta-suave);
   font-weight: 600;
 }
+
+/* ---------------------------------------------------------------------------
+   Los tableros
+
+   Tres columnas como el panel de revisión y por el mismo motivo: siete
+   tarjetas en dos columnas dejan una fila desperdiciada. La de avance ocupa
+   dos porque es la que se mira todos los días.
+   --------------------------------------------------------------------------- */
+
+.admin-tablero {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.6875rem;
+  align-items: start;
+}
+
+@media (max-width: 68rem) {
+  .admin-tablero {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.admin-tarjeta {
+  background: var(--superficie);
+  border-radius: var(--r-grande);
+  padding: 0.6875rem 0.875rem;
+  box-shadow: var(--sombra);
+  min-width: 0;
+}
+
+.admin-tarjeta--ancha {
+  grid-column: span 2;
+}
+
+.admin-tarjeta .cabeza {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+
+.admin-tarjeta h2 {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 800;
+}
+
+.admin-tarjeta .porque {
+  margin: 0.125rem 0 0;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--tinta-suave);
+}
+
+.admin-tarjeta .cifra-grande {
+  font-family: var(--serif);
+  font-size: 29px;
+  line-height: 1;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-tarjeta .cifra-grande .mala {
+  color: var(--error);
+}
+
+.admin-tarjeta .cifra-grande small {
+  font-family: var(--sans);
+  font-size: 10.5px;
+  font-weight: 800;
+  color: var(--tinta-tenue);
+  letter-spacing: 0.04em;
+}
+
+.admin-tarjeta .espera {
+  margin: 0.75rem 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tinta-tenue);
+}
+
+/* El cero y el error son dos cosas distintas y se ven distinto: «ninguna» es
+   una respuesta, «sin conexión» es la ausencia de respuesta. */
+.vacio-tablero {
+  margin-top: 0.5625rem;
+  padding: 0.75rem;
+  border-radius: var(--r-medio);
+  background: var(--superficie-honda);
+  text-align: center;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--tinta-suave);
+}
+
+.vacio-tablero b {
+  display: block;
+  margin-bottom: 0.125rem;
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--tinta);
+}
+
+.aviso-tablero {
+  margin-top: 0.5625rem;
+  padding: 0.625rem 0.8125rem;
+  border-radius: var(--r-medio);
+  background: rgba(163, 75, 0, 0.1);
+}
+
+.aviso-tablero p {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--alerta);
+}
+
+.leyenda-tablero {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.875rem;
+  margin-top: 0.5rem;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--tinta-suave);
+}
+
+.leyenda-tablero i {
+  display: inline-block;
+  width: 0.5625rem;
+  height: 0.5625rem;
+  margin-right: 0.3125rem;
+  border-radius: 3px;
+  vertical-align: -1px;
+}
+
+.leyenda-tablero i.raya {
+  width: 0.8125rem;
+  height: 0;
+  border-radius: 0;
+  border-top: 2px dashed;
+  vertical-align: 2px;
+}
+
+.pie-tablero {
+  margin: 0.5rem 0 0;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--tinta-suave);
+}
+
+.pie-tablero b {
+  color: var(--tinta);
+}
+
+.etiqueta-tablero {
+  margin: 0.75rem 0 0;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--tinta-tenue);
+}
+
+/* Canela y lunar van como matriz de HTML y no como gráfico: es la misma matriz
+   2×2 que se toca en el campo, y verla igual acá es lo que permite rastrear un
+   número del tablero hasta el gesto que lo produjo. */
+.matriz-tablero {
+  display: grid;
+  grid-template-columns: auto 1fr 1fr;
+  gap: 4px;
+  margin-top: 0.5625rem;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--tinta-suave);
+}
+
+.matriz-tablero .enc {
+  align-self: end;
+  padding-bottom: 2px;
+  text-align: center;
+}
+
+.matriz-tablero .rot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 4px;
+  text-align: right;
+}
+
+.matriz-tablero .celda {
+  padding: 0.4375rem 0.25rem;
+  border-radius: var(--r-chico);
+  background: var(--superficie-honda);
+  text-align: center;
+}
+
+.matriz-tablero .celda b {
+  display: block;
+  font-family: var(--serif);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--tinta);
+  font-variant-numeric: tabular-nums;
+}

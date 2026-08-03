@@ -37,8 +37,8 @@ import {
  * `history.state` sin que ninguna pantalla se entere.
  */
 
-/** Las cuatro secciones de la web admin. Son también su URL. */
-export type SeccionAdmin = 'partos' | 'corderos' | 'revision' | 'exportar';
+/** Las secciones de la web admin. Son también su URL. */
+export type SeccionAdmin = 'partos' | 'corderos' | 'revision' | 'tableros' | 'exportar';
 
 export type Pantalla =
   | { nombre: 'inicio' }

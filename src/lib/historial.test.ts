@@ -112,6 +112,7 @@ describe('pilaDesdeUrl: con qué arranca la app según lo que se tipeó', () => 
     expect(pilaDesdeUrl('/admin/partos')).toEqual([{ nombre: 'admin', seccion: 'partos' }]);
     expect(pilaDesdeUrl('/admin/corderos')).toEqual([{ nombre: 'admin', seccion: 'corderos' }]);
     expect(pilaDesdeUrl('/admin/revision')).toEqual([{ nombre: 'admin', seccion: 'revision' }]);
+    expect(pilaDesdeUrl('/admin/tableros')).toEqual([{ nombre: 'admin', seccion: 'tableros' }]);
     expect(pilaDesdeUrl('/admin/exportar')).toEqual([{ nombre: 'admin', seccion: 'exportar' }]);
   });
 
@@ -123,7 +124,7 @@ describe('pilaDesdeUrl: con qué arranca la app según lo que se tipeó', () => 
   // Nada de 404 propios: una sección inventada cae en la primera y
   // `sembrarHistorial` reescribe la barra de direcciones a la URL canónica.
   test('una sección que no existe cae en partos', () => {
-    expect(pilaDesdeUrl('/admin/tableros')).toEqual([{ nombre: 'admin', seccion: 'partos' }]);
+    expect(pilaDesdeUrl('/admin/reportes')).toEqual([{ nombre: 'admin', seccion: 'partos' }]);
     expect(pilaDesdeUrl('/admin/../etc')).toEqual([{ nombre: 'admin', seccion: 'partos' }]);
   });
 
