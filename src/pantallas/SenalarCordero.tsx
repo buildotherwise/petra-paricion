@@ -302,7 +302,7 @@ function Formulario({
     <div className="app">
       <Encabezado atras={salir} />
 
-      <main className="contenido contenido--senalada area-segura">
+      <main className="contenido area-segura">
         {/* La caravana y el collar juntos, como se leen en los animales. Es la
             única pantalla que se mira con el cordero sujeto, y el collar es el
             único dato que dice si se agarró el correcto: la caravana la tiene
@@ -328,7 +328,7 @@ function Formulario({
         )}
 
         {/* ── ¿Qué es? (R6) ───────────────────────────────────────────── */}
-        <div id="campo-sexo">
+        <div>
           <p className="etiqueta">¿Qué es?</p>
           <p className="aviso" style={{ marginTop: 0 }}>
             Al nacer se registró <b>{sexoLegible(cordero.sexo).toLowerCase()}</b>.
@@ -370,7 +370,7 @@ function Formulario({
         </div>
 
         {/* ── Tatuaje ─────────────────────────────────────────────────── */}
-        <div id="campo-tatuaje">
+        <div>
           <p className="etiqueta">Tatuaje</p>
           <input
             className="entrada entrada--cifra"
@@ -400,7 +400,7 @@ function Formulario({
         </div>
 
         {/* ── Entropión ───────────────────────────────────────────────── */}
-        <div id="campo-entropion">
+        <div>
           <p className="etiqueta">Entropión</p>
           <div className="opciones" style={{ '--columnas': 2 } as CSSProperties}>
             {ENTROPIONES.map((opcion) => (
@@ -418,7 +418,7 @@ function Formulario({
         </div>
 
         {/* ── Canela y lunar ──────────────────────────────────────────── */}
-        <div id="campo-canelaLunar">
+        <div>
           <p className="etiqueta">Canela y lunar</p>
           <MatrizCanelaLunar
             valor={canelaLunar}
@@ -427,7 +427,7 @@ function Formulario({
         </div>
 
         {/* ── Halo hair ───────────────────────────────────────────────── */}
-        <div id="campo-halo_hair">
+        <div>
           <p className="etiqueta">Halo hair</p>
           <div className="opciones" style={{ '--columnas': 2 } as CSSProperties}>
             <button
@@ -450,7 +450,7 @@ function Formulario({
         </div>
 
         {/* ── Pigmentación ────────────────────────────────────────────── */}
-        <div id="campo-pigmentacion">
+        <div>
           <p className="etiqueta">Pigmentación</p>
           <div className="opciones" style={{ '--columnas': 5 } as CSSProperties}>
             {PIGMENTACIONES.map((valor) => (
@@ -482,36 +482,7 @@ function Formulario({
 
         {error !== null && <p className="aviso aviso--error">{error}</p>}
 
-        <div className="barra-accion barra-accion--columna">
-          {/* R11, dicho antes del error y no después.
-
-              Un botón apagado sin explicación se toca tres veces y termina con
-              la app cerrada — pero dejarlo encendido para que el toque revele
-              lo que falta convierte el error en un paso obligatorio del flujo.
-              Va apagado, y lo que falta se ve desde el principio. Los nombres
-              llevan al campo. */}
-          {faltantes.length > 0 && (
-            <p className="faltantes">
-              Falta{faltantes.length > 1 ? 'n' : ''}{' '}
-              {faltantes.map((f, i) => (
-                <span key={f.campo}>
-                  {i > 0 && (i === faltantes.length - 1 ? ' y ' : ', ')}
-                  <button
-                    type="button"
-                    className="boton--texto"
-                    onClick={() =>
-                      document
-                        .getElementById(`campo-${f.campo}`)
-                        ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                    }
-                  >
-                    {f.etiqueta}
-                  </button>
-                </span>
-              ))}
-              .
-            </p>
-          )}
+        <div className="barra-accion">
           <button
             type="button"
             className="boton boton--principal"

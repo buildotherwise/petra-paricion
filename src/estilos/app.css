@@ -257,31 +257,12 @@
   background: linear-gradient(to top, var(--fondo) 62%, rgba(239, 234, 224, 0));
 }
 
-/* Con contenido apilado adentro, el degradado deja ver el formulario a través
-   del texto: se lee «Lupar» donde abajo dice «Lunar». Fondo sólido. */
-.barra-accion--columna {
-  background: var(--fondo);
-  box-shadow: 0 -14px 26px -20px rgba(43, 37, 25, 0.45);
-}
-
 .barra-accion .boton--secundario {
   flex: 0 0 38%;
 }
 
 .barra-accion .boton--principal {
   flex: 1;
-}
-
-/* Con un aviso arriba del botón, la barra apila en vez de repartir a lo ancho.
-   Sin esto el aviso y el botón se reparten el ancho como hermanos flex y el
-   botón queda en una columna de tres líneas. */
-.barra-accion--columna {
-  flex-direction: column;
-}
-
-.barra-accion--columna .boton--principal {
-  flex: none;
-  width: 100%;
 }
 
 /* ── Botoneras de opción ────────────────────────────────────────────── */
@@ -1099,13 +1080,6 @@ textarea.entrada::placeholder {
   box-shadow: 0 -14px 34px -18px rgba(43, 37, 25, 0.5);
 }
 
-/* La señalada tiene la barra más alta de la app —el aviso de lo que falta va
-   adentro— así que el contenido necesita más aire abajo para que el último
-   campo no quede tapado. */
-.contenido--senalada {
-  padding-bottom: 15rem;
-}
-
 /* El buscador de la señalada admite caravana o collar, así que su marcador es
    una palabra y no una cifra: en la serif de 34px no entraría. */
 .entrada--cifra.entrada--pista::placeholder {
@@ -1153,29 +1127,6 @@ textarea.entrada::placeholder {
 
 .collar-chapa--grande b {
   font-size: 1.125rem;
-}
-
-/* ── Lo que falta, sobre el botón ───────────────────────────────────── */
-
-/* Va siempre a la vista, no después de fallar: para saber qué falta no
-   debería haber que equivocarse primero. Los nombres llevan al campo. */
-.faltantes {
-  margin: 0;
-  padding: var(--sp-3);
-  border-radius: var(--r-chico);
-  background: #f3e3ce;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: #7d3a00;
-}
-
-.faltantes button {
-  min-height: 0;
-  padding: 0;
-  font-size: inherit;
-  font-weight: 800;
-  color: #6b4a12;
-  box-shadow: 0 1.5px 0 rgba(107, 74, 18, 0.35);
 }
 
 /* ── Contadores del inicio, agrupados por unidad ────────────────────── */

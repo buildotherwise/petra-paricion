@@ -288,7 +288,7 @@ h3{font-family:'Newsreader',serif;font-weight:400;font-size:26px;line-height:1.0
   <div class="grid">
 
     <div class="op si" style="width:auto">
-      <span class="titulo-op">A · A la vista, desde el principio <span class="elegida">Elegida</span></span>
+      <span class="titulo-op">A · A la vista, desde el principio <span class="rota">Se probó y se sacó</span></span>
       <p style="max-width:44ch">Sobre el botón, siempre, una línea con lo que falta. Los nombres son tocables y llevan al campo. El botón está apagado hasta que la línea desaparece.</p>
       <p class="pro">+ Nunca hay que equivocarse para enterarse. La información está antes del error, no después.</p>
       <p class="pro">+ Al ir contestando la línea se acorta sola: es una barra de avance escrita en castellano.</p>
@@ -386,6 +386,31 @@ h3{font-family:'Newsreader',serif;font-weight:400;font-size:26px;line-height:1.0
       </div>
     </div>
 
+    <div class="op si">
+      <span class="titulo-op">D · Solo el botón apagado <span class="elegida">Elegida</span></span>
+      <p>Nada arriba del botón. Está apagado mientras falte algo y se enciende cuando no falta nada, sin decir por qué.</p>
+      <p class="pro">+ El pie de la pantalla queda limpio. En un formulario de nueve campos, un bloque de texto permanente ahí abajo pesa más de lo que parece en la maqueta.</p>
+      <p class="pro">+ Los campos sin contestar se ven igual al scrollear: ninguna botonera marcada es tan visible como un aviso, y el formulario es corto.</p>
+      <p class="con">− La primera vez que alguien toque el botón y no pase nada, va a tener que buscar solo qué le falta.</p>
+      <p class="cap">El pie, sin nada</p>
+      <div class="tel">
+        <div class="top"><span class="volver">‹ Volver</span><span class="sync">● Todo sincronizado</span></div>
+        <div class="body" style="display:flex;flex-direction:column">
+          <p class="lbl" style="margin-top:0">Halo hair</p>
+          <div class="par"><div class="opt">Tiene</div><div class="opt">No tiene</div></div>
+          <p class="lbl">Pigmentación</p>
+          <div class="escala"><i>0</i><i>1</i><i>2</i><i>3</i><i>4</i></div>
+          <p class="lbl">Observaciones</p>
+          <div class="inp" style="font-family:'Manrope',sans-serif;font-size:14px;color:#9A9182">Opcional</div>
+          <div class="barra"><div class="btn mudo">Guardar la señalada</div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="nota mal">
+    <b>Esta sección cambió después de probarla en el teléfono.</b> La A se construyó y se usó en el corral: la lista de faltantes al pie molestaba más de lo que ayudaba, así que se sacó. Queda maquetada porque es lo que se probó, y porque el argumento a favor sigue en pie — <strong>lo que se pierde es el «por qué no anda este botón»</strong>. Si aparece como problema en la primera señalada real, lo que conviene no es traer la lista de vuelta al pie sino marcar los campos sin contestar en su lugar, que estorba menos. Lo que <strong>no</strong> se discute más es el botón: apagado mientras falte algo, y apagado de nuevo si se des-selecciona un campo.
   </div>
 </section>
 
@@ -585,7 +610,7 @@ h3{font-family:'Newsreader',serif;font-weight:400;font-size:26px;line-height:1.0
   <table class="tabla">
     <tr><th>Sección</th><th>Decisión</th><th>Qué implica</th></tr>
     <tr><td>01 · Contadores</td><td><b>Dos grupos: partos y corderos</b>, cada uno con su unidad dicha una vez. Aparece «corderos nacidos», que faltaba.</td><td>Una consulta más en <code>Inicio.tsx</code> y la grilla a dos columnas.</td></tr>
-    <tr><td>02 · Lo que falta</td><td><b>Botón apagado hasta que no falte nada</b>, y la lista de faltantes a la vista desde el principio, con fondo opaco.</td><td><code>disabled={!listo}</code> y sacar la condición <code>intentado</code>. Fondo sólido en la barra fija.</td></tr>
+    <tr><td>02 · Lo que falta</td><td><b>Botón apagado hasta que no falte nada, y nada más.</b> La lista de faltantes se construyó, se probó en el corral y se sacó por ruidosa.</td><td><code>disabled={!listo}</code> y sacar la condición <code>intentado</code>. <code>camposFaltantes</code> se queda: es lo que decide si el botón se enciende.</td></tr>
     <tr><td>03 · Cuántos faltan</td><td><b>Decir cuántos y dejar elegir.</b> Con dos o más pendientes se vuelve a la lista de hermanos; con uno, se entra derecho.</td><td>Contar en vez de <code>find</code>, y ramificar el destino del botón.</td></tr>
     <tr><td>04 · El collar</td><td><b>Una segunda chapa</b> con la marca dibujada adentro, al lado de la caravana. En señalar, en la elección del hermano y en las dos fichas.</td><td>Componente <code>Collar</code> que envuelve el <code>DibujoMarca</code> existente.</td></tr>
   </table>
