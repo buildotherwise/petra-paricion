@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="es-UY">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Petra · El encabezado</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300..700&family=Manrope:wght@400..800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#12110C;color:#E8E2D0;font-family:'Manrope',sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1240px;margin:0 auto;padding:0 24px}
+.intro{padding:72px 0 44px;border-bottom:1px solid #2C2819}
+.kicker{font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:#8C7A2E;font-weight:800;margin:0 0 18px}
+h1{font-family:'Newsreader',serif;font-weight:400;font-size:clamp(32px,5vw,52px);line-height:1.04;margin:0 0 18px;color:#F6F2E4}
+.lede{font-size:16px;max-width:66ch;color:#B3AB92;margin:0 0 12px}
+.lede strong{color:#E8E2D0;font-weight:700}
+
+section{padding:58px 0;border-bottom:1px solid #2C2819}
+.num{font-family:'Newsreader',serif;font-size:12px;letter-spacing:.28em;color:#8C7A2E;font-weight:700}
+h2{font-family:'Newsreader',serif;font-weight:400;font-size:clamp(26px,3.2vw,34px);line-height:1.1;margin:7px 0 13px;color:#F6F2E4}
+section > .intro-sec p{color:#B3AB92;font-size:15px;max-width:66ch;margin:0 0 12px}
+section p strong{color:#E8E2D0}
+.nota{margin:20px 0 0;padding:13px 16px;border-left:2px solid #8C7A2E;background:rgba(140,122,46,.10);font-size:14px;color:#D6CFB8;max-width:66ch}
+.nota b{color:#E8C86A}
+.nota.mal{border-left-color:#A34B00;background:rgba(163,75,0,.10)}
+.nota.mal b{color:#E8A867}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9em;color:#D8C98A}
+
+.grid{display:flex;gap:30px;overflow-x:auto;padding:26px 0 20px;align-items:flex-start}
+.op{flex:none;width:340px}
+.op .titulo-op{display:block;font-family:'Newsreader',serif;font-size:23px;color:#F6F2E4;margin:0 0 9px}
+.op > p{color:#B3AB92;font-size:13.5px;margin:0 0 9px}
+.pro{font-size:13px;color:#9FD8AE;margin:0 0 3px}
+.con{font-size:13px;color:#E8A867;margin:0 0 12px}
+.costo{font-size:12px;color:#7A7259;margin:0 0 14px;font-weight:700}
+.cap{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:#7A7259;margin:16px 0 10px;font-weight:700}
+
+.elegida{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
+         color:#12110C;background:#E8C86A;border-radius:99px;padding:3px 10px;margin-left:9px;vertical-align:2px}
+.hoy{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
+     color:#F6F2E4;background:#8A2018;border-radius:99px;padding:3px 10px;margin-left:9px;vertical-align:2px}
+.op.si{border-top:2px solid #E8C86A;padding-top:16px}
+.op.no{border-top:1px solid #2C2819;padding-top:17px}
+.op.no .titulo-op{color:#B3AB92}
+
+/* ═══ El teléfono ══════════════════════════════════════════════════════ */
+.tel{width:330px;height:540px;border-radius:32px;overflow:hidden;display:flex;flex-direction:column;flex:none;
+     box-shadow:0 0 0 1px rgba(255,255,255,.10),0 26px 56px -20px rgba(0,0,0,.8);
+     background:#EFEAE0;color:#2B2519}
+.tel *{box-sizing:border-box}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:15px 17px 9px;flex:none}
+.volver{font-size:13.5px;font-weight:800;color:#6B5A1E}
+.sync{font-size:10.5px;font-weight:800;color:#2E6B3F;background:#FCFAF6;border-radius:99px;padding:5px 10px;
+      box-shadow:0 1px 3px rgba(43,37,25,.08);white-space:nowrap;flex:none}
+.sync.pend{color:#A34B00}
+.body{padding:2px 17px 17px;flex:1;overflow:hidden}
+h3{font-family:'Newsreader',serif;font-weight:400;font-size:26px;line-height:1.06;margin:0 0 3px}
+.sub{font-size:12px;color:#7C7362;font-weight:600;margin:0 0 14px}
+.grupo{font-size:9.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#9A9182;margin:13px 0 6px}
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.kpi{background:#FCFAF6;border-radius:18px;padding:11px 6px;text-align:center;box-shadow:0 1px 2px rgba(43,37,25,.05),0 12px 26px -14px rgba(43,37,25,.22)}
+.kpi b{font-family:'Newsreader',serif;font-size:24px;display:block;line-height:1}
+.kpi span{font-size:9.5px;color:#9A9182;font-weight:800;display:block;margin-top:3px}
+.btn{padding:13px;text-align:center;border-radius:15px;background:#6B5A1E;color:#fff;font-size:14.5px;font-weight:800;margin-top:9px;box-shadow:0 8px 18px -10px rgba(107,90,30,.6)}
+.btn.sec{background:#FCFAF6;color:#2B2519;box-shadow:0 1px 3px rgba(43,37,25,.1)}
+.rizo{height:9px;margin:12px 0;opacity:.3;background-repeat:repeat-x;background-size:16px 9px;
+      background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='9'><path d='M0 7 Q4 0 8 7 T16 7' fill='none' stroke='%236B5A1E' stroke-width='1.4'/></svg>")}
+
+/* ═══ Las variantes de la marca ════════════════════════════════════════ */
+.marca{display:flex;align-items:center;gap:8px;min-width:0}
+.marca img{object-fit:contain;flex:none}
+
+/* Hoy: el ícono de la PWA, que es el logo ENTERO metido en un cuadrado. */
+.marca img.viejo{width:26px;height:26px}
+/* El medallón recortado, que a este tamaño todavía se reconoce. */
+.marca img.emblema{width:30px;height:30px}
+.marca img.emblema.gr{width:34px;height:34px}
+
+.nombre{font-family:'Newsreader',serif;font-size:17px;font-weight:500;letter-spacing:.01em;color:#6B5A1E}
+.lockup{display:flex;flex-direction:column;line-height:1}
+.lockup b{font-family:'Newsreader',serif;font-size:15px;font-weight:500;letter-spacing:.07em;color:#6B5A1E}
+.lockup span{font-size:7.5px;font-weight:800;letter-spacing:.16em;color:#9A9182;margin-top:2px}
+.fecha-top{font-size:12.5px;font-weight:700;color:#7C7362}
+
+/* El encabezado suelto, al ancho real del teléfono y con la pastilla en su peor
+   caso —con pendientes, que es el texto más largo— para ver si entran las dos.
+   Ampliarlo mentiría sobre justamente eso. */
+.tira{width:330px;background:#EFEAE0;border-radius:14px;margin-bottom:12px;overflow:hidden;
+      box-shadow:0 0 0 1px rgba(255,255,255,.08)}
+.tira .top{padding:13px 17px}
+
+.cierre{padding:56px 0 110px}
+.cierre p{color:#B3AB92;font-size:15.5px;max-width:68ch;margin:0 0 14px}
+.cierre strong{color:#E8E2D0}
+.tabla-caja{overflow-x:auto;margin:26px 0 8px}
+.tabla{width:100%;max-width:820px;border-collapse:collapse;font-size:14px}
+.tabla th{text-align:left;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:#7A7259;font-weight:800;padding:0 14px 9px 0;border-bottom:1px solid #2C2819}
+.tabla td{padding:11px 14px 11px 0;border-bottom:1px solid #201D13;color:#B3AB92;vertical-align:top}
+.tabla td b{color:#E8C86A;font-weight:700}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="intro">
+  <p class="kicker">Petra · El encabezado</p>
+  <h1>Una mancha dorada y el nombre repetido</h1>
+  <p class="lede">El encabezado usa <code>/icono-192.png</code>, que es el <strong>logo entero</strong> —medallón, «PETRA» y «MERINO AUSTRALIANO»— comprimido en un cuadrado de 192 px para servir de ícono de la PWA. Mostrado a 26 px, el lettering queda en menos de tres píxeles de alto: no se lee, se ve como una mancha.</p>
+  <p class="lede">Y al lado dice «Petra» otra vez, en serif. <strong>La marca está dos veces y no se lee ninguna de las dos.</strong></p>
+  <p class="lede">El logo no está viejo: los íconos se generan desde <code>logo_petra_sin_fondo.png</code> y están al día. El problema es de recorte, no de archivo — <strong>un ícono de app y una marca de encabezado no son la misma imagen</strong>, y acá se usó una para las dos cosas.</p>
+
+  <div class="nota">
+    <b>Lo primero, y vale para las cuatro alternativas:</b> se recorta el medallón del logo y se guarda aparte como <code>emblema.png</code>. El corte lo encuentra solo el script —busca la primera banda de filas transparentes, que es la que separa el carnero de la palabra— así que si el logo original cambia, el recorte sigue andando. A 30 px el medallón se reconoce; el logo entero, no.
+  </div>
+</div>
+
+<!-- ═══════════ 01 · Qué va en el encabezado ═══════════ -->
+<section>
+  <div class="intro-sec">
+    <div class="num">01</div>
+    <h2>Qué va a la izquierda</h2>
+    <p>La marca aparece <strong>solo en el inicio</strong>: en las demás pantallas ese lugar lo ocupa «‹ Volver». Así que esto se decide para una pantalla, la que ya tiene «Temporada 2026» en serif de 34 px justo abajo.</p>
+    <p>A la derecha está la pastilla de sincronización, que es lo único funcional del encabezado y la señal operativa del día. En un teléfono angosto puede decir «3 registros sin subir»: <strong>lo que vaya a la izquierda tiene que dejarla entrar sin apretarse.</strong></p>
+  </div>
+
+  <p class="cap" style="margin-bottom:0">Lo de hoy</p>
+  <div class="grid">
+    <div class="op no" style="width:auto">
+      <span class="titulo-op">El estado actual <span class="hoy">Hoy</span></span>
+      <p style="max-width:44ch">El ícono de la PWA a 26 px, y «Petra» al lado.</p>
+      <div class="tira">
+        <div class="top">
+          <div class="marca"><img class="viejo" src="../public/icono-192.png" alt=""><span class="nombre">Petra</span></div>
+          <span class="sync">● Todo sincronizado</span>
+        </div>
+      </div>
+      <p class="con">− El medallón se ve chico dentro del cuadrado, porque el cuadrado también contiene el lettering que no se lee.</p>
+      <p class="con">− «Petra» escrito al lado de un logo que ya dice «Petra».</p>
+    </div>
+  </div>
+
+  <div class="grid">
+
+    <div class="op si">
+      <span class="titulo-op">A · Solo el emblema <span class="elegida">Elegida</span></span>
+      <p>El medallón recortado, a 30 px, sin texto. El nombre completo vive en el login, que es donde se entra una vez y se lee entero.</p>
+      <p class="pro">+ El carnero es lo distintivo de la marca. Sin el lettering encima, a 30 px se reconoce.</p>
+      <p class="pro">+ Deja <b>132 px</b> libres para la pastilla de sync —el doble que la marca completa— y es lo único que ahí se necesita leer rápido.</p>
+      <p class="pro">+ No repite un nombre que ya está en el ícono de la pantalla de inicio del teléfono, por donde se entra siempre.</p>
+      <p class="con">− Un emblema solo, sin palabra, es más difícil de reconocer para alguien que recién empieza a usar la app.</p>
+      <p class="costo">Cambiar <code>src</code> y sacar el <code>span</code> en <code>Encabezado.tsx</code>.</p>
+      <div class="tira">
+        <div class="top">
+          <div class="marca"><img class="emblema gr" src="../public/emblema.png" alt=""></div>
+          <span class="sync pend">● 3 registros sin subir</span>
+        </div>
+      </div>
+      <p class="cap">En el inicio</p>
+      <div class="tel">
+        <div class="top">
+          <div class="marca"><img class="emblema" src="../public/emblema.png" alt=""></div>
+          <span class="sync">● Todo sincronizado</span>
+        </div>
+        <div class="body">
+          <h3>Temporada 2026</h3>
+          <p class="sub">domingo, 2 de agosto</p>
+          <p class="grupo">Partos</p>
+          <div class="kpis"><div class="kpi"><b>2</b><span>Hoy</span></div><div class="kpi"><b>5</b><span>En la temporada</span></div></div>
+          <p class="grupo">Corderos</p>
+          <div class="kpis"><div class="kpi"><b>10</b><span>Nacidos</span></div><div class="kpi"><b>6</b><span>Sin señalar ›</span></div></div>
+          <div class="rizo"></div>
+          <div class="btn">Registrar parto</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="op no">
+      <span class="titulo-op">B · Emblema y «Petra»</span>
+      <p>Lo mismo que hoy, con el emblema recortado en vez del logo entero. La palabra se queda.</p>
+      <p class="pro">+ El cambio más chico: solo mejora la imagen y deja todo lo demás igual.</p>
+      <p class="pro">+ Para quien recién aprende la app, la palabra ancla el emblema.</p>
+      <p class="con">− Sigue diciendo dos veces lo mismo, ahora con las dos legibles. Que se entienda no lo hace menos redundante.</p>
+      <p class="con">− Deja 89 px antes de la pastilla. Entra, pero es el ancho el que decide, no el diseño: en una caravana o un estado más largo se acaba.</p>
+      <div class="tira">
+        <div class="top">
+          <div class="marca"><img class="emblema" src="../public/emblema.png" alt=""><span class="nombre">Petra</span></div>
+          <span class="sync pend">● 3 registros sin subir</span>
+        </div>
+      </div>
+      <p class="cap">En el inicio</p>
+      <div class="tel">
+        <div class="top">
+          <div class="marca"><img class="emblema" src="../public/emblema.png" alt=""><span class="nombre">Petra</span></div>
+          <span class="sync">● Todo sincronizado</span>
+        </div>
+        <div class="body">
+          <h3>Temporada 2026</h3>
+          <p class="sub">domingo, 2 de agosto</p>
+          <p class="grupo">Partos</p>
+          <div class="kpis"><div class="kpi"><b>2</b><span>Hoy</span></div><div class="kpi"><b>5</b><span>En la temporada</span></div></div>
+          <p class="grupo">Corderos</p>
+          <div class="kpis"><div class="kpi"><b>10</b><span>Nacidos</span></div><div class="kpi"><b>6</b><span>Sin señalar ›</span></div></div>
+          <div class="rizo"></div>
+          <div class="btn">Registrar parto</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="op no">
+      <span class="titulo-op">C · La marca completa, en chico</span>
+      <p>Emblema y las dos líneas del logo: «Petra» arriba y «MERINO AUSTRALIANO» abajo, espaciada.</p>
+      <p class="pro">+ Es la marca de verdad, la del logo, no una versión recortada. Se ve deliberado.</p>
+      <p class="con">− «MERINO AUSTRALIANO» necesita 7,5 px para entrar. Es más chico que cualquier otro texto de la app, y esta app se usa a pleno sol.</p>
+      <p class="con">− Deja <b>19 px</b> entre la marca y la pastilla con pendientes. No se pisan por poco, y cualquier texto más largo las junta.</p>
+      <p class="con">− Y es la línea que menos falta hace: nadie abre la app para enterarse de qué raza cría la cabaña.</p>
+      <div class="tira">
+        <div class="top">
+          <div class="marca">
+            <img class="emblema gr" src="../public/emblema.png" alt="">
+            <span class="lockup"><b>Petra</b><span>MERINO AUSTRALIANO</span></span>
+          </div>
+          <span class="sync pend">● 3 registros sin subir</span>
+        </div>
+      </div>
+      <p class="cap">En el inicio</p>
+      <div class="tel">
+        <div class="top">
+          <div class="marca">
+            <img class="emblema" src="../public/emblema.png" alt="">
+            <span class="lockup"><b>Petra</b><span>MERINO AUSTRALIANO</span></span>
+          </div>
+          <span class="sync">● Todo sincronizado</span>
+        </div>
+        <div class="body">
+          <h3>Temporada 2026</h3>
+          <p class="sub">domingo, 2 de agosto</p>
+          <p class="grupo">Partos</p>
+          <div class="kpis"><div class="kpi"><b>2</b><span>Hoy</span></div><div class="kpi"><b>5</b><span>En la temporada</span></div></div>
+          <p class="grupo">Corderos</p>
+          <div class="kpis"><div class="kpi"><b>10</b><span>Nacidos</span></div><div class="kpi"><b>6</b><span>Sin señalar ›</span></div></div>
+          <div class="rizo"></div>
+          <div class="btn">Registrar parto</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="op no">
+      <span class="titulo-op">D · La fecha, y la marca al login</span>
+      <p>El encabezado se vuelve enteramente funcional: a la izquierda el día, a la derecha la sincronización. La marca queda solo en la pantalla de entrada.</p>
+      <p class="pro">+ Todo lo que hay arriba dice algo del trabajo. Cero decoración.</p>
+      <p class="pro">+ Libera el subtítulo del inicio, que hoy repite esa misma fecha.</p>
+      <p class="con">− La app deja de tener cara. Es de la cabaña, la hicieron para ellos, y eso se nota en cada apertura — no es un adorno gratis.</p>
+      <p class="con">− Y la fecha ya está dos líneas más abajo, en un lugar donde se lee mejor.</p>
+      <div class="tira">
+        <div class="top">
+          <span class="fecha-top">domingo, 2 de agosto</span>
+          <span class="sync pend">● 3 registros sin subir</span>
+        </div>
+      </div>
+      <p class="cap">En el inicio</p>
+      <div class="tel">
+        <div class="top">
+          <span class="fecha-top">domingo, 2 de agosto</span>
+          <span class="sync">● Todo sincronizado</span>
+        </div>
+        <div class="body">
+          <h3>Temporada 2026</h3>
+          <p class="sub" style="opacity:.35">domingo, 2 de agosto</p>
+          <p class="grupo">Partos</p>
+          <div class="kpis"><div class="kpi"><b>2</b><span>Hoy</span></div><div class="kpi"><b>5</b><span>En la temporada</span></div></div>
+          <p class="grupo">Corderos</p>
+          <div class="kpis"><div class="kpi"><b>10</b><span>Nacidos</span></div><div class="kpi"><b>6</b><span>Sin señalar ›</span></div></div>
+          <div class="rizo"></div>
+          <div class="btn">Registrar parto</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="nota">
+    <b>Lo que no cambia en ninguna:</b> en las pantallas que no son el inicio, la izquierda sigue siendo «‹ Volver». La marca no compite nunca con la navegación — aparece cuando no hay a dónde volver, y desaparece cuando sí.
+  </div>
+</section>
+
+<div class="cierre wrap" style="padding-left:0;padding-right:0">
+  <h2>Qué quedó decidido</h2>
+  <div class="tabla-caja">
+  <table class="tabla">
+    <tr><th>Qué</th><th>Decisión</th><th>Qué implica</th></tr>
+    <tr><td>La imagen</td><td><b>Un asset propio para el encabezado:</b> solo el medallón, recortado del logo. Un ícono de app y una marca de encabezado no son la misma imagen.</td><td><code>emblema()</code> en <code>scripts/generar-iconos.py</code>, que encuentra el corte solo. Genera <code>public/emblema.png</code>.</td></tr>
+    <tr><td>El texto</td><td><b>Ninguno.</b> El emblema va solo, a 30 px. El nombre completo vive en el login.</td><td>Sacar el <code>span.marca-nombre</code> de <code>Encabezado.tsx</code> y su regla en <code>app.css</code>.</td></tr>
+    <tr><td>El resto</td><td>Sin cambios: «‹ Volver» a la izquierda en todas las demás pantallas, la pastilla de sync a la derecha siempre.</td><td>—</td></tr>
+  </table>
+  </div>
+  <p style="margin-top:26px">Si más adelante entra gente nueva al equipo y el emblema solo no alcanza para reconocer la app, la vuelta atrás es la <strong>B</strong>: agregar la palabra al lado. Queda maquetada por eso.</p>
+</div>
+
+</div>
+</body>
+</html>

@@ -39,6 +39,37 @@ def recortado() -> Image.Image:
     return im.crop(caja) if caja else im
 
 
+def emblema(logo: Image.Image) -> Image.Image:
+    """
+    Solo el medallón del carnero, sin el lettering.
+
+    El encabezado de la app lo muestra a ~26 px. El logo entero a ese tamaño es
+    una mancha: «PETRA» y «MERINO AUSTRALIANO» quedan en menos de tres píxeles
+    de alto cada uno. El emblema solo, en cambio, se reconoce.
+
+    El corte se encuentra solo: se busca la primera banda de filas totalmente
+    transparentes, que es la que separa el medallón de la palabra. Buscarlo en
+    vez de escribir un número fijo hace que el recorte siga andando si el logo
+    original cambia de proporción.
+    """
+    alfa = logo.split()[3]
+    ancho, alto = logo.size
+
+    vacia = None
+    for y in range(alto):
+        hay = any(alfa.getpixel((x, y)) > 24 for x in range(0, ancho, 3))
+        if not hay and vacia is None:
+            vacia = y
+        elif hay and vacia is not None:
+            if y - vacia >= 4:
+                recorte = logo.crop((0, 0, ancho, vacia))
+                caja = recorte.getbbox()
+                return recorte.crop(caja) if caja else recorte
+            vacia = None
+
+    raise SystemExit('No encontré la separación entre el emblema y el lettering.')
+
+
 def componer(logo: Image.Image, lado: int, ocupacion: float, fondo=None) -> Image.Image:
     """Centra el logo en un lienzo cuadrado ocupando `ocupacion` del lado."""
     lienzo = Image.new("RGBA", (lado, lado), fondo or (0, 0, 0, 0))
@@ -81,6 +112,14 @@ def main() -> None:
 
     # iOS compone los íconos sobre negro si son transparentes: fondo opaco.
     guardar(componer(logo, 180, 0.78, PAPEL), "apple-touch-icon.png")
+
+    # El encabezado de la app: solo el medallón, que a 26 px todavía se lee.
+    # A 3x son 78 px reales, así que 160 sobra y pesa poco.
+    marca = emblema(logo)
+    guardar(
+        marca.resize((160, round(marca.height * 160 / marca.width)), Image.LANCZOS),
+        "emblema.png",
+    )
 
 
 if __name__ == "__main__":
