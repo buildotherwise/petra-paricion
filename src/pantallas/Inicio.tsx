@@ -20,10 +20,12 @@ interface PartoDeHoy {
 
 export function Inicio({
   onRegistrarParto,
+  onSenalada,
   onVerPartos,
   onAbrirParto,
 }: {
   onRegistrarParto: () => void;
+  onSenalada: () => void;
   onVerPartos: () => void;
   onAbrirParto: (partoId: string) => void;
 }) {
@@ -85,20 +87,25 @@ export function Inicio({
             <b>{contadores?.partos_temporada ?? 0}</b>
             <span>Temporada</span>
           </div>
-          <div className="contador">
+          {/* El único contador que lleva a algún lado: es el número que el
+              encargado mira para saber si va quedando trabajo atrás. */}
+          <button type="button" className="contador contador--tocable" onClick={onSenalada}>
             <b>{contadores?.pendientes_senalada ?? 0}</b>
-            <span>Sin señalar</span>
-          </div>
+            <span>Sin señalar ›</span>
+          </button>
         </div>
 
         <div className="rizo" aria-hidden="true" />
 
+        {/* «Registrar parto» se usa treinta veces por día durante seis semanas
+            y la señalada, dos o tres jornadas enteras. La jerarquía sigue al
+            uso, no a la importancia. */}
         <div style={{ display: 'grid', gap: 'var(--sp-3)' }}>
           <button type="button" className="boton boton--principal" onClick={onRegistrarParto}>
             Registrar parto
           </button>
-          <button type="button" className="boton boton--secundario" disabled>
-            Señalada · todavía no disponible
+          <button type="button" className="boton boton--secundario" onClick={onSenalada}>
+            Señalada
           </button>
         </div>
 

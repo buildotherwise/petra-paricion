@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@powersync/react';
 import { Encabezado } from '../componentes/Encabezado';
 import { entorno } from '../lib/entorno';
-import { buscarCaravana, partirCoincidencia } from '../lib/busqueda';
+import { buscarPorCaravanaOCollar, partirCoincidencia } from '../lib/busqueda';
 import { diaCorto, nombreTipo } from '../lib/parto';
 import { hoyISO } from '../lib/reglas';
 
@@ -50,7 +50,7 @@ export function PartosRegistrados({
 
   const buscando = consulta.trim() !== '';
   const resultados = useMemo(
-    () => (buscando ? buscarPartos(partos, consulta) : partos),
+    () => (buscando ? buscarPorCaravanaOCollar(partos, consulta) : partos),
     [partos, consulta, buscando],
   );
 
@@ -143,28 +143,6 @@ function ListaPartos({
 // ───────────────────────────────────────────────────────────────────────
 // Buscar y agrupar
 // ───────────────────────────────────────────────────────────────────────
-
-/**
- * Busca por caravana o por número de collar.
- *
- * La caravana usa `buscarCaravana`, que llega a las alfanuméricas; el collar es
- * una comparación aparte porque un «12» tipeado tiene que encontrar el parto del
- * collar 12 aunque ninguna caravana lo contenga.
- */
-function buscarPartos(partos: readonly FilaParto[], consulta: string): FilaParto[] {
-  const porCaravana = buscarCaravana(partos, consulta);
-  const encontrados = new Set(porCaravana.map((p) => p.id));
-  const texto = consulta.trim().replace(/^0+(?=.)/, '');
-
-  const porCollar = partos.filter(
-    (p) =>
-      !encontrados.has(p.id) &&
-      p.collar_numero !== null &&
-      p.collar_numero.trim().replace(/^0+(?=.)/, '') === texto,
-  );
-
-  return [...porCaravana, ...porCollar];
-}
 
 function agruparPorDia(partos: readonly FilaParto[]): [string, FilaParto[]][] {
   const dias = new Map<string, FilaParto[]>();

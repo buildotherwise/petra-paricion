@@ -17,8 +17,9 @@ formularios de Zoho. La especificación funcional completa está en
 | ✅ Deploy en Vercel | desde `main`, con los headers de caché del service worker |
 | ✅ Protocolo §11 | corrido en dispositivos reales |
 | ✅ Auditoría por campo | en uso: cada edición deja su diff en `cambios` |
+| ✅ **Fase 3** | señalada — buscador de pendientes, fenotipo, confirmación de sexo y tatuaje correlativo |
 | ⏳ Cuentas del equipo | quedan para el final, a pedido del usuario |
-| ⏳ **Fase 3** | señalada — lista de pendientes, fenotipo y confirmación de sexo |
+| ⏳ **Fase 4** | web admin — tablas, panel de revisión, exportaciones y dashboards |
 
 ---
 

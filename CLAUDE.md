@@ -203,7 +203,8 @@ group by p.id, o.caravana;
 - **R13 — Anulación de un cordero:** para el error de carga —se cargó de más, o dos veces—, no para lo que le pasó al animal. Es baja lógica (`anulado_en`, `anulado_por`, `anulado_motivo` de lista cerrada), porque el borrado está revocado en todas las tablas. Un anulado **no cuenta** para el tipo de nacimiento (R1) ni para la señalada, y sigue visible en la ficha, tachado y con autor. No se puede anular un cordero señalado —tiene el tatuaje puesto— ni el último que queda: un parto sin corderos no puede existir, porque alguien vio parir a la oveja. Si el parto entero está mal, lo que corresponde es cambiar la madre.
 - **R9 — Oveja fuera de la lista:** si una madre no aparece en la búsqueda, alta manual con `precargada = false`. Aparece en el panel de revisión web para verificar la caravana.
 - **R10 — Nodriza:** si un cordero pasa a criarse con otra madre, se registra `madre_tipo = nodriza` y `madre_crianza_id`, conservando siempre el parto (madre biológica) original.
-- **R11 — Señalada completa o nada:** el pasaje a estado `senalado` exige tatuaje + todos los campos fenotípicos. No se admiten señaladas a medias.
+- **R11 — Señalada completa o nada:** el pasaje a estado `senalado` exige tatuaje + todos los campos fenotípicos. No se admiten señaladas a medias, y la restricción `senalada_completa` lo hace cumplir en la base, no solo en la app. No hay borrador: salir a la mitad deja al cordero sin señalar, tal como estaba. `fecha_senalada` es siempre hoy y no se pide en el campo — un control más por cordero, seiscientas veces, para un dato que en la práctica nunca difiere; se corrige desde la web. **Ojo:** `validarFechaNacimiento` no sirve para validarla, porque un cordero nacido el 28 de noviembre se señala en diciembre, fuera de la ventana de parición.
+- **R14 — Tatuaje:** tres dígitos, del **001 al 999**, siempre con los ceros a la izquierda, y **único por temporada** (índice parcial `corderos_tatuaje_unico`). Se normaliza *siempre* antes de guardar: la columna es `text`, así que sin normalizar «7» y «007» serían dos tatuajes distintos para Postgres y el mismo número en dos orejas. La app **sugiere el siguiente libre** —el mayor usado más uno, no el primer hueco: un número salteado casi siempre es un cordero que murió, y reusarlo confundiría dos animales en el histórico. La sugerencia se calcula sobre la réplica local, así que **la señalada es la única operación de la app que necesita estar al día**: un aparato con días sin bajar datos propone números que otro ya gastó y el rechazo llega cuando el animal ya tiene el tatuaje puesto. Se **avisa, no se bloquea** — negarse a trabajar sin señal en un corral que rara vez la tiene convertiría un riesgo raro en un bloqueo seguro. Contención de fondo: nunca hay dos aparatos señalando a la vez.
 - **R12 — Fechas:** fecha de nacimiento por defecto = hoy. Tiene que caer dentro de la **ventana de parición de la temporada — del 1 de agosto al 30 de noviembre** del año correspondiente — y nunca en el futuro. Dentro de esa ventana no hay límite de días hacia atrás: un parto puede encontrarse bastante después de ocurrido, y mientras caiga en la temporada es un dato legítimo. Lo que se bloquea es la fecha de otro año o fuera de esos cuatro meses, que solo puede ser un error de tipeo.
 
 ## 6. Sincronización (PowerSync + Supabase)
@@ -225,9 +226,14 @@ group by p.id, o.caravana;
 3. Corderos: botón "+ Agregar cordero" → sexo (dos botones), vivo/muerto, peso (teclado numérico), collar si corresponde (R2).
 4. Resumen ("Mellizos: 1 macho vivo 4,2 kg — collar 12 punto arriba / 1 hembra viva 3,8 kg — collar 13 punto arriba") → Guardar.
 
-**Señalada:**
-1. Lista de pendientes (estado `nacido`), ordenada por fecha de nacimiento, buscable por caravana de la madre o número de collar.
-2. Detalle: datos del nacimiento visibles, confirmación de sexo (R6), tatuaje (teclado numérico), botoneras para fenotipo (0/1 y 0–4), entropión, observaciones → `Ingresar`.
+**Señalada:** se señala **en tandas y por la madre** — se agarra la oveja y lo primero que se sabe es su caravana, aun en los partos únicos, que no llevan collar. Por eso el buscador va arriba y la lista de pendientes abajo, y no al revés: una lista de doscientos corderos ordenada por antigüedad no ayuda a encontrar la oveja que ya se tiene agarrada.
+1. Buscador de caravana o collar; debajo, los partos con corderos sin señalar, los más viejos primero. Un aviso al entrar si el aparato hace más de 12 h que no baja datos — ver R14.
+2. En partos múltiples, elegir al hermano por su **marca de collar dibujada** (la posición es el dato, no la palabra). En partos únicos esta pantalla se saltea.
+3. Detalle en **una sola pantalla con scroll**, no un asistente: confirmación de sexo (R6), tatuaje (R14), entropión, matriz de canela y lunar, halo hair, pigmentación, observaciones → `Guardar la señalada`. Completa o nada (R11). Al guardar se vuelve al parto, con el hermano que falta a un toque.
+
+**Canela y lunar:** las cuatro columnas de Zoho (`canela_vellon`, `canela_no_vellon`, `lunar_vellon`, `lunar_no_vellon`) se capturan como **dos rasgos por dos ubicaciones** en una matriz 2×2, con una barra «Ninguna de las cuatro» que resuelve de un toque el caso mayoritario. La barra no es un adorno: sin ella una casilla apagada no distingue «no tiene» de «todavía no lo miré», y como las columnas son `smallint check in (0,1)` la app estaría escribiendo ceros que nadie afirmó.
+
+**La señalada no toca el collar.** Se saca de hecho al terminar el parto, pero la app no pregunta: el número queda tomado toda la temporada igual (R3) y `partos.collar_puesto` sigue siendo solo del caso de la Fase 2.
 
 **Partos registrados:** sección propia, con buscador por caravana o collar y la lista de la temporada agrupada por jornada. Se llega desde el pie de «Partos de hoy», en el inicio.
 
@@ -270,7 +276,7 @@ esquema en Supabase + repo + PWA con flujo "Registrar parto" guardando en local 
 ficha del parto y del cordero, edición de lo guardado, cambio de madre, registro de muertes (R8), nodriza posterior (R10), anulación de corderos (R13) y bandeja de registros rechazados. En paralelo: carga real junto con Zoho (solo la tablet duplica registros los primeros 2–3 días para validar paridad) y ajustes de UX con el equipo. Maquetas y decisiones en `diseno/fase2-pantallas.html`.
 
 **Fase 3 — Señalada (días 5–10):**
-lista de pendientes + flujo de señalada + confirmación de sexo. Llega antes de la primera señalada real.
+buscador de pendientes + flujo de señalada + confirmación de sexo (R6) + tatuaje correlativo (R14). Llega antes de la primera señalada real. Maquetas y decisiones en `diseno/fase3-pantallas.html`.
 
 **Fase 4 — Web admin y reportes (semanas 2–3):**
 tablas, panel de revisión, exportaciones, vistas SQL de métricas y sección de dashboards. Al cerrar esta fase se retira el respaldo Zoho.

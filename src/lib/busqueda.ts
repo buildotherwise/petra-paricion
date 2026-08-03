@@ -45,6 +45,45 @@ function relevancia(caravana: string, consulta: string): number | null {
   return null;
 }
 
+export interface ConCollar extends ConCaravana {
+  id: string;
+  collar_numero: string | null;
+}
+
+/**
+ * Busca un parto por caravana de la madre o por número de collar.
+ *
+ * Son las dos cosas que se pueden leer en el animal: la caravana la lleva la
+ * madre y el collar lo llevan la madre y todos los hermanos. Lo usan la lista
+ * de partos registrados y la señalada, y tiene que dar lo mismo en las dos —
+ * que un parto aparezca en una pantalla y no en la otra haría dudar de si es el
+ * mismo registro.
+ *
+ * La caravana va por `buscarCaravana`, que llega a las alfanuméricas; el collar
+ * es una comparación aparte porque un «12» tipeado tiene que encontrar el parto
+ * del collar 12 aunque ninguna caravana lo contenga. Los collares se comparan
+ * como números —«12» y «012» son el mismo objeto físico— por la misma razón que
+ * en `collarDisponible`.
+ */
+export function buscarPorCaravanaOCollar<T extends ConCollar>(
+  filas: readonly T[],
+  consulta: string,
+): T[] {
+  const porCaravana = buscarCaravana(filas, consulta);
+  const encontrados = new Set(porCaravana.map((f) => f.id));
+  const buscado = consulta.trim().replace(/^0+(?=.)/, '');
+  if (buscado === '') return porCaravana;
+
+  const porCollar = filas.filter(
+    (f) =>
+      !encontrados.has(f.id) &&
+      f.collar_numero !== null &&
+      f.collar_numero.trim().replace(/^0+(?=.)/, '') === buscado,
+  );
+
+  return [...porCaravana, ...porCollar];
+}
+
 export function buscarCaravana<T extends ConCaravana>(ovejas: readonly T[], consulta: string): T[] {
   const buscada = compactar(consulta);
   if (buscada === '') return [];

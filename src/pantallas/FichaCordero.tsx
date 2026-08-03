@@ -10,15 +10,19 @@ import { actualizar } from '../lib/powersync/escritura';
 import { useUsuarioId } from '../lib/sesion';
 import { fechaLarga } from '../lib/parto';
 import { Dato, nombreMarca, useCorderosDelParto, type FilaCorderoGuardado } from './FichaParto';
+import { describirCanelaLunar } from '../componentes/MatrizCanelaLunar';
 import {
   CAUSAS_MUERTE,
+  ENTROPIONES,
   hoyISO,
   marcasOcupadas,
   MOTIVOS_ANULACION,
   partoQuedaUnico,
   puedeAnular,
   puedeRegistrarMuerte,
+  puedeSenalar,
   validarFechaMuerte,
+  type CanelaLunar,
   type CausaMuerte,
   type MotivoAnulacion,
 } from '../lib/reglas';
@@ -46,9 +50,11 @@ type Vista = 'ficha' | 'editar' | 'muerte' | 'nodriza' | 'anular';
 export function FichaCordero({
   corderoId,
   onVolver,
+  onSenalar,
 }: {
   corderoId: string;
   onVolver: () => void;
+  onSenalar: (corderoId: string) => void;
 }) {
   const [vista, setVista] = useState<Vista>('ficha');
 
@@ -56,6 +62,9 @@ export function FichaCordero({
     `SELECT c.id, c.sexo, c.condicion, c.estado, c.peso_kg, c.collar_marca,
             c.causa_muerte, c.fecha_muerte, c.madre_crianza_id, c.observaciones,
             c.anulado_en, c.anulado_motivo, c.parto_id,
+            c.tatuaje, c.fecha_senalada, c.entropion, c.halo_hair, c.pigmentacion,
+            c.canela_vellon, c.canela_no_vellon, c.lunar_vellon, c.lunar_no_vellon,
+            c.sexo_discrepancia,
             p.fecha AS parto_fecha, p.collar_numero, p.collar_puesto, p.oveja_id,
             o.caravana,
             n.caravana AS nodriza_caravana,
@@ -88,7 +97,12 @@ export function FichaCordero({
 
       <main className="contenido area-segura">
         {vista === 'ficha' && (
-          <Ficha cordero={cordero} hermanos={hermanos} onIr={setVista} />
+          <Ficha
+            cordero={cordero}
+            hermanos={hermanos}
+            onIr={setVista}
+            onSenalar={() => onSenalar(cordero.id)}
+          />
         )}
         {vista === 'editar' && (
           <EditarCordero
@@ -129,14 +143,18 @@ function Ficha({
   cordero,
   hermanos,
   onIr,
+  onSenalar,
 }: {
   cordero: FilaCorderoFicha;
   hermanos: readonly FilaCorderoGuardado[];
   onIr: (vista: Vista) => void;
+  onSenalar: () => void;
 }) {
   const anulado = cordero.anulado_en !== null;
   const permisoMuerte = puedeRegistrarMuerte(cordero);
   const permisoAnular = puedeAnular(hermanos, cordero.id);
+  const permisoSenalar = puedeSenalar(cordero);
+  const senalado = cordero.estado === 'senalado';
   const motivo = MOTIVOS_ANULACION.find((m) => m.valor === cordero.anulado_motivo);
 
   return (
@@ -189,8 +207,48 @@ function Ficha({
         )}
       </div>
 
+      {/* El fenotipo entero a la vista, sin desplegar: es lo que se mira cuando
+          algo no cierra, y esconderlo detrás de un acordeón solo agrega toques. */}
+      {senalado && (
+        <>
+          <p className="etiqueta">Señalada</p>
+          <div className="tarjeta">
+            <Dato etiqueta="Tatuaje" valor={cordero.tatuaje ?? '—'} />
+            {cordero.fecha_senalada !== null && (
+              <Dato etiqueta="Señalado el" valor={fechaLarga(cordero.fecha_senalada)} />
+            )}
+            <Dato etiqueta="Entropión" valor={nombreEntropion(cordero.entropion)} />
+            <Dato etiqueta="Canela y lunar" valor={describirCanelaLunar(canelaLunarDe(cordero))} />
+            <Dato
+              etiqueta="Halo hair"
+              valor={cordero.halo_hair === 1 ? 'Tiene' : cordero.halo_hair === 0 ? 'No tiene' : '—'}
+            />
+            <Dato
+              etiqueta="Pigmentación"
+              valor={cordero.pigmentacion !== null ? String(cordero.pigmentacion) : '—'}
+            />
+          </div>
+          {cordero.sexo_discrepancia === 1 && (
+            <p className="aviso aviso--atencion">
+              En la señalada el sexo no coincidió con el registrado al nacer. Queda para revisar
+              desde la web.
+            </p>
+          )}
+        </>
+      )}
+
       {!anulado && (
         <div style={{ display: 'grid', gap: 'var(--sp-3)', marginTop: 'var(--sp-4)' }}>
+          {permisoSenalar.puede && (
+            <button type="button" className="boton boton--principal" onClick={onSenalar}>
+              Señalar
+            </button>
+          )}
+          {senalado && (
+            <button type="button" className="boton boton--secundario" onClick={onSenalar}>
+              Corregir la señalada
+            </button>
+          )}
           <button type="button" className="boton boton--secundario" onClick={() => onIr('editar')}>
             Editar
           </button>
@@ -219,6 +277,25 @@ function Ficha({
       )}
     </>
   );
+}
+
+const NOMBRE_ENTROPION: Record<string, string> = Object.fromEntries(
+  ENTROPIONES.map((e) => [e.valor, e.etiqueta]),
+);
+
+function nombreEntropion(valor: string | null): string {
+  return valor === null ? '—' : (NOMBRE_ENTROPION[valor] ?? valor);
+}
+
+/** Las cuatro columnas como el objeto que sabe describirse. */
+function canelaLunarDe(cordero: FilaCorderoFicha): CanelaLunar {
+  const uno = (valor: number | null): 0 | 1 => (valor === 1 ? 1 : 0);
+  return {
+    canela_vellon: uno(cordero.canela_vellon),
+    canela_no_vellon: uno(cordero.canela_no_vellon),
+    lunar_vellon: uno(cordero.lunar_vellon),
+    lunar_no_vellon: uno(cordero.lunar_no_vellon),
+  };
 }
 
 // ───────────────────────────────────────────────────────────────────────

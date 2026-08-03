@@ -8,10 +8,13 @@ import { RegistrarParto } from './pantallas/RegistrarParto';
 import { PartosRegistrados } from './pantallas/PartosRegistrados';
 import { FichaParto } from './pantallas/FichaParto';
 import { FichaCordero } from './pantallas/FichaCordero';
+import { Senalada } from './pantallas/Senalada';
+import { SenalarParto } from './pantallas/SenalarParto';
+import { SenalarCordero } from './pantallas/SenalarCordero';
 import { Rechazados } from './pantallas/Rechazados';
 
 function Ruteo() {
-  const { pantalla, ir, volver, alInicio } = useNavegacion();
+  const { pantalla, ir, volver, reemplazar, alInicio } = useNavegacion();
 
   switch (pantalla.nombre) {
     case 'registrar-parto':
@@ -43,7 +46,43 @@ function Ruteo() {
       );
 
     case 'ficha-cordero':
-      return <FichaCordero corderoId={pantalla.corderoId} onVolver={volver} />;
+      return (
+        <FichaCordero
+          corderoId={pantalla.corderoId}
+          onVolver={volver}
+          onSenalar={(corderoId) => ir({ nombre: 'senalar-cordero', corderoId })}
+        />
+      );
+
+    case 'senalada':
+      return (
+        <Senalada
+          onVolver={volver}
+          onSenalarParto={(partoId) => ir({ nombre: 'senalar-parto', partoId })}
+          onSenalarCordero={(corderoId) => ir({ nombre: 'senalar-cordero', corderoId })}
+        />
+      );
+
+    case 'senalar-parto':
+      return (
+        <SenalarParto
+          partoId={pantalla.partoId}
+          onVolver={volver}
+          onSenalar={(corderoId) => ir({ nombre: 'senalar-cordero', corderoId })}
+          onAbrirCordero={(corderoId) => ir({ nombre: 'ficha-cordero', corderoId })}
+        />
+      );
+
+    case 'senalar-cordero':
+      return (
+        <SenalarCordero
+          corderoId={pantalla.corderoId}
+          onVolver={volver}
+          // Reemplaza en vez de apilar: al terminar el segundo mellizo, «volver»
+          // tiene que llevar al parto y no al hermano ya señalado.
+          onSenalarOtro={(corderoId) => reemplazar({ nombre: 'senalar-cordero', corderoId })}
+        />
+      );
 
     case 'rechazados':
       return <Rechazados onVolver={volver} />;
@@ -52,6 +91,7 @@ function Ruteo() {
       return (
         <Inicio
           onRegistrarParto={() => ir({ nombre: 'registrar-parto' })}
+          onSenalada={() => ir({ nombre: 'senalada' })}
           onVerPartos={() => ir({ nombre: 'partos' })}
           onAbrirParto={(partoId) => ir({ nombre: 'ficha-parto', partoId })}
         />

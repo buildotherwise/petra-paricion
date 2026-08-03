@@ -1,19 +1,28 @@
 import { describe, expect, test } from 'vitest';
 import {
   ajustarCollarDelParto,
+  camposFaltantes,
   collarDisponible,
   corderosQueRequierenMarca,
+  hermanoDelMismoSexo,
   marcasOcupadas,
   maximoElegible,
+  ningunaCanelaNiLunar,
+  normalizarTatuaje,
   partoQuedaUnico,
   partoRequiereCollar,
   puedeAnular,
   puedeRegistrarMuerte,
+  puedeSenalar,
   rangoTemporada,
+  siguienteTatuaje,
+  tatuajeDisponible,
   tipoNacimiento,
   validarFechaMuerte,
   validarFechaNacimiento,
   validarPeso,
+  SIN_CANELA_NI_LUNAR,
+  type BorradorSenalada,
   type CorderoDelParto,
   type CorderoEnFicha,
 } from './reglas';
@@ -497,5 +506,236 @@ describe('límites de la temporada', () => {
 
   test('pasado el cierre, el máximo elegible es el fin de la temporada', () => {
     expect(maximoElegible('2026-12-20', 2026)).toBe('2026-11-30');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// La señalada — el tatuaje
+// ---------------------------------------------------------------------------
+
+describe('el tatuaje se normaliza a tres dígitos', () => {
+  test('rellena con ceros a la izquierda', () => {
+    // El índice único de Postgres compara texto. Sin esto, '7' y '007' serían
+    // dos tatuajes distintos para la base y el mismo número en dos orejas.
+    expect(normalizarTatuaje('7')).toBe('007');
+    expect(normalizarTatuaje('42')).toBe('042');
+  });
+
+  test('lo ya normalizado no cambia', () => {
+    expect(normalizarTatuaje('042')).toBe('042');
+    expect(normalizarTatuaje('999')).toBe('999');
+  });
+
+  test('los espacios y los ceros de más no hacen otro tatuaje', () => {
+    expect(normalizarTatuaje('  42 ')).toBe('042');
+    expect(normalizarTatuaje('0042')).toBe('042');
+  });
+
+  test('el 000 no existe: la numeración arranca en 001', () => {
+    expect(normalizarTatuaje('0')).toBeNull();
+    expect(normalizarTatuaje('000')).toBeNull();
+  });
+
+  test('más de 999 no entra en la pinza', () => {
+    expect(normalizarTatuaje('1000')).toBeNull();
+  });
+
+  test('lo que no es un número no es un tatuaje', () => {
+    expect(normalizarTatuaje('')).toBeNull();
+    expect(normalizarTatuaje('abc')).toBeNull();
+    expect(normalizarTatuaje('4,2')).toBeNull();
+    expect(normalizarTatuaje('-7')).toBeNull();
+  });
+});
+
+describe('el siguiente tatuaje libre', () => {
+  test('la temporada arranca en el 001', () => {
+    expect(siguienteTatuaje([])).toBe('001');
+  });
+
+  test('es el mayor usado más uno', () => {
+    expect(siguienteTatuaje(['001', '041'])).toBe('042');
+  });
+
+  test('un hueco en el medio no se rellena', () => {
+    // Un número salteado casi siempre es un cordero que murió, no un número
+    // libre. Reusarlo confundiría dos animales en el histórico.
+    expect(siguienteTatuaje(['001', '002', '005'])).toBe('006');
+  });
+
+  test('los corderos sin señalar no cuentan', () => {
+    expect(siguienteTatuaje([null, '007', null])).toBe('008');
+  });
+
+  test('agotados los tres dígitos, no hay sugerencia', () => {
+    // Remotísimo —en 2025 hubo 468 corderos vivos— pero la app no debería
+    // descubrirlo en el corral.
+    expect(siguienteTatuaje(['999'])).toBeNull();
+  });
+});
+
+describe('un tatuaje usado no se repite en la temporada', () => {
+  test('uno libre está disponible', () => {
+    expect(tatuajeDisponible('042', ['001', '041'])).toBe(true);
+  });
+
+  test('uno tomado no', () => {
+    expect(tatuajeDisponible('041', ['001', '041'])).toBe(false);
+  });
+
+  test('la comparación es por número, no por texto', () => {
+    // El caso que esta función existe para frenar.
+    expect(tatuajeDisponible('41', ['041'])).toBe(false);
+    expect(tatuajeDisponible('041', ['41'])).toBe(false);
+  });
+
+  test('el propio tatuaje no se bloquea a sí mismo al corregir', () => {
+    expect(tatuajeDisponible('042', ['042'], '042')).toBe(true);
+  });
+
+  test('uno imposible nunca está disponible', () => {
+    expect(tatuajeDisponible('0', [])).toBe(false);
+    expect(tatuajeDisponible('abc', [])).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// R11 — Señalada completa o nada
+// ---------------------------------------------------------------------------
+
+/** Una señalada completa, para ir sacándole campos en cada test. */
+function borrador(sobre: Partial<BorradorSenalada> = {}): BorradorSenalada {
+  return {
+    sexo: 'macho',
+    tatuaje: '042',
+    entropion: 'ninguno',
+    canelaLunar: SIN_CANELA_NI_LUNAR,
+    halo_hair: 0,
+    pigmentacion: 0,
+    ...sobre,
+  };
+}
+
+describe('R11 — la señalada es completa o no es', () => {
+  test('con los nueve campos no falta nada', () => {
+    expect(camposFaltantes(borrador())).toEqual([]);
+  });
+
+  test('cada campo vacío se nombra', () => {
+    expect(camposFaltantes(borrador({ sexo: null })).map((f) => f.campo)).toEqual(['sexo']);
+    expect(camposFaltantes(borrador({ entropion: null })).map((f) => f.campo)).toEqual(['entropion']);
+    expect(camposFaltantes(borrador({ halo_hair: null })).map((f) => f.campo)).toEqual(['halo_hair']);
+  });
+
+  test('un tatuaje imposible cuenta como faltante', () => {
+    expect(camposFaltantes(borrador({ tatuaje: null })).map((f) => f.campo)).toEqual(['tatuaje']);
+    expect(camposFaltantes(borrador({ tatuaje: '0' })).map((f) => f.campo)).toEqual(['tatuaje']);
+  });
+
+  test('canela y lunar sin contestar es distinto de las cuatro en cero', () => {
+    // La distinción que la matriz de casillas sueltas no podía expresar y que
+    // «Ninguna de las cuatro» resuelve: sin ella la app inventaría ceros.
+    expect(camposFaltantes(borrador({ canelaLunar: null })).map((f) => f.campo)).toEqual([
+      'canelaLunar',
+    ]);
+    expect(camposFaltantes(borrador({ canelaLunar: SIN_CANELA_NI_LUNAR }))).toEqual([]);
+  });
+
+  test('la pigmentación fuera de la escala 0–4 no vale', () => {
+    expect(camposFaltantes(borrador({ pigmentacion: 5 })).map((f) => f.campo)).toEqual([
+      'pigmentacion',
+    ]);
+    expect(camposFaltantes(borrador({ pigmentacion: -1 })).map((f) => f.campo)).toEqual([
+      'pigmentacion',
+    ]);
+    expect(camposFaltantes(borrador({ pigmentacion: 4 }))).toEqual([]);
+  });
+
+  test('la pigmentación 0 es una respuesta, no un vacío', () => {
+    expect(camposFaltantes(borrador({ pigmentacion: 0 }))).toEqual([]);
+  });
+
+  test('los faltantes salen en el orden de la pantalla', () => {
+    const vacio = camposFaltantes({
+      sexo: null,
+      tatuaje: null,
+      entropion: null,
+      canelaLunar: null,
+      halo_hair: null,
+      pigmentacion: null,
+    });
+    expect(vacio.map((f) => f.campo)).toEqual([
+      'sexo',
+      'tatuaje',
+      'entropion',
+      'canelaLunar',
+      'halo_hair',
+      'pigmentacion',
+    ]);
+  });
+});
+
+describe('ninguna canela ni lunar', () => {
+  test('las cuatro en cero', () => {
+    expect(ningunaCanelaNiLunar(SIN_CANELA_NI_LUNAR)).toBe(true);
+  });
+
+  test('con una encendida, ya no es ninguna', () => {
+    expect(ningunaCanelaNiLunar({ ...SIN_CANELA_NI_LUNAR, canela_no_vellon: 1 })).toBe(false);
+  });
+});
+
+describe('a quién se puede señalar', () => {
+  test('a un cordero nacido, sí', () => {
+    expect(puedeSenalar(guardado()).puede).toBe(true);
+  });
+
+  test('a uno muerto, no: no pasa por la señalada', () => {
+    expect(puedeSenalar(guardado({ estado: 'muerto' })).puede).toBe(false);
+  });
+
+  test('a uno ya señalado, no: lo que corresponde es corregir', () => {
+    expect(puedeSenalar(guardado({ estado: 'senalado' })).puede).toBe(false);
+  });
+
+  test('a uno anulado, no', () => {
+    expect(puedeSenalar(guardado({ anulado_en: '2026-08-02T16:42:00Z' })).puede).toBe(false);
+  });
+
+  test('cada negativa explica algo distinto', () => {
+    const muerto = puedeSenalar(guardado({ estado: 'muerto' }));
+    const senalado = puedeSenalar(guardado({ estado: 'senalado' }));
+    const anulado = puedeSenalar(guardado({ anulado_en: 'x' }));
+    const motivos = [muerto, senalado, anulado].map((p) => (p.puede ? '' : p.motivo));
+    expect(new Set(motivos).size).toBe(3);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// R6 — El hermano equivocado
+// ---------------------------------------------------------------------------
+
+describe('R6 — la discrepancia de sexo puede ser el hermano equivocado', () => {
+  const macho = { id: 'a', sexo: 'macho' as const, anulado_en: null };
+  const hembra = { id: 'b', sexo: 'hembra' as const, anulado_en: null };
+
+  test('en mellizos de distinto sexo, señala al hermano que sí coincide', () => {
+    // Se está señalando al macho y el operador dice que es hembra: lo más
+    // probable es que en la mano tenga a su hermana.
+    expect(hermanoDelMismoSexo([macho, hembra], 'a', 'hembra')).toBe(hembra);
+  });
+
+  test('en un parto único no hay con quién confundirse', () => {
+    expect(hermanoDelMismoSexo([macho], 'a', 'hembra')).toBeNull();
+  });
+
+  test('si los hermanos son del mismo sexo que el registrado, no hay aviso', () => {
+    const otroMacho = { id: 'c', sexo: 'macho' as const, anulado_en: null };
+    expect(hermanoDelMismoSexo([macho, otroMacho], 'a', 'hembra')).toBeNull();
+  });
+
+  test('un hermano anulado no cuenta: no existió', () => {
+    const anulada = { ...hembra, anulado_en: '2026-08-02T16:42:00Z' };
+    expect(hermanoDelMismoSexo([macho, anulada], 'a', 'hembra')).toBeNull();
   });
 });

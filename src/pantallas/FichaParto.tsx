@@ -62,6 +62,20 @@ export interface FilaCorderoGuardado {
   anulado_en: string | null;
   anulado_motivo: string | null;
   anulado_nombre: string | null;
+
+  // Etapa 2. Van acá y no en una consulta aparte porque el tatuaje es lo que
+  // identifica al cordero una vez señalado: sin él, la lista de hermanos no
+  // puede decir cuál ya está hecho.
+  tatuaje: string | null;
+  fecha_senalada: string | null;
+  canela_vellon: number | null;
+  canela_no_vellon: number | null;
+  lunar_vellon: number | null;
+  lunar_no_vellon: number | null;
+  entropion: string | null;
+  halo_hair: number | null;
+  pigmentacion: number | null;
+  sexo_discrepancia: number | null;
 }
 
 type Vista = 'ficha' | 'editar' | 'madre' | 'cordero';
@@ -72,6 +86,9 @@ export function useCorderosDelParto(partoId: string) {
     `SELECT c.id, c.sexo, c.condicion, c.estado, c.peso_kg, c.collar_marca,
             c.causa_muerte, c.fecha_muerte, c.madre_crianza_id, c.observaciones,
             c.anulado_en, c.anulado_motivo,
+            c.tatuaje, c.fecha_senalada, c.entropion, c.halo_hair, c.pigmentacion,
+            c.canela_vellon, c.canela_no_vellon, c.lunar_vellon, c.lunar_no_vellon,
+            c.sexo_discrepancia,
             n.caravana AS nodriza_caravana,
             a.nombre   AS anulado_nombre
        FROM corderos c

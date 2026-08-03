@@ -6,9 +6,11 @@
  * que más tests tiene.
  */
 
+export type Sexo = 'macho' | 'hembra';
 export type Condicion = 'vivo' | 'muerto';
 export type MarcaCollar = 'punto_arriba' | 'cruz_al_medio' | 'punto_abajo';
 export type EstadoCordero = 'nacido' | 'senalado' | 'muerto';
+export type Entropion = 'ninguno' | 'ojo_derecho' | 'ojo_izquierdo' | 'ambos';
 
 export interface CorderoDelParto {
   id: string;
@@ -487,4 +489,224 @@ export function validarFechaMuerte(
   }
 
   return { valida: true };
+}
+
+// ---------------------------------------------------------------------------
+// La señalada — el tatuaje
+// ---------------------------------------------------------------------------
+
+/**
+ * El tatuaje va del 001 al 999, siempre con tres dígitos.
+ *
+ * El techo no es una restricción de la base —la columna es `text`— sino de la
+ * pinza de tatuar, que lleva tres posiciones. En 2025 hubo 468 corderos vivos,
+ * así que sobra margen.
+ */
+export const TATUAJE_DIGITOS = 3;
+export const TATUAJE_MAXIMO = 999;
+
+/** El máximo de la escala de pigmentación heredada de Zoho (0–4). */
+export const PIGMENTACION_MAXIMA = 4;
+
+export const ENTROPIONES: readonly { valor: Entropion; etiqueta: string }[] = [
+  { valor: 'ninguno', etiqueta: 'Ninguno' },
+  { valor: 'ojo_derecho', etiqueta: 'Ojo derecho' },
+  { valor: 'ojo_izquierdo', etiqueta: 'Ojo izquierdo' },
+  { valor: 'ambos', etiqueta: 'Ambos' },
+];
+
+/**
+ * Lleva lo tipeado a la forma canónica de tres dígitos, o null si no es un
+ * tatuaje posible.
+ *
+ * Existe por el índice único `corderos_tatuaje_unico`, que compara texto: sin
+ * normalizar, '7' y '007' serían dos tatuajes distintos para Postgres y el
+ * mismo número en la oreja de dos animales. Es el mismo problema que
+ * `normalizarNumeroCollar` resuelve para los collares, con una diferencia: acá
+ * los ceros se conservan, porque en la oreja van los tres dígitos.
+ */
+export function normalizarTatuaje(texto: string): string | null {
+  const limpio = texto.trim();
+  if (!/^\d+$/.test(limpio)) return null;
+
+  const numero = Number(limpio);
+  // El 000 no existe: la numeración arranca en 001.
+  if (numero < 1 || numero > TATUAJE_MAXIMO) return null;
+
+  return String(numero).padStart(TATUAJE_DIGITOS, '0');
+}
+
+/**
+ * El siguiente tatuaje libre de la temporada, o null si se agotaron.
+ *
+ * Es el mayor usado más uno, no el primer hueco: los tatuajes salen
+ * correlativos de la pinza y un hueco en el medio casi siempre es un cordero
+ * que murió, no un número disponible. Rellenarlo confundiría dos animales
+ * distintos en el análisis histórico.
+ *
+ * Se calcula sobre la réplica local, así que un aparato con días sin
+ * sincronizar puede proponer uno ya usado. De ahí el aviso al entrar a la
+ * señalada: es la única pantalla de la app que quiere estar al día.
+ */
+export function siguienteTatuaje(usados: readonly (string | null)[]): string | null {
+  let mayor = 0;
+  for (const usado of usados) {
+    if (usado === null) continue;
+    const normalizado = normalizarTatuaje(usado);
+    if (normalizado === null) continue;
+    mayor = Math.max(mayor, Number(normalizado));
+  }
+
+  if (mayor >= TATUAJE_MAXIMO) return null;
+  return String(mayor + 1).padStart(TATUAJE_DIGITOS, '0');
+}
+
+/**
+ * ¿Está libre este tatuaje en la temporada?
+ *
+ * `tatuajeActual` es el del cordero que se está corrigiendo. Sin él, abrir una
+ * señalada con el 042 y guardarla sin tocar nada avisaría que el 042 está
+ * ocupado — por él mismo.
+ */
+export function tatuajeDisponible(
+  tatuaje: string,
+  usados: readonly (string | null)[],
+  tatuajeActual?: string | null,
+): boolean {
+  const buscado = normalizarTatuaje(tatuaje);
+  if (buscado === null) return false;
+
+  if (tatuajeActual != null && normalizarTatuaje(tatuajeActual) === buscado) return true;
+
+  return !usados.some((u) => u !== null && normalizarTatuaje(u) === buscado);
+}
+
+// ---------------------------------------------------------------------------
+// R11 — Señalada completa o nada
+// ---------------------------------------------------------------------------
+
+/**
+ * Los cuatro rasgos de canela y lunar: dos rasgos por dos ubicaciones.
+ *
+ * Van juntos en un solo objeto porque en la pantalla son un solo control (la
+ * matriz con «Ninguna de las cuatro») y un solo campo faltante. Que el objeto
+ * sea null es lo que distingue «todavía no lo miré» de «no tiene ninguna» —
+ * distinción que cuatro booleanos sueltos no pueden expresar, y sin la cual la
+ * app estaría inventando ceros que nadie afirmó.
+ */
+export interface CanelaLunar {
+  canela_vellon: 0 | 1;
+  canela_no_vellon: 0 | 1;
+  lunar_vellon: 0 | 1;
+  lunar_no_vellon: 0 | 1;
+}
+
+export const SIN_CANELA_NI_LUNAR: CanelaLunar = {
+  canela_vellon: 0,
+  canela_no_vellon: 0,
+  lunar_vellon: 0,
+  lunar_no_vellon: 0,
+};
+
+/** ¿Están las cuatro en cero? Es el estado que marca «Ninguna de las cuatro». */
+export function ningunaCanelaNiLunar(valor: CanelaLunar): boolean {
+  return (
+    valor.canela_vellon === 0 &&
+    valor.canela_no_vellon === 0 &&
+    valor.lunar_vellon === 0 &&
+    valor.lunar_no_vellon === 0
+  );
+}
+
+/** Lo que la pantalla de señalada va juntando, antes de poder guardarse. */
+export interface BorradorSenalada {
+  /** La confirmación de R6, no el sexo del nacimiento. */
+  sexo: Sexo | null;
+  tatuaje: string | null;
+  entropion: Entropion | null;
+  canelaLunar: CanelaLunar | null;
+  halo_hair: 0 | 1 | null;
+  pigmentacion: number | null;
+}
+
+export interface CampoFaltante {
+  campo: keyof BorradorSenalada;
+  etiqueta: string;
+}
+
+/**
+ * Lo que falta para poder guardar. Vacío significa completa.
+ *
+ * R11 no admite señaladas a medias y la base tampoco: la restricción
+ * `senalada_completa` rechaza cualquier fila en estado `senalado` a la que le
+ * falte uno de los campos. Esta función existe para que la app llegue a esa
+ * restricción sabiendo que va a pasar, y para poder decir qué falta en vez de
+ * mostrar un botón apagado sin explicación —que es la peor pantalla posible,
+ * la que se toca tres veces y termina con la app cerrada.
+ *
+ * El orden es el de la pantalla, para que «tocá para ir» lleve al primero de
+ * arriba hacia abajo.
+ */
+export function camposFaltantes(borrador: BorradorSenalada): CampoFaltante[] {
+  const faltan: CampoFaltante[] = [];
+
+  if (borrador.sexo === null) faltan.push({ campo: 'sexo', etiqueta: 'confirmar qué es' });
+  if (normalizarTatuaje(borrador.tatuaje ?? '') === null) {
+    faltan.push({ campo: 'tatuaje', etiqueta: 'el tatuaje' });
+  }
+  if (borrador.entropion === null) faltan.push({ campo: 'entropion', etiqueta: 'entropión' });
+  if (borrador.canelaLunar === null) {
+    faltan.push({ campo: 'canelaLunar', etiqueta: 'canela y lunar' });
+  }
+  if (borrador.halo_hair === null) faltan.push({ campo: 'halo_hair', etiqueta: 'halo hair' });
+  if (
+    borrador.pigmentacion === null ||
+    !Number.isInteger(borrador.pigmentacion) ||
+    borrador.pigmentacion < 0 ||
+    borrador.pigmentacion > PIGMENTACION_MAXIMA
+  ) {
+    faltan.push({ campo: 'pigmentacion', etiqueta: 'pigmentación' });
+  }
+
+  return faltan;
+}
+
+/**
+ * ¿Se puede señalar este cordero?
+ *
+ * Solo a los que están en `nacido`. Un muerto no pasa por la señalada (R5 y
+ * R8) y un señalado ya tiene el tatuaje puesto: lo que corresponde ahí es
+ * corregir, no volver a señalar.
+ */
+export function puedeSenalar(cordero: CorderoEnFicha): Permiso {
+  if (cordero.anulado_en !== null) {
+    return { puede: false, motivo: 'Este cordero está anulado.' };
+  }
+  if (cordero.estado === 'muerto') {
+    return { puede: false, motivo: 'Este cordero está muerto: no pasa por la señalada.' };
+  }
+  if (cordero.estado === 'senalado') {
+    return { puede: false, motivo: 'Este cordero ya está señalado. Lo que se puede es corregir la señalada.' };
+  }
+  return { puede: true };
+}
+
+/**
+ * En un parto múltiple de sexos distintos, decir que el sexo no coincide casi
+ * nunca significa que se cargó mal al nacer: significa que en la mano está el
+ * otro hermano. Devuelve el hermano con el que se lo puede estar confundiendo,
+ * o null si no hay ninguno.
+ *
+ * Es lo mejor que sale de R6. Sin este aviso el error se descubre meses
+ * después, cuando el pedigrí no cierra; con él se resuelve mirando el collar,
+ * con el animal todavía sujeto.
+ */
+export function hermanoDelMismoSexo<T extends { id: string; sexo: Sexo; anulado_en: string | null }>(
+  hermanos: readonly T[],
+  corderoId: string,
+  sexoDeclarado: Sexo,
+): T | null {
+  return (
+    activos(hermanos).find((h) => h.id !== corderoId && h.sexo === sexoDeclarado) ?? null
+  );
 }

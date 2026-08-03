@@ -17,7 +17,7 @@ export interface CorderoDeFila {
   collar_marca: MarcaCollar | null;
 }
 
-export type TonoChip = 'muerto' | 'anulado';
+export type TonoChip = 'muerto' | 'anulado' | 'senalado';
 
 /** '4.2' → '4,20 kg'. Sin peso dice "sin pesar", no cero (R5). */
 export function pesoLegible(peso: number | null): string {

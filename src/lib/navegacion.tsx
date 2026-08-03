@@ -22,6 +22,9 @@ export type Pantalla =
   | { nombre: 'partos' }
   | { nombre: 'ficha-parto'; partoId: string }
   | { nombre: 'ficha-cordero'; corderoId: string }
+  | { nombre: 'senalada' }
+  | { nombre: 'senalar-parto'; partoId: string }
+  | { nombre: 'senalar-cordero'; corderoId: string }
   | { nombre: 'rechazados' };
 
 const INICIO: Pantalla = { nombre: 'inicio' };
@@ -30,6 +33,14 @@ interface Navegacion {
   pantalla: Pantalla;
   ir: (destino: Pantalla) => void;
   volver: () => void;
+  /**
+   * Cambia la pantalla actual sin apilar otra.
+   *
+   * Es lo que hace que encadenar mellizos en la señalada no deje una pila de
+   * corderos ya señalados detrás: al terminar el segundo, «volver» tiene que
+   * llevar al parto, no al primero.
+   */
+  reemplazar: (destino: Pantalla) => void;
   /** Vuelve al inicio y descarta la pila: se usa al terminar de cargar algo. */
   alInicio: () => void;
 }
@@ -48,11 +59,15 @@ export function ProveedorNavegacion({ children }: { children: ReactNode }) {
     setPila((previa) => (previa.length <= 1 ? [INICIO] : previa.slice(0, -1)));
   }, []);
 
+  const reemplazar = useCallback((destino: Pantalla) => {
+    setPila((previa) => [...previa.slice(0, -1), destino]);
+  }, []);
+
   const alInicio = useCallback(() => setPila([INICIO]), []);
 
   const valor = useMemo(
-    () => ({ pantalla: pila[pila.length - 1] ?? INICIO, ir, volver, alInicio }),
-    [pila, ir, volver, alInicio],
+    () => ({ pantalla: pila[pila.length - 1] ?? INICIO, ir, volver, reemplazar, alInicio }),
+    [pila, ir, volver, reemplazar, alInicio],
   );
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;
