@@ -23,25 +23,67 @@
   background: var(--fondo);
 }
 
+/* flex:none a propósito. Con min-width:0 la marca se dejaba comprimir por la
+   pastilla y «MERINO AUSTRALIANO» se recortaba a mitad de palabra, metiéndose
+   por debajo. Si no entra, lo que corresponde es esconder la línea entera —ver
+   la consulta de medios más abajo— y no mostrarla cortada. */
 .marca {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  min-width: 0;
+  flex: none;
 }
 
 .marca img {
-  width: 1.65rem;
-  height: 1.65rem;
+  width: 1.9rem;
+  height: 1.9rem;
   object-fit: contain;
+  flex: none;
 }
 
-.marca-nombre {
+/* La marca completa, como está en el logo: el nombre y la raza debajo.
+   No compite con la pastilla de sync —que es lo único funcional del
+   encabezado— porque el lockup no se encoge y la pastilla tampoco; lo que
+   cede es la segunda línea, y solo en pantallas donde no entran las dos.
+   Ver .marca-lockup small más abajo. */
+.marca-lockup {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+  min-width: 0;
+}
+
+.marca-lockup b {
   font-family: var(--serif);
-  font-size: 1.0625rem;
+  font-size: 1rem;
   font-weight: 500;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.05em;
   color: var(--marca);
+}
+
+.marca-lockup small {
+  margin-top: 0.15rem;
+  font-size: 0.5rem;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--tinta-tenue);
+}
+
+/* Medido: la marca completa (149 px) más la pastilla en su peor caso —«127
+   registros sin subir», 170 px— más el padding y el hueco necesitan 363 px de
+   pantalla. Abajo de eso no entran las dos, y una raza recortada a mitad de
+   palabra se ve peor que ausente. El corte va en 384 px para dejar margen:
+   la pastilla puede crecer un dígito más y las fuentes de iOS no miden igual
+   que las de Chrome.
+
+   Se cae la línea decorativa, nunca la pastilla: la marca es lo lindo, pero el
+   estado de sincronización es la señal operativa del día. */
+@media (max-width: 24rem) {
+  .marca-lockup small {
+    display: none;
+  }
 }
 
 .volver {

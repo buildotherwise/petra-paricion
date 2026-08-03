@@ -25,9 +25,15 @@ export function Encabezado({ atras }: { atras?: (() => void) | undefined }) {
           Volver
         </button>
       ) : (
+        /* El emblema recortado, no el ícono de la PWA: ese es el logo entero
+           —medallón y lettering— comprimido en un cuadrado, y a 30 px las dos
+           líneas de texto quedan en menos de tres píxeles de alto. */
         <div className="marca">
-          <img src="/icono-192.png" alt="" />
-          <span className="marca-nombre">Petra</span>
+          <img src="/emblema.png" alt="" />
+          <span className="marca-lockup">
+            <b>Petra</b>
+            <small>Merino Australiano</small>
+          </span>
         </div>
       )}
       <IndicadorSync onVerRechazados={verRechazados} />

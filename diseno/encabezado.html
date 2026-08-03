@@ -143,8 +143,8 @@ h3{font-family:'Newsreader',serif;font-weight:400;font-size:26px;line-height:1.0
 
   <div class="grid">
 
-    <div class="op si">
-      <span class="titulo-op">A · Solo el emblema <span class="elegida">Elegida</span></span>
+    <div class="op no">
+      <span class="titulo-op">A · Solo el emblema</span>
       <p>El medallón recortado, a 30 px, sin texto. El nombre completo vive en el login, que es donde se entra una vez y se lee entero.</p>
       <p class="pro">+ El carnero es lo distintivo de la marca. Sin el lettering encima, a 30 px se reconoce.</p>
       <p class="pro">+ Deja <b>132 px</b> libres para la pastilla de sync —el doble que la marca completa— y es lo único que ahí se necesita leer rápido.</p>
@@ -208,12 +208,13 @@ h3{font-family:'Newsreader',serif;font-weight:400;font-size:26px;line-height:1.0
       </div>
     </div>
 
-    <div class="op no">
-      <span class="titulo-op">C · La marca completa, en chico</span>
+    <div class="op si">
+      <span class="titulo-op">C · La marca completa, en chico <span class="elegida">Elegida</span></span>
       <p>Emblema y las dos líneas del logo: «Petra» arriba y «MERINO AUSTRALIANO» abajo, espaciada.</p>
       <p class="pro">+ Es la marca de verdad, la del logo, no una versión recortada. Se ve deliberado.</p>
       <p class="con">− «MERINO AUSTRALIANO» necesita 7,5 px para entrar. Es más chico que cualquier otro texto de la app, y esta app se usa a pleno sol.</p>
-      <p class="con">− Deja <b>19 px</b> entre la marca y la pastilla con pendientes. No se pisan por poco, y cualquier texto más largo las junta.</p>
+      <p class="con">− Es la que menos aire deja. Medido en la app: la marca completa (149 px) más la pastilla en su peor caso (170 px) más el padding y el hueco piden <b>363 px</b> de pantalla.</p>
+      <p class="costo">Se resuelve con una consulta de medios: abajo de 384 px se esconde la raza y queda emblema + «Petra». Lo que cede es la línea decorativa, nunca la pastilla.</p>
       <p class="con">− Y es la línea que menos falta hace: nadie abre la app para enterarse de qué raza cría la cabaña.</p>
       <div class="tira">
         <div class="top">
@@ -291,11 +292,12 @@ h3{font-family:'Newsreader',serif;font-weight:400;font-size:26px;line-height:1.0
   <table class="tabla">
     <tr><th>Qué</th><th>Decisión</th><th>Qué implica</th></tr>
     <tr><td>La imagen</td><td><b>Un asset propio para el encabezado:</b> solo el medallón, recortado del logo. Un ícono de app y una marca de encabezado no son la misma imagen.</td><td><code>emblema()</code> en <code>scripts/generar-iconos.py</code>, que encuentra el corte solo. Genera <code>public/emblema.png</code>.</td></tr>
-    <tr><td>El texto</td><td><b>Ninguno.</b> El emblema va solo, a 30 px. El nombre completo vive en el login.</td><td>Sacar el <code>span.marca-nombre</code> de <code>Encabezado.tsx</code> y su regla en <code>app.css</code>.</td></tr>
+    <tr><td>El texto</td><td><b>La marca completa:</b> «Petra» en serif y «MERINO AUSTRALIANO» debajo, como en el logo.</td><td>Un <code>span.marca-lockup</code> de dos líneas en <code>Encabezado.tsx</code>.</td></tr>
+    <tr><td>El choque con la pastilla</td><td><b>Abajo de 384 px se esconde la raza</b> y queda emblema + «Petra». Nunca se recorta a mitad de palabra ni se toca la pastilla.</td><td>Una consulta de medios, y <code>flex: none</code> en <code>.marca</code> para que no se deje comprimir.</td></tr>
     <tr><td>El resto</td><td>Sin cambios: «‹ Volver» a la izquierda en todas las demás pantallas, la pastilla de sync a la derecha siempre.</td><td>—</td></tr>
   </table>
   </div>
-  <p style="margin-top:26px">Si más adelante entra gente nueva al equipo y el emblema solo no alcanza para reconocer la app, la vuelta atrás es la <strong>B</strong>: agregar la palabra al lado. Queda maquetada por eso.</p>
+  <p style="margin-top:26px">El riesgo que había que despejar era el choque con la pastilla de sincronización, y se despejó midiendo en la app y no a ojo: se probaron seis anchos de pantalla por seis textos posibles de la pastilla. El límite real es <strong>363 px</strong>, el corte quedó en 384 para dejar margen —la pastilla puede crecer un dígito más y las fuentes de iOS no miden igual que las de Chrome— y abajo de ahí la app se ve como la <strong>B</strong>, que por eso queda maquetada.</p>
 </div>
 
 </div>
