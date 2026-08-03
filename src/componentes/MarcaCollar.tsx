@@ -18,12 +18,15 @@ export function DibujoMarca({
   marca,
   tamano = 1,
   apagado = false,
+  tinta,
 }: {
   marca: Marca;
   tamano?: number;
   apagado?: boolean;
+  /** Sobreescribe el color; lo usa la chapa del collar, que va sobre champán. */
+  tinta?: string;
 }) {
-  const color = apagado ? 'var(--tinta-tenue)' : 'var(--marca)';
+  const color = tinta ?? (apagado ? 'var(--tinta-tenue)' : 'var(--marca)');
 
   return (
     <svg
@@ -52,6 +55,42 @@ export function DibujoMarca({
         </g>
       )}
     </svg>
+  );
+}
+
+/**
+ * El collar, como la segunda chapa que se lee en el animal.
+ *
+ * La caravana cuelga de la oreja de la madre; el collar va en el cuello y lo
+ * llevan la madre y todos los hermanos. Son dos objetos distintos y por eso se
+ * ven distintos: la caravana en el amarillo real de las caravanas, el collar en
+ * champán.
+ *
+ * La marca va dibujada ADENTRO de la pastilla, junto al número, porque «collar
+ * 12, punto arriba» es una sola cosa: sin la marca, el número no distingue a un
+ * hermano de otro, y sin el número, en un potrero con tres collares puestos la
+ * marca tampoco alcanza.
+ *
+ * Va donde se compara contra el animal —señalar, elegir el hermano, las dos
+ * fichas— y no en las listas de búsqueda, donde el collar ya está como texto y
+ * ahí está bien: esas pantallas se miran sin el cordero en la mano.
+ */
+export function Collar({
+  numero,
+  marca,
+  grande = false,
+}: {
+  numero: string;
+  marca?: Marca | null;
+  grande?: boolean;
+}) {
+  return (
+    <span className={grande ? 'collar-chapa collar-chapa--grande' : 'collar-chapa'}>
+      {marca != null && (
+        <DibujoMarca marca={marca} tamano={grande ? 0.5 : 0.42} tinta="var(--marca-press)" />
+      )}
+      <b>Collar {numero}</b>
+    </span>
   );
 }
 

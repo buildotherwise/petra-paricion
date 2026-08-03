@@ -10,6 +10,7 @@ import { actualizar } from '../lib/powersync/escritura';
 import { useUsuarioId } from '../lib/sesion';
 import { fechaLarga } from '../lib/parto';
 import { Dato, nombreMarca, useCorderosDelParto, type FilaCorderoGuardado } from './FichaParto';
+import { Collar } from '../componentes/MarcaCollar';
 import { describirCanelaLunar } from '../componentes/MatrizCanelaLunar';
 import {
   CAUSAS_MUERTE,
@@ -159,9 +160,22 @@ function Ficha({
 
   return (
     <>
-      <h1 className="titulo">{sexoLegible(cordero.sexo)}</h1>
+      {/* Una vez señalado, el tatuaje es el nombre del animal y pasa al lugar
+          grande. El collar va al lado mientras exista: es lo que el cordero
+          lleva puesto y lo que permite reconocerlo entre sus hermanos. */}
+      <h1 className="titulo chapas">
+        {senalado && cordero.tatuaje !== null ? (
+          <span className="tatuaje-chapa">{cordero.tatuaje}</span>
+        ) : (
+          sexoLegible(cordero.sexo)
+        )}
+        {cordero.collar_numero !== null && (
+          <Collar numero={cordero.collar_numero} marca={cordero.collar_marca} grande />
+        )}
+      </h1>
       <p className="subtitulo">
-        Madre <Caravana numero={cordero.caravana} /> · nacido el{' '}
+        Madre <Caravana numero={cordero.caravana} />
+        {senalado && ` · ${sexoLegible(cordero.sexo).toLowerCase()}`} · nacido el{' '}
         {fechaLarga(cordero.parto_fecha)}
       </p>
 
@@ -175,15 +189,10 @@ function Ficha({
 
       <div className="tarjeta">
         <Dato etiqueta="Peso" valor={pesoLegible(cordero.peso_kg)} />
+        {/* El número ya está en la chapa de arriba; acá va lo que lo distingue
+            de sus hermanos. */}
         {cordero.collar_marca !== null && (
-          <Dato
-            etiqueta="Marca del collar"
-            valor={
-              cordero.collar_numero !== null
-                ? `${cordero.collar_numero} · ${nombreMarca(cordero.collar_marca).toLowerCase()}`
-                : nombreMarca(cordero.collar_marca)
-            }
-          />
+          <Dato etiqueta="Marca del collar" valor={nombreMarca(cordero.collar_marca)} />
         )}
         <Dato
           etiqueta="Se cría con"

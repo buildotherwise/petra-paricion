@@ -81,6 +81,7 @@ function Ruteo() {
           // Reemplaza en vez de apilar: al terminar el segundo mellizo, «volver»
           // tiene que llevar al parto y no al hermano ya señalado.
           onSenalarOtro={(corderoId) => reemplazar({ nombre: 'senalar-cordero', corderoId })}
+          onElegirHermano={(partoId) => reemplazar({ nombre: 'senalar-parto', partoId })}
         />
       );
 

@@ -2,6 +2,7 @@ import { useState, type CSSProperties } from 'react';
 import { useQuery } from '@powersync/react';
 import { Encabezado } from '../componentes/Encabezado';
 import { Caravana } from '../componentes/Caravana';
+import { Collar } from '../componentes/MarcaCollar';
 import { MatrizCanelaLunar } from '../componentes/MatrizCanelaLunar';
 import { pesoLegible, sexoLegible } from '../componentes/FilaCordero';
 import { db } from '../lib/powersync/db';
@@ -99,11 +100,14 @@ export function SenalarCordero({
   corderoId,
   onVolver,
   onSenalarOtro,
+  onElegirHermano,
 }: {
   corderoId: string;
   onVolver: () => void;
   /** Encadena con el hermano que falta, sin apilar otra pantalla. */
   onSenalarOtro: (corderoId: string) => void;
+  /** Con dos o más pendientes, vuelve a la lista de hermanos a elegir. */
+  onElegirHermano: (partoId: string) => void;
 }) {
   const { data: filas } = useQuery<FilaSenalar>(
     `SELECT c.id, c.parto_id, c.sexo, c.estado, c.peso_kg, c.collar_marca,
@@ -133,17 +137,27 @@ export function SenalarCordero({
   // La clave remonta el formulario entero al encadenar con un hermano: sin
   // ella, React reusaría el estado y el segundo cordero arrancaría con las
   // respuestas del primero ya puestas.
-  return <Formulario key={cordero.id} cordero={cordero} onVolver={onVolver} onSenalarOtro={onSenalarOtro} />;
+  return (
+    <Formulario
+      key={cordero.id}
+      cordero={cordero}
+      onVolver={onVolver}
+      onSenalarOtro={onSenalarOtro}
+      onElegirHermano={onElegirHermano}
+    />
+  );
 }
 
 function Formulario({
   cordero,
   onVolver,
   onSenalarOtro,
+  onElegirHermano,
 }: {
   cordero: FilaSenalar;
   onVolver: () => void;
   onSenalarOtro: (corderoId: string) => void;
+  onElegirHermano: (partoId: string) => void;
 }) {
   const usuarioId = useUsuarioId();
   const hermanos = useCorderosDelParto(cordero.parto_id);
@@ -183,7 +197,6 @@ function Formulario({
   );
   const [pigmentacion, setPigmentacion] = useState<number | null>(() => cordero.pigmentacion);
   const [observaciones, setObservaciones] = useState<string | null>(null);
-  const [intentado, setIntentado] = useState(false);
   const [confirmandoSalida, setConfirmandoSalida] = useState(false);
   const [guardado, setGuardado] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -242,7 +255,6 @@ function Formulario({
   };
 
   async function guardar() {
-    setIntentado(true);
     if (!listo || canelaLunar === null || normalizado === null || sexo === null) return;
 
     try {
@@ -281,6 +293,7 @@ function Formulario({
         hermanos={hermanos}
         onVolver={onVolver}
         onSenalarOtro={onSenalarOtro}
+        onElegirHermano={onElegirHermano}
       />
     );
   }
@@ -290,8 +303,15 @@ function Formulario({
       <Encabezado atras={salir} />
 
       <main className="contenido contenido--senalada area-segura">
-        <h1 className="titulo">
+        {/* La caravana y el collar juntos, como se leen en los animales. Es la
+            única pantalla que se mira con el cordero sujeto, y el collar es el
+            único dato que dice si se agarró el correcto: la caravana la tiene
+            la madre y el tatuaje todavía no existe. */}
+        <h1 className="titulo chapas">
           <Caravana numero={cordero.caravana} grande />
+          {cordero.collar_numero !== null && (
+            <Collar numero={cordero.collar_numero} marca={cordero.collar_marca} grande />
+          )}
         </h1>
         <p className="subtitulo">
           {corrigiendo && cordero.tatuaje !== null && `Tatuaje ${cordero.tatuaje} · `}
@@ -318,7 +338,6 @@ function Formulario({
               type="button"
               className="opcion"
               aria-pressed={sexo === cordero.sexo}
-              data-faltante={intentado && sexo === null ? true : undefined}
               onClick={() => setSexo(cordero.sexo)}
             >
               Sí, {sexoLegible(cordero.sexo).toLowerCase()}
@@ -327,7 +346,6 @@ function Formulario({
               type="button"
               className="opcion"
               aria-pressed={discrepancia}
-              data-faltante={intentado && sexo === null ? true : undefined}
               onClick={() => setSexo(cordero.sexo === 'macho' ? 'hembra' : 'macho')}
             >
               No, es {cordero.sexo === 'macho' ? 'hembra' : 'macho'}
@@ -360,7 +378,6 @@ function Formulario({
             maxLength={3}
             placeholder="000"
             value={tatuaje}
-            data-faltante={intentado && normalizado === null ? true : undefined}
             onChange={(e) => setTatuajeEscrito(e.target.value)}
             aria-label="Número de tatuaje"
           />
@@ -392,7 +409,6 @@ function Formulario({
                 type="button"
                 className="opcion"
                 aria-pressed={entropion === opcion.valor}
-                data-faltante={intentado && entropion === null ? true : undefined}
                 onClick={() => setEntropion(opcion.valor)}
               >
                 {opcion.etiqueta}
@@ -407,7 +423,6 @@ function Formulario({
           <MatrizCanelaLunar
             valor={canelaLunar}
             onChange={setCanelaLunar}
-            faltante={intentado && canelaLunar === null}
           />
         </div>
 
@@ -419,7 +434,6 @@ function Formulario({
               type="button"
               className="opcion"
               aria-pressed={haloHair === 1}
-              data-faltante={intentado && haloHair === null ? true : undefined}
               onClick={() => setHaloHair(1)}
             >
               Tiene
@@ -428,7 +442,6 @@ function Formulario({
               type="button"
               className="opcion"
               aria-pressed={haloHair === 0}
-              data-faltante={intentado && haloHair === null ? true : undefined}
               onClick={() => setHaloHair(0)}
             >
               No tiene
@@ -446,7 +459,6 @@ function Formulario({
                 type="button"
                 className="opcion"
                 aria-pressed={pigmentacion === valor}
-                data-faltante={intentado && pigmentacion === null ? true : undefined}
                 onClick={() => setPigmentacion(valor)}
               >
                 {valor}
@@ -471,11 +483,15 @@ function Formulario({
         {error !== null && <p className="aviso aviso--error">{error}</p>}
 
         <div className="barra-accion barra-accion--columna">
-          {/* R11: un botón apagado sin explicación se toca tres veces y termina
-              con la app cerrada. Decir qué falta —y llevar hasta ahí— es la
-              diferencia entre una regla y una pared. */}
-          {intentado && faltantes.length > 0 && (
-            <p className="aviso aviso--atencion" style={{ margin: 0 }}>
+          {/* R11, dicho antes del error y no después.
+
+              Un botón apagado sin explicación se toca tres veces y termina con
+              la app cerrada — pero dejarlo encendido para que el toque revele
+              lo que falta convierte el error en un paso obligatorio del flujo.
+              Va apagado, y lo que falta se ve desde el principio. Los nombres
+              llevan al campo. */}
+          {faltantes.length > 0 && (
+            <p className="faltantes">
               Falta{faltantes.length > 1 ? 'n' : ''}{' '}
               {faltantes.map((f, i) => (
                 <span key={f.campo}>
@@ -499,7 +515,7 @@ function Formulario({
           <button
             type="button"
             className="boton boton--principal"
-            disabled={intentado && !listo}
+            disabled={!listo}
             onClick={() => void guardar()}
           >
             {corrigiendo ? 'Guardar la corrección' : 'Guardar la señalada'}
@@ -525,9 +541,14 @@ function Formulario({
 /**
  * Lo que pasa cuando se guarda.
  *
- * En mellizos y trillizos el hermano que falta queda a un toque: el animal
- * todavía está ahí y la madre también, así que mandar de vuelta al buscador
- * sería pedir que se busque una oveja que se tiene agarrada.
+ * En mellizos y trillizos los hermanos que faltan quedan a un toque: los
+ * animales todavía están ahí y la madre también, así que mandar de vuelta al
+ * buscador sería pedir que se busque una oveja que se tiene agarrada.
+ *
+ * Con dos o más pendientes se vuelve a la lista de hermanos en vez de entrar
+ * derecho a uno. El orden lo pone quien agarra los corderos, no la app: entrar
+ * al que la app eligió significa que si en la mano está el otro, ya se está en
+ * la pantalla equivocada y todavía no se sabe.
  */
 function Guardado({
   tatuaje,
@@ -537,6 +558,7 @@ function Guardado({
   hermanos,
   onVolver,
   onSenalarOtro,
+  onElegirHermano,
 }: {
   tatuaje: string;
   cordero: FilaSenalar;
@@ -545,21 +567,30 @@ function Guardado({
   hermanos: readonly { id: string; estado: string; anulado_en: string | null }[];
   onVolver: () => void;
   onSenalarOtro: (corderoId: string) => void;
+  onElegirHermano: (partoId: string) => void;
 }) {
-  const falta = hermanos.find(
+  const faltan = hermanos.filter(
     (h) => h.id !== cordero.id && h.anulado_en === null && h.estado === 'nacido',
   );
+  const unoSolo = faltan[0];
 
   return (
     <div className="app">
       <Encabezado atras={onVolver} />
 
       <main className="contenido area-segura">
-        <h1 className="titulo">
+        <h1 className="titulo chapas">
           <Caravana numero={cordero.caravana} grande />
+          {cordero.collar_numero !== null && (
+            <Collar numero={cordero.collar_numero} grande />
+          )}
         </h1>
         <p className="subtitulo">
-          {falta !== undefined ? 'Falta un cordero de este parto' : 'Parto señalado'}
+          {faltan.length === 0
+            ? 'Parto señalado'
+            : faltan.length === 1
+              ? 'Falta un cordero de este parto'
+              : `Faltan ${faltan.length} corderos de este parto`}
         </p>
 
         <p className="aviso aviso--exito">
@@ -569,13 +600,17 @@ function Guardado({
         </p>
 
         <div style={{ display: 'grid', gap: 'var(--sp-3)', marginTop: 'var(--sp-4)' }}>
-          {falta !== undefined && (
+          {unoSolo !== undefined && (
             <button
               type="button"
               className="boton boton--principal"
-              onClick={() => onSenalarOtro(falta.id)}
+              onClick={() =>
+                faltan.length === 1
+                  ? onSenalarOtro(unoSolo.id)
+                  : onElegirHermano(cordero.parto_id)
+              }
             >
-              Señalar el que falta
+              {faltan.length === 1 ? 'Señalar el que falta' : 'Elegir el que sigue'}
             </button>
           )}
           <button type="button" className="boton boton--secundario" onClick={onVolver}>

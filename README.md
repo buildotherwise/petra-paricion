@@ -21,6 +21,11 @@ formularios de Zoho. La especificación funcional completa está en
 | ⏳ Cuentas del equipo | quedan para el final, a pedido del usuario |
 | ⏳ **Fase 4** | web admin — tablas, panel de revisión, exportaciones y dashboards |
 
+> **Los datos de la temporada 2026 son de prueba.** Las 502 madres son reales, pero
+> los partos cargados hasta ahora se hicieron para probar la app. `scripts/limpiar-datos-de-prueba.sql`
+> muestra cómo borrarlos: hay que correrlo desde el SQL Editor de Supabase, porque el
+> `delete` está revocado hasta para `service_role` y ese es el único lugar con permiso.
+
 ---
 
 ## Bloque 0 — Lo que hay que crear a mano

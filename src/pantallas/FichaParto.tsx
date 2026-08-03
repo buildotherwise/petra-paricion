@@ -5,6 +5,7 @@ import { Caravana } from '../componentes/Caravana';
 import { BuscadorCaravana, type OvejaElegida } from '../componentes/BuscadorCaravana';
 import { FormularioCordero, type BorradorCordero } from '../componentes/FormularioCordero';
 import { causaLegible, FilaCordero } from '../componentes/FilaCordero';
+import { Collar } from '../componentes/MarcaCollar';
 import {
   SelectorCondicionCorporal,
   formatearCondicion,
@@ -203,8 +204,12 @@ function Ficha({
 }) {
   return (
     <>
-      <h1 className="titulo">
+      {/* Las dos chapas que se leen en los animales: la caravana cuelga de la
+          oreja de la madre, el collar va en el cuello y lo llevan ella y todos
+          los hermanos. */}
+      <h1 className="titulo chapas">
         <Caravana numero={parto.caravana} grande />
+        {parto.collar_numero !== null && <Collar numero={parto.collar_numero} grande />}
       </h1>
       <p className="subtitulo">
         {nombreTipo(tipo)} · {vivos} vivo{vivos === 1 ? '' : 's'} · {fechaLarga(parto.fecha)}

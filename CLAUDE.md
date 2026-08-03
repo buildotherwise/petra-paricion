@@ -218,7 +218,7 @@ group by p.id, o.caravana;
 
 ## 7. Pantallas — app de campo
 
-**Inicio:** temporada activa, contadores del día (partos hoy / total temporada / pendientes de señalar), estado de sincronización, dos botones grandes: `Registrar parto` y `Señalada`.
+**Inicio:** temporada activa, estado de sincronización, dos botones grandes —`Registrar parto` y `Señalada`— y los contadores **agrupados por unidad**: `PARTOS: hoy · en la temporada` y `CORDEROS: nacidos · sin señalar`. Los tres en una fila mezclaban partos con corderos sin decirlo, y con tres partos que dieron cinco corderos los números parecían contradecirse. El sustantivo se dice una vez, arriba de cada grupo. «Sin señalar» es el único contador tocable: lleva a la señalada.
 
 **Registrar parto:**
 1. Buscador de caravana: campo numérico que filtra la lista precargada al escribir. Opción "No está en la lista" → alta manual (R9). Si la oveja ya tiene parto registrado, avisar y ofrecer abrirlo (evita duplicados).
@@ -229,11 +229,14 @@ group by p.id, o.caravana;
 **Señalada:** se señala **en tandas y por la madre** — se agarra la oveja y lo primero que se sabe es su caravana, aun en los partos únicos, que no llevan collar. Por eso el buscador va arriba y la lista de pendientes abajo, y no al revés: una lista de doscientos corderos ordenada por antigüedad no ayuda a encontrar la oveja que ya se tiene agarrada.
 1. Buscador de caravana o collar; debajo, los partos con corderos sin señalar, los más viejos primero. Un aviso al entrar si el aparato hace más de 12 h que no baja datos — ver R14.
 2. En partos múltiples, elegir al hermano por su **marca de collar dibujada** (la posición es el dato, no la palabra). En partos únicos esta pantalla se saltea.
-3. Detalle en **una sola pantalla con scroll**, no un asistente: confirmación de sexo (R6), tatuaje (R14), entropión, matriz de canela y lunar, halo hair, pigmentación, observaciones → `Guardar la señalada`. Completa o nada (R11). Al guardar se vuelve al parto, con el hermano que falta a un toque.
+3. Detalle en **una sola pantalla con scroll**, no un asistente: confirmación de sexo (R6), tatuaje (R14), entropión, matriz de canela y lunar, halo hair, pigmentación, observaciones → `Guardar la señalada`. Completa o nada (R11). El botón está **apagado mientras falte algo** y vuelve a apagarse si se des-selecciona un campo.
+4. Al guardar: con **un** pendiente el botón lleva derecho a ese hermano; con **dos o más** vuelve a la lista a elegir, porque el orden lo pone quien agarra los corderos y no la app — entrar al que la app eligió significa que si en la mano está el otro, ya se está en la pantalla equivocada y todavía no se sabe.
 
 **Canela y lunar:** las cuatro columnas de Zoho (`canela_vellon`, `canela_no_vellon`, `lunar_vellon`, `lunar_no_vellon`) se capturan como **dos rasgos por dos ubicaciones** en una matriz 2×2, con una barra «Ninguna de las cuatro» que resuelve de un toque el caso mayoritario. La barra no es un adorno: sin ella una casilla apagada no distingue «no tiene» de «todavía no lo miré», y como las columnas son `smallint check in (0,1)` la app estaría escribiendo ceros que nadie afirmó.
 
 **La señalada no toca el collar.** Se saca de hecho al terminar el parto, pero la app no pregunta: el número queda tomado toda la temporada igual (R3) y `partos.collar_puesto` sigue siendo solo del caso de la Fase 2.
+
+**El collar es una segunda chapa, no un dato de texto.** En partos múltiples va al lado de la caravana, en champán y con la marca dibujada adentro: la caravana cuelga de la oreja de la madre y el collar va en el cuello, así que son dos objetos y se ven distintos. Va donde se compara contra el animal —señalar, elegir el hermano, ficha del parto, ficha del cordero— y **no** en las listas de búsqueda, donde el collar ya aparece como texto en la línea chica y ahí está bien: esas pantallas se miran sin el cordero en la mano. La regla: *chapa donde se compara contra el animal, texto donde solo se consulta.* En un cordero ya señalado la chapa grande pasa a ser el tatuaje, que es su nombre a partir de ese momento.
 
 **Partos registrados:** sección propia, con buscador por caravana o collar y la lista de la temporada agrupada por jornada. Se llega desde el pie de «Partos de hoy», en el inicio.
 
@@ -315,5 +318,7 @@ Los MCPs son herramientas de la fase de desarrollo; el sistema terminado no depe
 ```
 
 - **Supabase MCP:** esquema, migraciones, RLS, inspección de datos. Las migraciones viven como SQL versionado en el repo (el MCP las aplica; el repo es la fuente de verdad). **Con datos reales de temporada: modo solo lectura o proyecto de desarrollo separado.** Complementar con la CLI de Supabase (desarrollo local, generación de tipos).
+
+  **Probar la app contra el proyecto real escribe en el proyecto real, y la única barrera confiable es no apuntarle.** Sembrar datos en la réplica local y «cortar el sync» no alcanza: la cola de subida sobrevive al `disconnect()`, y cualquier cosa que vuelva a llamar a `conectarSync()` —entrar con una cuenta, por ejemplo— la vacía contra el servidor sin preguntar. Pasó una vez, el 2 de agosto de 2026: tres partos de prueba terminaron en la base de la temporada. Y no se pudieron borrar, porque el `delete` está revocado incluso para `service_role` (`0005_service_role.sql`) — la limpieza tiene que salir del SQL Editor de Supabase, que corre como dueño (ver `scripts/limpiar-datos-de-prueba.sql` como modelo). Para probar de verdad: un proyecto Supabase separado con su propio `.env.local`.
 - **PowerSync docs MCP:** documentación oficial en tiempo real (sync rules YAML, conector de backend, SDK web). Instalar también sus agent skills.
 - **Playwright MCP:** pruebas en navegador real — viewport móvil, recorridos de los flujos, simulación de pérdida de conexión, verificación del service worker y de la cola de sincronización.

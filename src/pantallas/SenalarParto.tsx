@@ -1,6 +1,7 @@
 import { useQuery } from '@powersync/react';
 import { Encabezado } from '../componentes/Encabezado';
 import { Caravana } from '../componentes/Caravana';
+import { Collar } from '../componentes/MarcaCollar';
 import { FilaCordero } from '../componentes/FilaCordero';
 import { diaCorto, nombreTipo } from '../lib/parto';
 import { puedeSenalar } from '../lib/reglas';
@@ -85,13 +86,13 @@ export function SenalarParto({
       <Encabezado atras={onVolver} />
 
       <main className="contenido area-segura">
-        <h1 className="titulo">
+        <h1 className="titulo chapas">
           <Caravana numero={parto.caravana} grande />
+          {parto.collar_numero !== null && <Collar numero={parto.collar_numero} grande />}
         </h1>
         <p className="subtitulo">
-          {nombreTipo(activos.length)}
-          {parto.collar_numero !== null && ` · collar ${parto.collar_numero}`} · nacidos el{' '}
-          {diaCorto(parto.fecha)} · {antiguedad(parto.fecha)}
+          {nombreTipo(activos.length)} · nacidos el {diaCorto(parto.fecha)} ·{' '}
+          {antiguedad(parto.fecha)}
         </p>
 
         <p className="etiqueta">{pendientes.length > 0 ? '¿Cuál tenés?' : 'Corderos'}</p>

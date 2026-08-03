@@ -8,6 +8,7 @@ import { nombreTipo } from '../lib/parto';
 interface Contadores {
   partos_hoy: number;
   partos_temporada: number;
+  corderos_nacidos: number;
   pendientes_senalada: number;
 }
 
@@ -40,9 +41,11 @@ export function Inicio({
           JOIN ovejas o ON o.id = p.oveja_id
         WHERE o.temporada = ?)                                         AS partos_temporada,
        (SELECT count() FROM corderos
+        WHERE temporada = ? AND anulado_en IS NULL)                    AS corderos_nacidos,
+       (SELECT count() FROM corderos
         WHERE temporada = ? AND estado = 'nacido'
           AND anulado_en IS NULL)                                      AS pendientes_senalada`,
-    [hoy, entorno.temporada, entorno.temporada],
+    [hoy, entorno.temporada, entorno.temporada, entorno.temporada],
   );
 
   /**
@@ -78,14 +81,27 @@ export function Inicio({
         <h1 className="titulo">Temporada {entorno.temporada}</h1>
         <p className="subtitulo">{fecha}</p>
 
-        <div className="contadores">
+        {/* Agrupados por unidad, con el sustantivo dicho una vez arriba. Los
+            tres contadores en fila mezclaban partos con corderos sin decirlo,
+            y con tres partos que dieron cinco corderos los números parecían
+            contradecirse: 3, 3, y de pronto 4. */}
+        <span className="grupo-contadores">Partos</span>
+        <div className="contadores contadores--dos">
           <div className="contador">
             <b>{contadores?.partos_hoy ?? 0}</b>
             <span>Hoy</span>
           </div>
           <div className="contador">
             <b>{contadores?.partos_temporada ?? 0}</b>
-            <span>Temporada</span>
+            <span>En la temporada</span>
+          </div>
+        </div>
+
+        <span className="grupo-contadores">Corderos</span>
+        <div className="contadores contadores--dos">
+          <div className="contador">
+            <b>{contadores?.corderos_nacidos ?? 0}</b>
+            <span>Nacidos</span>
           </div>
           {/* El único contador que lleva a algún lado: es el número que el
               encargado mira para saber si va quedando trabajo atrás. */}

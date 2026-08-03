@@ -257,6 +257,13 @@
   background: linear-gradient(to top, var(--fondo) 62%, rgba(239, 234, 224, 0));
 }
 
+/* Con contenido apilado adentro, el degradado deja ver el formulario a través
+   del texto: se lee «Lupar» donde abajo dice «Lunar». Fondo sólido. */
+.barra-accion--columna {
+  background: var(--fondo);
+  box-shadow: 0 -14px 26px -20px rgba(43, 37, 25, 0.45);
+}
+
 .barra-accion .boton--secundario {
   flex: 0 0 38%;
 }
@@ -1042,13 +1049,6 @@ textarea.entrada::placeholder {
 
 /* Lo que quedó sin contestar cuando se intentó guardar (R11). El borde y no
    el fondo: el campo sigue leyéndose como lo que es, con una marca encima. */
-.opcion[data-faltante],
-.entrada[data-faltante],
-.matriz-ninguna[data-faltante],
-.matriz-casilla[data-faltante] {
-  box-shadow: inset 0 0 0 2px rgba(163, 75, 0, 0.55);
-}
-
 /* El tatuaje: lo que identifica al cordero una vez señalado. En serif y en
    el color de la marca, para que se lea como un nombre y no como un dato. */
 .chip--senalado {
@@ -1113,4 +1113,104 @@ textarea.entrada::placeholder {
   font-size: 0.9375rem;
   font-weight: 600;
   opacity: 0.75;
+}
+
+/* ── La chapa del collar ────────────────────────────────────────────── */
+
+/* La segunda chapa. La caravana cuelga de la oreja de la madre y va en el
+   amarillo real de las caravanas; el collar va en el cuello y lo llevan la
+   madre y todos los hermanos, así que va en champán: dos objetos distintos
+   que se ven distintos. */
+.chapas {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  margin-bottom: var(--sp-1);
+}
+
+.collar-chapa {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.65rem 0.2rem 0.4rem;
+  border-radius: var(--r-pastilla);
+  background: var(--marca-tenue);
+  box-shadow: inset 0 0 0 1.5px rgba(107, 90, 30, 0.3);
+}
+
+.collar-chapa b {
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: var(--marca-press);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.collar-chapa--grande {
+  padding: 0.25rem 0.8rem 0.25rem 0.45rem;
+}
+
+.collar-chapa--grande b {
+  font-size: 1.125rem;
+}
+
+/* ── Lo que falta, sobre el botón ───────────────────────────────────── */
+
+/* Va siempre a la vista, no después de fallar: para saber qué falta no
+   debería haber que equivocarse primero. Los nombres llevan al campo. */
+.faltantes {
+  margin: 0;
+  padding: var(--sp-3);
+  border-radius: var(--r-chico);
+  background: #f3e3ce;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #7d3a00;
+}
+
+.faltantes button {
+  min-height: 0;
+  padding: 0;
+  font-size: inherit;
+  font-weight: 800;
+  color: #6b4a12;
+  box-shadow: 0 1.5px 0 rgba(107, 74, 18, 0.35);
+}
+
+/* ── Contadores del inicio, agrupados por unidad ────────────────────── */
+
+/* «3 hoy · 3 temporada · 4 sin señalar» mezclaba partos con corderos sin
+   decirlo, y los números parecían contradecirse. La unidad se dice una vez,
+   arriba de cada grupo. */
+.grupo-contadores {
+  display: block;
+  margin: var(--sp-4) 0 var(--sp-2);
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--tinta-tenue);
+}
+
+.grupo-contadores:first-child {
+  margin-top: 0;
+}
+
+.contadores--dos {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+/* Una vez señalado, el tatuaje es el nombre del animal: ocupa el lugar grande
+   de la ficha, en la serif de los números y en el verde del estado. */
+.tatuaje-chapa {
+  display: inline-block;
+  padding: 0.1rem 0.7rem;
+  border-radius: var(--r-pastilla);
+  background: rgba(46, 107, 63, 0.13);
+  color: #215030;
+  font-family: var(--serif);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
 }
