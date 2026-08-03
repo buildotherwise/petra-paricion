@@ -3,8 +3,7 @@ import { useQuery } from '@powersync/react';
 import { Caravana } from '../../componentes/Caravana';
 import { entorno } from '../../lib/entorno';
 import { buscarCaravana } from '../../lib/busqueda';
-import { nombreMarca } from '../FichaParto';
-import { antiguedad, diaCorto, fechaLarga, nombreTipo } from '../../lib/parto';
+import { antiguedad, diaCorto, fechaLarga, nombreMarca, nombreTipo } from '../../lib/parto';
 import { sexoLegible } from '../../componentes/FilaCordero';
 import {
   collaresDuplicados,

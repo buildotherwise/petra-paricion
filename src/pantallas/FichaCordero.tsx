@@ -8,8 +8,8 @@ import { causaLegible, pesoLegible, sexoLegible } from '../componentes/FilaCorde
 import { db } from '../lib/powersync/db';
 import { actualizar } from '../lib/powersync/escritura';
 import { useUsuarioId } from '../lib/sesion';
-import { fechaLarga } from '../lib/parto';
-import { Dato, nombreMarca, useCorderosDelParto, type FilaCorderoGuardado } from './FichaParto';
+import { fechaLarga, nombreMarca } from '../lib/parto';
+import { Dato, useCorderosDelParto, type FilaCorderoGuardado } from './FichaParto';
 import { Collar } from '../componentes/MarcaCollar';
 import { describirCanelaLunar } from '../componentes/MatrizCanelaLunar';
 import {

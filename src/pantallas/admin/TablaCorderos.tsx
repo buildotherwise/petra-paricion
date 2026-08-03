@@ -9,8 +9,7 @@ import { buscarPorCaravanaOCollar } from '../../lib/busqueda';
 // doscientas filas es ruido. Por eso no se usa `pesoLegible`, que sí
 // corresponde en las fichas, donde el número está suelto en una oración.
 import { causaLegible, sexoLegible } from '../../componentes/FilaCordero';
-import { nombreMarca } from '../FichaParto';
-import { diaCorto, diasDesde } from '../../lib/parto';
+import { diaCorto, diasDesde, nombreMarca } from '../../lib/parto';
 import type { MarcaCollar } from '../../lib/reglas';
 
 /**

@@ -7,7 +7,7 @@
  * hace dudar de si se está mirando el mismo registro.
  */
 
-import { hoyISO } from './reglas';
+import { hoyISO, type MarcaCollar } from './reglas';
 
 export const NOMBRE_TIPO: Record<number, string> = {
   0: 'Sin corderos',
@@ -63,4 +63,60 @@ export function antiguedad(fecha: string, hoy: string = hoyISO()): string {
   if (dias <= 0) return 'hoy';
   if (dias === 1) return '1 día';
   return `${dias} días`;
+}
+
+// ---------------------------------------------------------------------------
+// Cómo se nombra un cordero
+// ---------------------------------------------------------------------------
+
+const NOMBRE_MARCA: Record<MarcaCollar, string> = {
+  punto_arriba: 'Punto arriba',
+  cruz_al_medio: 'Cruz al medio',
+  punto_abajo: 'Punto abajo',
+};
+
+export function nombreMarca(marca: MarcaCollar): string {
+  return NOMBRE_MARCA[marca];
+}
+
+export interface CorderoNombrable {
+  tatuaje: string | null;
+  /**
+   * La caravana de la MADRE.
+   *
+   * El nombre del campo importa: la caravana no identifica al cordero, lo
+   * ubica. Confundir las dos cosas fue exactamente el error que tenía el feed
+   * de últimas ediciones, que decía «Cordero 0001» cuando 0001 es la chapa que
+   * cuelga de la oreja de la madre.
+   */
+  caravanaMadre: string;
+  collar_marca: MarcaCollar | null;
+  /** Corderos del parto que cuentan (R1). */
+  hermanos: number;
+}
+
+/**
+ * Cómo se llama un cordero en una lista.
+ *
+ * Tres casos, en orden de cuánto identifican:
+ *
+ *  1. **Señalado** → el tatuaje. Es su nombre a partir de ese momento, y la
+ *     madre queda como ubicación.
+ *  2. **Sin señalar, en un parto múltiple** → la madre más la marca del collar,
+ *     que es lo único que lo distingue de sus hermanos (R2). Sin la marca, los
+ *     tres trillizos se llamarían igual y no habría forma de saber cuál se
+ *     tocó.
+ *  3. **Sin señalar, en un parto único** → la madre alcanza, porque no hay
+ *     ningún otro.
+ *
+ * En los tres, la madre se dice como madre y no como si fuera el cordero.
+ */
+export function nombreDeCordero(cordero: CorderoNombrable): string {
+  if (cordero.tatuaje !== null && cordero.tatuaje !== '') {
+    return `Cordero ${cordero.tatuaje} · madre ${cordero.caravanaMadre}`;
+  }
+  if (cordero.hermanos > 1 && cordero.collar_marca !== null) {
+    return `Cordero de ${cordero.caravanaMadre} · ${nombreMarca(cordero.collar_marca).toLowerCase()}`;
+  }
+  return `Cordero de ${cordero.caravanaMadre}`;
 }

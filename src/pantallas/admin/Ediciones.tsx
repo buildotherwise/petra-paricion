@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import { useQuery } from '@powersync/react';
 import { edicionesRecientes, useConsultaOnline, type Cambio } from '../../lib/consultas-online';
+import { nombreDeCordero } from '../../lib/parto';
+import type { MarcaCollar } from '../../lib/reglas';
 
 /**
  * Lo último que se tocó, en cualquier registro.
@@ -12,11 +14,14 @@ import { edicionesRecientes, useConsultaOnline, type Cambio } from '../../lib/co
  * Es la única parte de esta pantalla que se pide por internet.
  */
 
-const TABLAS: Record<string, string> = {
-  partos: 'Parto',
-  corderos: 'Cordero',
-  ovejas: 'Oveja',
-};
+interface Nombrable {
+  id: string;
+  tabla: string;
+  caravana: string;
+  tatuaje: string | null;
+  collar_marca: MarcaCollar | null;
+  hermanos: number;
+}
 
 export function Ediciones() {
   const { datos, cargando, error, recargar } = useConsultaOnline<Cambio>(edicionesRecientes(), []);
@@ -26,25 +31,35 @@ export function Ediciones() {
   );
   const nombres = useMemo(() => new Map(perfiles.map((p) => [p.id, p.nombre])), [perfiles]);
 
-  // Las caravanas salen de la réplica, no del servidor: `cambios` guarda un
-  // registro_id y nada más, y un uuid no le dice nada a nadie. Cruzarlo acá es
-  // lo que convierte «se cambió el registro 8f2c…» en «se cambió el parto de la
-  // 0015».
-  const { data: comoSeLlaman } = useQuery<{ id: string; caravana: string; tabla: string }>(
-    `SELECT p.id, o.caravana, 'partos' AS tabla
+  // Cómo se llama cada registro sale de la réplica, no del servidor: `cambios`
+  // guarda un registro_id y nada más, y un uuid no le dice nada a nadie.
+  //
+  // Para el cordero hacen falta el tatuaje y la marca además de la caravana,
+  // porque la caravana es de la MADRE y no lo identifica: en un parto de
+  // trillizos los tres se llamarían igual. Ver `nombreDeCordero`.
+  const { data: comoSeLlaman } = useQuery<Nombrable>(
+    `SELECT p.id, 'partos' AS tabla, o.caravana,
+            NULL AS tatuaje, NULL AS collar_marca, 0 AS hermanos
        FROM partos p JOIN ovejas o ON o.id = p.oveja_id
      UNION ALL
-     SELECT c.id, o.caravana, 'corderos' AS tabla
+     SELECT c.id, 'corderos' AS tabla, o.caravana,
+            c.tatuaje, c.collar_marca,
+            (SELECT count() FROM corderos h
+              WHERE h.parto_id = c.parto_id AND h.anulado_en IS NULL) AS hermanos
        FROM corderos c
        JOIN partos p ON p.id = c.parto_id
        JOIN ovejas o ON o.id = p.oveja_id
      UNION ALL
-     SELECT o.id, o.caravana, 'ovejas' AS tabla FROM ovejas o`,
+     SELECT o.id, 'ovejas' AS tabla, o.caravana, NULL, NULL, 0 FROM ovejas o`,
   );
-  const caravanas = useMemo(
-    () => new Map(comoSeLlaman.map((f) => [`${f.tabla}:${f.id}`, f.caravana])),
-    [comoSeLlaman],
-  );
+
+  const etiquetas = useMemo(() => {
+    const mapa = new Map<string, string>();
+    for (const fila of comoSeLlaman) {
+      mapa.set(`${fila.tabla}:${fila.id}`, etiquetaDe(fila));
+    }
+    return mapa;
+  }, [comoSeLlaman]);
 
   return (
     <section className="historial" style={{ marginTop: 0 }}>
@@ -72,8 +87,7 @@ export function Ediciones() {
               <span className="cuando">{cuando(cambio.realizado_en)}</span>
               <span className="campo">{cambio.campo ?? 'creado'}</span>
               <span className="valor">
-                {TABLAS[cambio.tabla] ?? cambio.tabla}{' '}
-                {caravanas.get(`${cambio.tabla}:${cambio.registro_id}`) ?? '—'}
+                {etiquetas.get(`${cambio.tabla}:${cambio.registro_id}`) ?? cambio.tabla}
                 {cambio.tipo === 'actualizacion' && (
                   <>
                     {' · '}
@@ -91,6 +105,23 @@ export function Ediciones() {
       )}
     </section>
   );
+}
+
+/**
+ * Cómo se nombra cada registro en el feed.
+ *
+ * El parto y la oveja se llaman por la caravana, que es lo que los identifica.
+ * El cordero NO: la caravana es de su madre. Ver `nombreDeCordero`.
+ */
+function etiquetaDe(fila: Nombrable): string {
+  if (fila.tabla === 'partos') return `Parto ${fila.caravana}`;
+  if (fila.tabla === 'ovejas') return `Oveja ${fila.caravana}`;
+  return nombreDeCordero({
+    tatuaje: fila.tatuaje,
+    caravanaMadre: fila.caravana,
+    collar_marca: fila.collar_marca,
+    hermanos: fila.hermanos,
+  });
 }
 
 function cuando(iso: string): string {

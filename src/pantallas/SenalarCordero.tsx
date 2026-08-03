@@ -9,7 +9,7 @@ import { db } from '../lib/powersync/db';
 import { guardarCambio } from '../lib/powersync/escritura';
 import { useUsuarioId } from '../lib/sesion';
 import { entorno } from '../lib/entorno';
-import { antiguedad, diaCorto } from '../lib/parto';
+import { antiguedad, diaCorto, nombreMarca } from '../lib/parto';
 import {
   camposFaltantes,
   ENTROPIONES,
@@ -25,7 +25,7 @@ import {
   type Entropion,
   type Sexo,
 } from '../lib/reglas';
-import { nombreMarca, useCorderosDelParto } from './FichaParto';
+import { useCorderosDelParto } from './FichaParto';
 
 /**
  * La señalada de un cordero: nueve campos en un teléfono, a pleno sol.

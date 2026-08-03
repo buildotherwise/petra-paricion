@@ -3,9 +3,9 @@ import { Encabezado } from '../componentes/Encabezado';
 import { Caravana } from '../componentes/Caravana';
 import { Collar } from '../componentes/MarcaCollar';
 import { FilaCordero } from '../componentes/FilaCordero';
-import { antiguedad, diaCorto, nombreTipo } from '../lib/parto';
+import { antiguedad, diaCorto, nombreMarca, nombreTipo } from '../lib/parto';
 import { puedeSenalar } from '../lib/reglas';
-import { nombreMarca, useCorderosDelParto } from './FichaParto';
+import { useCorderosDelParto } from './FichaParto';
 
 /**
  * Cuál de los hermanos tenés en la mano.

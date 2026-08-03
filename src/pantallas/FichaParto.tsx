@@ -14,7 +14,7 @@ import { db } from '../lib/powersync/db';
 import { actualizar } from '../lib/powersync/escritura';
 import { dispositivo, entorno } from '../lib/entorno';
 import { useUsuarioId } from '../lib/sesion';
-import { fechaLarga, nombreTipo } from '../lib/parto';
+import { fechaLarga, nombreMarca, nombreTipo } from '../lib/parto';
 import {
   collarDisponible,
   corderosQueRequierenMarca,
@@ -342,15 +342,9 @@ export function chipDelCordero(
   return undefined;
 }
 
-const NOMBRE_MARCA: Record<MarcaCollar, string> = {
-  punto_arriba: 'Punto arriba',
-  cruz_al_medio: 'Cruz al medio',
-  punto_abajo: 'Punto abajo',
-};
-
-export function nombreMarca(marca: MarcaCollar): string {
-  return NOMBRE_MARCA[marca];
-}
+// `nombreMarca` se mudó a lib/parto.ts, que es el archivo de cómo se nombran
+// las cosas en pantalla. Lo usan cinco pantallas y una función pura, y una de
+// ellas importándolo desde otra pantalla era el camino al revés.
 
 // ───────────────────────────────────────────────────────────────────────
 // Editar los datos del parto
