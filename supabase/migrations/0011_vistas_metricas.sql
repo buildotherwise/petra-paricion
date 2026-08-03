@@ -29,12 +29,16 @@
 -- la ventana [servicio + 145, servicio + 155] de a lo sumo un servicio, y ese
 -- es el padre.
 --
--- Se midió contra el archivo real de 2026: ninguna oveja tiene dos servicios de
--- padres distintos con ventanas solapadas (el par más ajustado quedó a 11 días,
--- la mediana en 32). Aun así la vista cuenta los candidatos en vez de asumir:
--- con 0 o con 2+ el padre es null y el caso se mira a mano. Un cordero con
--- padre equivocado en un plantel de cabaña es peor que uno sin padre asignado —
--- el segundo se investiga, el primero se hereda.
+-- Se midió contra el archivo real de 2026, sobre las 1.149 comparaciones entre
+-- padres distintos: ninguna oveja tiene dos ventanas solapadas. El margen es más
+-- ajustado de lo que parece —el par más cercano queda a UN día, la mediana a
+-- 22—, pero un margen chico acá no produce un padre equivocado sino un parto que
+-- no cae en ninguna ventana y queda sin padre, que es el modo de falla seguro.
+--
+-- Aun así la vista cuenta los candidatos en vez de asumir: con 0 o con 2+ el
+-- padre es null y el caso se mira a mano. Un cordero con padre equivocado en un
+-- plantel de cabaña es peor que uno sin padre asignado — el segundo se
+-- investiga, el primero se hereda.
 --
 -- Los 145 y 155 viven acá y en v_avance_paricion, en ningún otro lado.
 create view v_paternidad as
@@ -89,7 +93,8 @@ comment on view v_paternidad is
 -- va a parir UNA vez, no tres, así que cada oveja pesa exactamente 1 en toda la
 -- temporada, repartido en partes iguales entre el conjunto DEDUPLICADO de sus
 -- días posibles. La consecuencia es verificable y está como aserción en
--- metricas.test.sql: sum(esperados) = inseminadas, siempre.
+-- metricas.test.sql: sum(esperados) = inseminadas, salvo milésimas del
+-- redondeo por día (que es a lo que apunta la tolerancia del test).
 --
 -- El calendario es continuo a propósito: un día sin partos es un dato, y una
 -- serie que se saltea los días vacíos dibuja una curva que comprime el tiempo —
@@ -171,7 +176,7 @@ grant select on v_avance_paricion to authenticated;
 grant select on v_avance_paricion to service_role;
 
 comment on view v_avance_paricion is
-  'Curva diaria de partos contra la esperada por gestación 145–155. Cada oveja pesa 1 repartido en sus días posibles: sum(esperados) = inseminadas.';
+  'Curva diaria de partos contra la esperada por gestación 145–155. Cada oveja pesa 1 repartido en sus días posibles, así que sum(esperados) = inseminadas a menos del redondeo diario.';
 
 -- ---------------------------------------------------------------------------
 -- v_tipo_nacimiento — únicos, mellizos, trillizos

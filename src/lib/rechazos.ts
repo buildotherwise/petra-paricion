@@ -228,22 +228,33 @@ export function camposDeLaCarga(
 export function mensajeDeLectura(
   codigo: string | null | undefined,
   hayConexion: boolean,
+  // Qué se estaba leyendo. Empezó siendo siempre el historial y dejó de serlo
+  // con los tableros: un 42501 sobre una vista de métricas es una vista a la
+  // que le falta su `grant` —el error contra el que CLAUDE.md advierte dos
+  // veces— y mandar a revisar `cambios` haría perder la tarde en el lugar
+  // equivocado.
+  que = 'el historial',
 ): string {
   if (!hayConexion) {
-    return 'Sin conexión. El historial se guarda en el servidor, así que hace falta señal para verlo.';
+    return `Sin conexión. ${mayuscula(que)} se calcula en el servidor, así que hace falta señal para verlo.`;
   }
   if (codigo === null || codigo === undefined || codigo === '') {
-    return 'No se pudo cargar el historial.';
+    return `No se pudo cargar ${que}.`;
   }
 
-  // 42501 es lo que devuelve RLS cuando `cambios_lectura_admin` no deja pasar.
-  // Es informativo, no un bug: la política existe y funcionó.
-  if (codigo === '42501') return 'Tu cuenta no tiene permiso para ver el historial de cambios.';
+  // 42501 es lo que devuelve RLS cuando una política no deja pasar —en
+  // `cambios`, `cambios_lectura_admin`— y también lo que devuelve una vista
+  // recién creada a la que se le olvidaron sus dos líneas.
+  if (codigo === '42501') return `Tu cuenta no tiene permiso para ver ${que}.`;
   if (codigo === 'PGRST301' || codigo === '401') {
     return 'La sesión venció. Cerrá sesión y volvé a entrar.';
   }
   if (codigo.startsWith('PGRST')) {
     return 'La consulta al servidor no es válida. Es un error de la app, no de los datos.';
   }
-  return `No se pudo cargar el historial (${codigo}).`;
+  return `No se pudo cargar ${que} (${codigo}).`;
+}
+
+function mayuscula(texto: string): string {
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
 }

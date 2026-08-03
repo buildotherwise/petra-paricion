@@ -131,7 +131,14 @@ function Tarjeta({
           <h2>{titulo}</h2>
           <p className="porque">{porque}</p>
         </div>
-        {estado.error === null && cifra !== undefined && <div className="cifra-grande">{cifra}</div>}
+        {/* La cifra espera a que haya datos. Mientras carga, `datos` es un
+            arreglo vacío y las transformaciones devuelven ceros honestos —«0,0 %
+            · 0 de 0»— que en pantalla se leen como un resultado y no como una
+            espera. Es la misma mentira que el error tiene prohibida, en el otro
+            estado. */}
+        {!estado.cargando && estado.error === null && cifra !== undefined && (
+          <div className="cifra-grande">{cifra}</div>
+        )}
       </div>
 
       {estado.cargando && <p className="espera">Consultando el servidor…</p>}
@@ -187,7 +194,7 @@ const contando =
 // ---------------------------------------------------------------------------
 
 function Avance({ temporada, c }: { temporada: number; c: Colores }) {
-  const estado = useConsultaOnline(avanceParicion(temporada), [temporada]);
+  const estado = useConsultaOnline(avanceParicion(temporada), [temporada], 'el avance');
   const serie = useMemo(() => serieAvance(estado.datos), [estado.datos]);
   const resumen = useMemo(() => resumenAvance(estado.datos), [estado.datos]);
 
@@ -207,13 +214,7 @@ function Avance({ temporada, c }: { temporada: number; c: Colores }) {
       estado={estado}
       vacio={
         serie.length === 0
-          ? {
-              titulo: 'Sin datos todavía',
-              detalle:
-                resumen.inseminadas === 0
-                  ? 'Falta cargar los servicios de la temporada.'
-                  : 'La parición no arrancó.',
-            }
+          ? { titulo: 'Sin datos todavía', detalle: 'Falta cargar los servicios de la temporada.' }
           : null
       }
     >
@@ -241,16 +242,27 @@ function Avance({ temporada, c }: { temporada: number; c: Colores }) {
           />
         </ComposedChart>
       </ResponsiveContainer>
-      <div className="leyenda-tablero">
-        <span>
-          <i style={{ background: c.marca }} />
-          Partos por día
-        </span>
-        <span>
-          <i className="raya" style={{ borderTopColor: c.esperado }} />
-          Esperados (gestación 145–155)
-        </span>
-      </div>
+      {/* Sin servicios cargados hay curva real pero no hay contra qué compararla,
+          y el porcentaje dice «0 de 0» — que sin esta línea se lee como si nadie
+          hubiera parido. Es el estado del primer día: los partos entran antes de
+          que alguien corra la importación. */}
+      {resumen.inseminadas === 0 ? (
+        <p className="pie-tablero">
+          Faltan los servicios de la temporada, así que todavía no hay contra qué
+          comparar. Se cargan con <b>scripts/importar-servicios.py</b>.
+        </p>
+      ) : (
+        <div className="leyenda-tablero">
+          <span>
+            <i style={{ background: c.marca }} />
+            Partos por día
+          </span>
+          <span>
+            <i className="raya" style={{ borderTopColor: c.esperado }} />
+            Esperados (gestación 145–155)
+          </span>
+        </div>
+      )}
     </Tarjeta>
   );
 }
@@ -260,7 +272,7 @@ function Avance({ temporada, c }: { temporada: number; c: Colores }) {
 // ---------------------------------------------------------------------------
 
 function Pendientes({ temporada, c }: { temporada: number; c: Colores }) {
-  const estado = useConsultaOnline(senaladasPendientes(temporada), [temporada]);
+  const estado = useConsultaOnline(senaladasPendientes(temporada), [temporada], 'las señaladas pendientes');
   const p = useMemo(() => pendientesConAntiguedad(estado.datos, hoyISO()), [estado.datos]);
 
   return (
@@ -297,7 +309,7 @@ function Pendientes({ temporada, c }: { temporada: number; c: Colores }) {
 // ---------------------------------------------------------------------------
 
 function Tipos({ temporada, c }: { temporada: number; c: Colores }) {
-  const estado = useConsultaOnline(tipoDeNacimiento(temporada), [temporada]);
+  const estado = useConsultaOnline(tipoDeNacimiento(temporada), [temporada], 'el tipo de nacimiento');
   const d = useMemo(() => distribucionTipos(estado.datos), [estado.datos]);
 
   return (
@@ -332,7 +344,7 @@ function Tipos({ temporada, c }: { temporada: number; c: Colores }) {
 // ---------------------------------------------------------------------------
 
 function Mortalidad({ temporada, c }: { temporada: number; c: Colores }) {
-  const estado = useConsultaOnline(mortalidad(temporada), [temporada]);
+  const estado = useConsultaOnline(mortalidad(temporada), [temporada], 'la mortalidad');
   const m = useMemo(() => tasasMortalidad(estado.datos), [estado.datos]);
 
   const barras = [
@@ -378,7 +390,7 @@ function Mortalidad({ temporada, c }: { temporada: number; c: Colores }) {
 // ---------------------------------------------------------------------------
 
 function Pesos({ temporada, c }: { temporada: number; c: Colores }) {
-  const estado = useConsultaOnline(pesoAlNacer(temporada), [temporada]);
+  const estado = useConsultaOnline(pesoAlNacer(temporada), [temporada], 'los pesos');
   const barras = useMemo(() => pesosPorSexoYTipo(estado.datos), [estado.datos]);
 
   return (
@@ -439,7 +451,7 @@ function Pesos({ temporada, c }: { temporada: number; c: Colores }) {
 // ---------------------------------------------------------------------------
 
 function Condicion({ temporada, c }: { temporada: number; c: Colores }) {
-  const estado = useConsultaOnline(condicionCorporal(temporada), [temporada]);
+  const estado = useConsultaOnline(condicionCorporal(temporada), [temporada], 'la condición corporal');
   const h = useMemo(() => histogramaCondicion(estado.datos), [estado.datos]);
 
   return (
@@ -482,7 +494,7 @@ function Condicion({ temporada, c }: { temporada: number; c: Colores }) {
 // ---------------------------------------------------------------------------
 
 function Prevalencias({ temporada, c }: { temporada: number; c: Colores }) {
-  const estado = useConsultaOnline(prevalenciasFenotipicas(temporada), [temporada]);
+  const estado = useConsultaOnline(prevalenciasFenotipicas(temporada), [temporada], 'las prevalencias');
   const m = useMemo(() => matrizCanelaLunar(estado.datos), [estado.datos]);
   const pigmentacion = useMemo(() => prevalenciaDe(estado.datos, 'pigmentacion'), [estado.datos]);
   const halo = useMemo(

@@ -287,7 +287,8 @@ justamente una de las correcciones para las que existe la web.
 
 **La curva esperada reparte peso 1 por oveja.** Una oveja con tres servicios va a
 parir una vez, no tres. Cada una aporta 1 repartido entre sus días posibles
-deduplicados, y por eso `sum(esperados) = inseminadas` — está como aserción en
+deduplicados, y por eso `sum(esperados) = inseminadas` a menos del redondeo por
+día — está como aserción, con su tolerancia, en
 `supabase/tests/metricas.test.sql`. Sin eso la curva diría 1.359 y el porcentaje
 de avance no llegaría nunca a nada.
 

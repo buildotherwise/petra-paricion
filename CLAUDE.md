@@ -298,7 +298,7 @@ Las ocho vistas viven en `0011_vistas_metricas.sql` y **cada una lleva sus dos l
 
 Tarjetas del dashboard:
 
-1. Avance: % de ovejas paridas sobre inseminadas y curva diaria de partos contra la esperada. **La curva esperada reparte peso 1 por oveja** entre el conjunto deduplicado de sus días posibles: una oveja con tres servicios va a parir una vez, no tres, y `sum(esperados) = inseminadas` es una aserción de `metricas.test.sql`. El calendario es continuo a propósito — sin los días en cero, las tres tandas de la inseminación se aplanarían en una sola loma.
+1. Avance: % de ovejas paridas sobre inseminadas y curva diaria de partos contra la esperada. **La curva esperada reparte peso 1 por oveja** entre el conjunto deduplicado de sus días posibles: una oveja con tres servicios va a parir una vez, no tres, y `sum(esperados) = inseminadas` —a menos de las milésimas del redondeo diario— es una aserción de `metricas.test.sql`. El calendario es continuo a propósito — sin los días en cero, las tres tandas de la inseminación se aplanarían en una sola loma.
 2. Distribución de tipo de nacimiento (únicos/mellizos/trillizos) y % de mellicería.
 3. Mortalidad: al nacer y entre nacimiento y señalada. **Se cuenta con `fecha_muerte is not null`, nunca con `estado = 'muerto'`:** un cordero que muere después de señalado conserva su estado `senalado`, porque perderlo borraría el hecho de haberlo sido (R8).
 4. Peso promedio al nacer por sexo y tipo de nacimiento.

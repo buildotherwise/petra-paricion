@@ -43,3 +43,7 @@ pnpm-debug.log*
 # Sesión temporal que uso para inspeccionar la app con el navegador.
 # Lleva un token de acceso: nunca al repo.
 public/sesion-temp.json
+
+# Python
+__pycache__/
+*.pyc

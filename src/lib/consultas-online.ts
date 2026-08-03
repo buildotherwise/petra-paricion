@@ -48,6 +48,8 @@ export interface EstadoConsulta<T> {
 export function useConsultaOnline<T>(
   consultar: () => Promise<{ data: T[] | null; error: PostgrestError | null }>,
   deps: readonly unknown[],
+  /** Qué se está leyendo, para que el error lo nombre. Ver `mensajeDeLectura`. */
+  que?: string,
 ): EstadoConsulta<T> {
   const [datos, setDatos] = useState<readonly T[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -71,7 +73,7 @@ export function useConsultaOnline<T>(
       .then(({ data, error: fallo }) => {
         if (abortado) return;
         if (fallo !== null) {
-          setError(mensajeDeLectura(fallo.code, navigator.onLine));
+          setError(mensajeDeLectura(fallo.code, navigator.onLine, que));
           setDatos([]);
         } else {
           setDatos(data ?? []);
@@ -80,7 +82,7 @@ export function useConsultaOnline<T>(
       .catch(() => {
         // Un `fetch` que no llega ni a hablar con PostgREST: casi siempre, red.
         if (!abortado) {
-          setError(mensajeDeLectura(null, navigator.onLine));
+          setError(mensajeDeLectura(null, navigator.onLine, que));
           setDatos([]);
         }
       })
@@ -91,7 +93,7 @@ export function useConsultaOnline<T>(
     return () => {
       abortado = true;
     };
-  }, [ejecutar, intento]);
+  }, [ejecutar, intento, que]);
 
   const recargar = useCallback(() => setIntento((n) => n + 1), []);
 

@@ -275,7 +275,7 @@ def leer_archivo(temporada: int) -> tuple[list[dict], list[dict], int]:
 # ---------------------------------------------------------------------------
 
 
-def pedir(ruta: str, metodo="GET", cuerpo=None, prefer=None):
+def pedir(ruta: str, metodo="GET", cuerpo=None, prefer=None, con_rango=False):
     url = os.environ["VITE_SUPABASE_URL"].rstrip("/")
     clave = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
     cabeceras = {
@@ -296,14 +296,41 @@ def pedir(ruta: str, metodo="GET", cuerpo=None, prefer=None):
     try:
         with urllib.request.urlopen(pedido, timeout=120) as r:
             texto = r.read().decode()
-            return json.loads(texto) if texto else []
+            datos = json.loads(texto) if texto else []
+            return (datos, r.headers.get("Content-Range")) if con_rango else datos
     except urllib.error.HTTPError as e:
         raise SystemExit(f"\n  ✗ HTTP {e.code}\n{e.read().decode(errors='replace')[:900]}")
 
 
+def total_de(ruta: str) -> int:
+    """Cuántas filas hay, según el servidor y no según cuántas nos mandó.
+
+    Contar el largo de la respuesta es contar hasta donde llegue el tope de filas
+    de PostgREST —el mismo que obliga a paginar en otras partes—, así que una
+    tabla más grande que el tope se informaría como si tuviera exactamente el
+    tope. `count=exact` lo dice en la cabecera: `0-502/503`.
+    """
+    _, rango = pedir(f"{ruta}&limit=0", prefer="count=exact", con_rango=True)
+    if rango is None or "/" not in rango:
+        raise SystemExit(f"  ✗ el servidor no informó el total de {ruta}")
+    return int(rango.rsplit("/", 1)[1])
+
+
 def madres_de_la_temporada(temporada: int) -> dict[str, str]:
     """caravana → id, leído de la base. Es el cruce que decide qué se inserta."""
-    filas = pedir(f"ovejas?select=id,caravana&temporada=eq.{temporada}&limit=5000")
+    filtro = f"ovejas?select=id,caravana&temporada=eq.{temporada}"
+    esperadas = total_de(filtro)
+    filas = pedir(f"{filtro}&limit=5000")
+
+    # Si el tope del proyecto cortara la respuesta, las madres que faltan se
+    # reportarían como «sin madre en la base» y sus servicios no se cargarían.
+    # Es un falso negativo ruidoso y recuperable, pero mejor no descubrirlo
+    # leyendo una lista de cuatrocientas caravanas.
+    if len(filas) != esperadas:
+        raise SystemExit(
+            f"  ✗ la base tiene {esperadas} ovejas y el servidor devolvió {len(filas)}: "
+            "la respuesta se cortó. Hay que paginar antes de seguir."
+        )
     return {f["caravana"]: f["id"] for f in filas}
 
 
@@ -331,9 +358,17 @@ def insertar(servicios: list[dict]) -> int:
     return entrados
 
 
-def contar_en_la_base() -> int:
-    filas = pedir("servicios?select=id&limit=5000")
-    return len(filas)
+def contar_en_la_base(temporada: int) -> int:
+    """Los servicios de ESTA temporada, contados por el servidor.
+
+    `servicios` no tiene columna temporada —se deriva por la oveja—, así que el
+    filtro viaja como un embed interno sobre `ovejas`. Sin eso el número sería el
+    total histórico y dejaría de significar algo en cuanto haya una segunda
+    temporada.
+    """
+    return total_de(
+        f"servicios?select=id,ovejas!inner(temporada)&ovejas.temporada=eq.{temporada}"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -478,7 +513,7 @@ def main() -> None:
     print()
     entrados = insertar(a_insertar)
     print(f"\n  nuevos: {entrados}   ya estaban: {len(a_insertar) - entrados}")
-    print(f"  en la base ahora: {contar_en_la_base()} servicios")
+    print(f"  en la base ahora: {contar_en_la_base(temporada)} servicios de la temporada")
 
 
 if __name__ == "__main__":
