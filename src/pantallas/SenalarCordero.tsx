@@ -162,8 +162,12 @@ function Formulario({
    *
    * Vale la pena que sea el mismo y no una pantalla aparte: son nueve campos
    * con nueve controles particulares, y dos copias divergen apenas una cambie.
+   *
+   * Se congela al montar a propósito. Derivarlo en cada render lo daría vuelta
+   * al guardar —la consulta se reejecuta y el cordero ya figura señalado—, y la
+   * pantalla de confirmación diría «corregido» sobre una señalada recién hecha.
    */
-  const corrigiendo = cordero.estado === 'senalado';
+  const [corrigiendo] = useState(() => cordero.estado === 'senalado');
 
   const [sexo, setSexo] = useState<Sexo | null>(() => (corrigiendo ? cordero.sexo : null));
   // null significa «todavía no lo tocó»: el valor que se muestra es el
@@ -285,7 +289,7 @@ function Formulario({
     <div className="app">
       <Encabezado atras={salir} />
 
-      <main className="contenido area-segura">
+      <main className="contenido contenido--senalada area-segura">
         <h1 className="titulo">
           <Caravana numero={cordero.caravana} grande />
         </h1>
@@ -466,7 +470,7 @@ function Formulario({
 
         {error !== null && <p className="aviso aviso--error">{error}</p>}
 
-        <div className="barra-accion">
+        <div className="barra-accion barra-accion--columna">
           {/* R11: un botón apagado sin explicación se toca tres veces y termina
               con la app cerrada. Decir qué falta —y llevar hasta ahí— es la
               diferencia entre una regla y una pared. */}

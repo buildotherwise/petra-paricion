@@ -265,6 +265,18 @@
   flex: 1;
 }
 
+/* Con un aviso arriba del botón, la barra apila en vez de repartir a lo ancho.
+   Sin esto el aviso y el botón se reparten el ancho como hermanos flex y el
+   botón queda en una columna de tres líneas. */
+.barra-accion--columna {
+  flex-direction: column;
+}
+
+.barra-accion--columna .boton--principal {
+  flex: none;
+  width: 100%;
+}
+
 /* ── Botoneras de opción ────────────────────────────────────────────── */
 
 .opciones {
@@ -1085,4 +1097,20 @@ textarea.entrada::placeholder {
   background: var(--fondo);
   border-radius: var(--r-grande) var(--r-grande) 0 0;
   box-shadow: 0 -14px 34px -18px rgba(43, 37, 25, 0.5);
+}
+
+/* La señalada tiene la barra más alta de la app —el aviso de lo que falta va
+   adentro— así que el contenido necesita más aire abajo para que el último
+   campo no quede tapado. */
+.contenido--senalada {
+  padding-bottom: 15rem;
+}
+
+/* El buscador de la señalada admite caravana o collar, así que su marcador es
+   una palabra y no una cifra: en la serif de 34px no entraría. */
+.entrada--cifra.entrada--pista::placeholder {
+  font-family: var(--sans);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  opacity: 0.75;
 }

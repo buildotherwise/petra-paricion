@@ -124,7 +124,7 @@ export function Senalada({
         )}
 
         <input
-          className="entrada entrada--cifra"
+          className="entrada entrada--cifra entrada--pista"
           type="search"
           inputMode="numeric"
           autoCorrect="off"

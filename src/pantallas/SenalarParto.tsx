@@ -2,7 +2,7 @@ import { useQuery } from '@powersync/react';
 import { Encabezado } from '../componentes/Encabezado';
 import { Caravana } from '../componentes/Caravana';
 import { FilaCordero } from '../componentes/FilaCordero';
-import { fechaLarga, nombreTipo } from '../lib/parto';
+import { diaCorto, nombreTipo } from '../lib/parto';
 import { puedeSenalar } from '../lib/reglas';
 import { nombreMarca, useCorderosDelParto } from './FichaParto';
 import { antiguedad } from './Senalada';
@@ -26,6 +26,14 @@ interface Cabecera {
   caravana: string;
   fecha: string;
   collar_numero: string | null;
+}
+
+/** De arriba hacia abajo, como están en el collar. Sin marca, al final. */
+const ORDEN_MARCA = ['punto_arriba', 'cruz_al_medio', 'punto_abajo'];
+
+function ordenMarca(marca: string | null): number {
+  const i = marca === null ? -1 : ORDEN_MARCA.indexOf(marca);
+  return i === -1 ? ORDEN_MARCA.length : i;
 }
 
 export function SenalarParto({
@@ -61,7 +69,15 @@ export function SenalarParto({
 
   // Los anulados no existieron: no cuentan para el tipo de nacimiento (R1) ni
   // pasan por la señalada.
-  const activos = hermanos.filter((h) => h.anulado_en === null);
+  //
+  // El orden es el de las marcas en el collar —arriba, medio, abajo— y no el de
+  // carga: los hermanos se cargan en la misma transacción y comparten
+  // `creado_en` al milisegundo, así que sin esto el orden lo decide el UUID y
+  // la lista sale distinta cada vez. Acá el orden es el del objeto que se está
+  // mirando.
+  const activos = [...hermanos]
+    .filter((h) => h.anulado_en === null)
+    .sort((a, b) => ordenMarca(a.collar_marca) - ordenMarca(b.collar_marca));
   const pendientes = activos.filter((h) => puedeSenalar(h).puede);
 
   return (
@@ -75,7 +91,7 @@ export function SenalarParto({
         <p className="subtitulo">
           {nombreTipo(activos.length)}
           {parto.collar_numero !== null && ` · collar ${parto.collar_numero}`} · nacidos el{' '}
-          {fechaLarga(parto.fecha)} · {antiguedad(parto.fecha)}
+          {diaCorto(parto.fecha)} · {antiguedad(parto.fecha)}
         </p>
 
         <p className="etiqueta">{pendientes.length > 0 ? '¿Cuál tenés?' : 'Corderos'}</p>
