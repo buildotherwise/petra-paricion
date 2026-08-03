@@ -3,8 +3,10 @@ import {
   ajustarCollarDelParto,
   camposFaltantes,
   collarDisponible,
+  collaresDuplicados,
   corderosQueRequierenMarca,
   hermanoDelMismoSexo,
+  marcasDuplicadasEnParto,
   marcasOcupadas,
   maximoElegible,
   ningunaCanelaNiLunar,
@@ -15,6 +17,7 @@ import {
   puedeRegistrarMuerte,
   puedeSenalar,
   rangoTemporada,
+  restarDias,
   siguienteTatuaje,
   tatuajeDisponible,
   tipoNacimiento,
@@ -25,6 +28,7 @@ import {
   type BorradorSenalada,
   type CorderoDelParto,
   type CorderoEnFicha,
+  type MarcaCollar,
 } from './reglas';
 
 /** Constructor breve de corderos para los tests. Por defecto: vivo, sin marca. */
@@ -737,5 +741,119 @@ describe('R6 — la discrepancia de sexo puede ser el hermano equivocado', () =>
   test('un hermano anulado no cuenta: no existió', () => {
     const anulada = { ...hembra, anulado_en: '2026-08-02T16:42:00Z' };
     expect(hermanoDelMismoSexo([macho, anulada], 'a', 'hembra')).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Lo que el panel de revisión tiene que poder encontrar
+// ---------------------------------------------------------------------------
+
+describe('restarDias no se corre con el cambio de horario', () => {
+  test('resta días corridos', () => {
+    expect(restarDias('2026-08-20', 15)).toBe('2026-08-05');
+    expect(restarDias('2026-08-20', 0)).toBe('2026-08-20');
+  });
+
+  test('cruza el fin de mes y el de año', () => {
+    expect(restarDias('2026-09-03', 15)).toBe('2026-08-19');
+    expect(restarDias('2027-01-05', 10)).toBe('2026-12-26');
+  });
+
+  // Uruguay estuvo en horario de verano hasta 2015 y podría volver. Con la
+  // resta al mediodía UTC el resultado no depende de eso.
+  test('funciona con un timestamp completo, no solo con la fecha', () => {
+    expect(restarDias('2026-08-20T23:40:00Z', 15)).toBe('2026-08-05');
+  });
+});
+
+describe('collaresDuplicados agrupa por el objeto físico, no por el texto', () => {
+  // El caso que justifica la función: agrupando por el string crudo, estos dos
+  // partos no aparecerían — y son el mismo collar en dos ovejas.
+  test('«12» y «012» son el mismo collar', () => {
+    const duplicados = collaresDuplicados([
+      { id: 'a', collar_numero: '12' },
+      { id: 'b', collar_numero: '012' },
+    ]);
+    expect(duplicados).toHaveLength(1);
+    expect(duplicados[0]?.numero).toBe('12');
+    expect(duplicados[0]?.partos.map((p) => p.id)).toEqual(['a', 'b']);
+  });
+
+  test('sin repetidos no devuelve nada', () => {
+    expect(
+      collaresDuplicados([
+        { id: 'a', collar_numero: '12' },
+        { id: 'b', collar_numero: '13' },
+      ]),
+    ).toEqual([]);
+  });
+
+  test('los partos sin collar no se agrupan entre sí', () => {
+    expect(
+      collaresDuplicados([
+        { id: 'a', collar_numero: null },
+        { id: 'b', collar_numero: null },
+        { id: 'c', collar_numero: '  ' },
+      ]),
+    ).toEqual([]);
+  });
+
+  test('tres partos con el mismo collar salen en un solo grupo', () => {
+    const duplicados = collaresDuplicados([
+      { id: 'a', collar_numero: '7' },
+      { id: 'b', collar_numero: '07' },
+      { id: 'c', collar_numero: '007' },
+    ]);
+    expect(duplicados).toHaveLength(1);
+    expect(duplicados[0]?.partos).toHaveLength(3);
+  });
+});
+
+describe('marcasDuplicadasEnParto', () => {
+  const cordero = (
+    id: string,
+    parto_id: string,
+    collar_marca: MarcaCollar | null,
+    anulado_en: string | null = null,
+  ) => ({ id, parto_id, collar_marca, anulado_en });
+
+  test('dos hermanos con la misma marca', () => {
+    const repetidas = marcasDuplicadasEnParto([
+      cordero('a', 'p1', 'punto_arriba'),
+      cordero('b', 'p1', 'punto_arriba'),
+    ]);
+    expect(repetidas).toHaveLength(1);
+    expect(repetidas[0]?.partoId).toBe('p1');
+    expect(repetidas[0]?.marca).toBe('punto_arriba');
+  });
+
+  test('la misma marca en partos distintos no es duplicado', () => {
+    expect(
+      marcasDuplicadasEnParto([
+        cordero('a', 'p1', 'punto_arriba'),
+        cordero('b', 'p2', 'punto_arriba'),
+      ]),
+    ).toEqual([]);
+  });
+
+  // R3: la marca de un anulado vuelve a estar libre, porque no es un objeto
+  // aparte sino la que lleva ese collar.
+  test('un anulado no hace duplicado', () => {
+    expect(
+      marcasDuplicadasEnParto([
+        cordero('a', 'p1', 'punto_arriba'),
+        cordero('b', 'p1', 'punto_arriba', '2026-08-02T10:00:00Z'),
+      ]),
+    ).toEqual([]);
+  });
+
+  test('los corderos sin marca no se agrupan entre sí', () => {
+    expect(
+      marcasDuplicadasEnParto([cordero('a', 'p1', null), cordero('b', 'p1', null)]),
+    ).toEqual([]);
+  });
+
+  test('un parto único con su cordero marcado no es duplicado', () => {
+    expect(marcasDuplicadasEnParto([cordero('a', 'p1', 'punto_abajo')])).toEqual([]);
   });
 });

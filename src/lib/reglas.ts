@@ -710,3 +710,112 @@ export function hermanoDelMismoSexo<T extends { id: string; sexo: Sexo; anulado_
     activos(hermanos).find((h) => h.id !== corderoId && h.sexo === sexoDeclarado) ?? null
   );
 }
+
+// ---------------------------------------------------------------------------
+// Lo que el panel de revisión tiene que poder encontrar
+// ---------------------------------------------------------------------------
+
+/**
+ * Cuántos días sin señalar hacen que un cordero merezca aparecer en el panel.
+ *
+ * La señalada normal cae entre los 5 y los 10 días. Quince deja margen para
+ * una tanda que se corrió por lluvia sin llenar el panel de falsos atrasos.
+ */
+// El `: number` no es decorativo: sin él TypeScript fija el tipo en el literal
+// 15 y da por muerta la rama del singular en el título del panel. Es un umbral
+// que se va a mover cuando el equipo lo pida, no una constante del universo.
+export const DIAS_SIN_SENALAR_PARA_REVISAR: number = 15;
+
+/**
+ * Una fecha ISO, tantos días antes.
+ *
+ * Al mediodía para que el cambio de horario no corra un día — el mismo cuidado
+ * que `diasDesde` en parto.ts, del otro lado de la resta.
+ */
+export function restarDias(fecha: string, dias: number): string {
+  const base = new Date(`${fecha.slice(0, 10)}T12:00:00Z`);
+  base.setUTCDate(base.getUTCDate() - dias);
+  return base.toISOString().slice(0, 10);
+}
+
+/** Un parto, para buscarle el collar repetido. */
+export interface PartoConCollar {
+  id: string;
+  collar_numero: string | null;
+}
+
+/**
+ * Los grupos de partos que comparten número de collar (R3).
+ *
+ * El agrupado normaliza, y esa es toda la gracia: «12» y «012» son el mismo
+ * objeto físico, así que agrupar por el texto crudo dejaría pasar justo el caso
+ * que importa. Es la misma normalización que usa `collarDisponible`, que es lo
+ * que impide que la app y el panel discrepen sobre qué es un duplicado.
+ *
+ * No puede hacerse en SQL porque SQLite no tiene esa función: el panel lo
+ * resuelve en memoria sobre las filas que ya bajó.
+ */
+export function collaresDuplicados<T extends PartoConCollar>(
+  partos: readonly T[],
+): { numero: string; partos: T[] }[] {
+  const porNumero = new Map<string, T[]>();
+
+  for (const parto of partos) {
+    if (parto.collar_numero === null) continue;
+    const clave = normalizarNumeroCollar(parto.collar_numero);
+    if (clave === '') continue;
+    const grupo = porNumero.get(clave);
+    if (grupo === undefined) porNumero.set(clave, [parto]);
+    else grupo.push(parto);
+  }
+
+  const duplicados: { numero: string; partos: T[] }[] = [];
+  for (const [numero, grupo] of porNumero) {
+    if (grupo.length > 1) duplicados.push({ numero, partos: grupo });
+  }
+  return duplicados;
+}
+
+/** Un cordero, para buscarle la marca repetida dentro de su parto. */
+export interface CorderoConMarca {
+  id: string;
+  parto_id: string;
+  collar_marca: MarcaCollar | null;
+  anulado_en: string | null;
+}
+
+/**
+ * Las marcas que se repiten dentro de un mismo parto.
+ *
+ * La app ya lo valida al cargar, así que esto no debería pasar nunca — pero dos
+ * aparatos offline pueden agregarle un cordero al mismo parto y elegir los dos
+ * la misma marca, y ahí no hay nada que los frene hasta que se juntan.
+ *
+ * Los anulados no cuentan: su marca vuelve a estar libre, porque no es un
+ * objeto aparte sino la que lleva ese collar (R3).
+ */
+export function marcasDuplicadasEnParto<T extends CorderoConMarca>(
+  corderos: readonly T[],
+): { partoId: string; marca: MarcaCollar; corderos: T[] }[] {
+  const porClave = new Map<string, T[]>();
+
+  for (const cordero of activos(corderos)) {
+    if (cordero.collar_marca === null) continue;
+    const clave = `${cordero.parto_id}:${cordero.collar_marca}`;
+    const grupo = porClave.get(clave);
+    if (grupo === undefined) porClave.set(clave, [cordero]);
+    else grupo.push(cordero);
+  }
+
+  const duplicadas: { partoId: string; marca: MarcaCollar; corderos: T[] }[] = [];
+  for (const [clave, grupo] of porClave) {
+    if (grupo.length <= 1) continue;
+    const corte = clave.lastIndexOf(':');
+    duplicadas.push({
+      partoId: clave.slice(0, corte),
+      marca: clave.slice(corte + 1) as MarcaCollar,
+      corderos: grupo,
+    });
+  }
+  return duplicadas;
+}
