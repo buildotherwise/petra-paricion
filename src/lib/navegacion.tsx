@@ -1,4 +1,22 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
+import {
+  apilarEnHistorial,
+  escucharHistorial,
+  leerPilaDelHistorial,
+  rebobinarAlInicio,
+  reemplazarEnHistorial,
+  retrocederEnHistorial,
+  sembrarHistorial,
+} from './historial';
 
 /**
  * A dónde está mirando la app.
@@ -12,8 +30,10 @@ import { createContext, useCallback, useContext, useMemo, useState, type ReactNo
  * roja tiene que poder abrir los rechazados desde cualquiera. Pasarlo como prop
  * obligaría a que seis pantallas reciban y reenvíen algo que no usan.
  *
- * No hay router: son seis pantallas y ninguna necesita URL propia. La app se usa
- * instalada, sin barra de direcciones.
+ * Sigue sin haber router: ninguna pantalla necesita URL propia y la app se usa
+ * instalada. Lo que sí hay es el botón atrás del navegador, que sin ayuda se
+ * sale de la aplicación entera — ver `historial.ts`, que espeja esta pila en
+ * `history.state` sin que ninguna pantalla se entere.
  */
 
 export type Pantalla =
@@ -50,20 +70,82 @@ const Contexto = createContext<Navegacion | null>(null);
 export function ProveedorNavegacion({ children }: { children: ReactNode }) {
   const [pila, setPila] = useState<Pantalla[]>([INICIO]);
 
-  const ir = useCallback((destino: Pantalla) => {
-    setPila((previa) => [...previa, destino]);
+  /**
+   * La pila autoritativa. El estado es solo para renderizar.
+   *
+   * Hace falta por dos razones. Una: escribir en `window.history` adentro del
+   * updater de `setPila` lo ejecutaría dos veces en desarrollo, por StrictMode,
+   * y dejaría entradas duplicadas. Dos: dos `ir()` en el mismo tick leerían la
+   * misma pila vieja, porque `pila` no se actualiza hasta el próximo render.
+   */
+  const pilaRef = useRef<Pantalla[]>(pila);
+
+  const aplicar = useCallback((nueva: Pantalla[]) => {
+    pilaRef.current = nueva;
+    setPila(nueva);
   }, []);
 
-  // Volver nunca vacía la pila: del inicio no se sale.
+  useEffect(() => {
+    // Al arrancar puede haber una pila nuestra guardada —una recarga sobre una
+    // pantalla profunda— y entonces se restaura. Si no, se siembra el inicio en
+    // la entrada actual, sin crear una nueva.
+    //
+    // Restaurar es seguro incluso con un id que ya no está: las dos fichas
+    // muestran «no encontrado», que es una pantalla prevista.
+    const guardada = leerPilaDelHistorial();
+    if (guardada === null) {
+      sembrarHistorial(pilaRef.current);
+    } else {
+      aplicar(guardada);
+    }
+
+    return escucharHistorial((restaurada) => aplicar(restaurada ?? [INICIO]));
+  }, [aplicar]);
+
+  const ir = useCallback(
+    (destino: Pantalla) => {
+      const nueva = [...pilaRef.current, destino];
+      apilarEnHistorial(nueva);
+      aplicar(nueva);
+    },
+    [aplicar],
+  );
+
+  /**
+   * Volver nunca vacía la pila: del inicio no se sale.
+   *
+   * No toca el estado a propósito — pide `history.back()` y espera a que
+   * `popstate` confirme. Ver el comentario largo en `historial.ts`: hacer las
+   * dos cosas correría una pila respecto de la otra.
+   */
   const volver = useCallback(() => {
-    setPila((previa) => (previa.length <= 1 ? [INICIO] : previa.slice(0, -1)));
-  }, []);
+    if (pilaRef.current.length > 1) {
+      retrocederEnHistorial();
+      return;
+    }
+    const nueva: Pantalla[] = [INICIO];
+    reemplazarEnHistorial(nueva);
+    aplicar(nueva);
+  }, [aplicar]);
 
-  const reemplazar = useCallback((destino: Pantalla) => {
-    setPila((previa) => [...previa.slice(0, -1), destino]);
-  }, []);
+  const reemplazar = useCallback(
+    (destino: Pantalla) => {
+      const nueva = [...pilaRef.current.slice(0, -1), destino];
+      reemplazarEnHistorial(nueva);
+      aplicar(nueva);
+    },
+    [aplicar],
+  );
 
-  const alInicio = useCallback(() => setPila([INICIO]), []);
+  const alInicio = useCallback(() => {
+    // Rebobinar el historial en vez de apilar el inicio: si se apilara, «atrás»
+    // ofrecería volver al formulario del parto recién guardado.
+    if (!rebobinarAlInicio(pilaRef.current.length)) {
+      const nueva: Pantalla[] = [INICIO];
+      reemplazarEnHistorial(nueva);
+      aplicar(nueva);
+    }
+  }, [aplicar]);
 
   const valor = useMemo(
     () => ({ pantalla: pila[pila.length - 1] ?? INICIO, ir, volver, reemplazar, alInicio }),
