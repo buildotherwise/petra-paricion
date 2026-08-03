@@ -10,7 +10,7 @@ formularios de Zoho. La especificación funcional completa está en
 |---|---|
 | ✅ Esquema, RLS y auditoría | **aplicados en el proyecto**; 22 aserciones verdes en local y privilegios verificados en producción |
 | ✅ Rol `powersync_role` | creado, con `REPLICATION BYPASSRLS` y sin acceso a `cambios` |
-| ✅ Reglas de negocio | R1, R2, R3, R7, R8, R12, R13 con 131 tests |
+| ✅ Reglas de negocio | R1–R14 como funciones puras, con 225 tests |
 | ✅ App PWA | registro de parto, fichas, corrección, muerte, nodriza, anulación y rechazados |
 | ✅ Instancia de PowerSync | replicando por IPv6; slot activo y WAL al día |
 | ✅ Las 502 madres | importadas y verificadas contra el archivo original |
@@ -19,7 +19,8 @@ formularios de Zoho. La especificación funcional completa está en
 | ✅ Auditoría por campo | en uso: cada edición deja su diff en `cambios` |
 | ✅ **Fase 3** | señalada — buscador de pendientes, fenotipo, confirmación de sexo y tatuaje correlativo |
 | ⏳ Cuentas del equipo | quedan para el final, a pedido del usuario |
-| ⏳ **Fase 4** | web admin — tablas, panel de revisión, exportaciones y dashboards |
+| ✅ **Fase 4 · 1.ª tanda** | web admin — tablas con filtros, panel de revisión, historial de cambios y exportación |
+| ⏳ **Fase 4 · 2.ª tanda** | importación de inseminadas y tableros (vistas SQL + Recharts) |
 
 > **Los datos de la temporada 2026 son de prueba.** Las 502 madres son reales, pero
 > los partos cargados hasta ahora se hicieron para probar la app. `scripts/limpiar-datos-de-prueba.sql`
@@ -204,9 +205,52 @@ dejar rastro. Ahora se guardan la que falló y las posteriores, agrupadas por
 `carga_id` — las anteriores sí entraron al servidor. Y «quitar de la lista» borra
 la última copia que queda del registro, así que pide confirmación mostrándolo.
 
+## Fase 4 — qué quedó hecho (primera tanda)
+
+La web de administración. Maquetas y decisiones —incluidas las alternativas
+descartadas— en [`diseno/fase4-pantallas.html`](diseno/fase4-pantallas.html).
+
+Se entra por **`/admin`** y por un enlace al pie del inicio que solo ve un
+`admin`. Es la misma app, la misma sesión y la misma réplica: lo que cambia es
+la superficie.
+
+**Cuatro secciones.** Partos y corderos, en tablas con buscador, filtros y orden
+por columna. **Revisión**, con ocho preguntas —cinco de la spec y tres que
+salieron de maquetar— y el feed de últimas ediciones al pie. **Exportar**, con la
+planilla plana de 29 columnas y la exportación completa.
+
+**El historial de cambios**, que era la deuda de la Fase 2. Al pie de cada
+ficha, y solo en la web: `cambios` sigue fuera de la replicación.
+
+**Tres correcciones que el teléfono no hace:** la fecha de la señalada, la
+muerte de un cordero ya señalado y deshacer una anulación.
+
+### Tres decisiones que conviene no deshacer
+
+**Se entra por rol, nunca por ancho de pantalla.** La tablet Android es el
+dispositivo principal de captura y en horizontal mide 1024–1280 px CSS, así que
+cualquier umbral que sirva para una laptop se dispara en la tablet y le pone la
+administración en las manos a quien registra partos a las seis de la mañana. Y
+el rol tiene **tres** estados: mientras la réplica no bajó no es «operador», es
+desconocido, y con desconocido no se dibuja nada.
+
+**La muerte de un señalado no toca `estado`.** Se escriben `fecha_muerte` y
+`causa_muerte` y nada más: poner `estado = 'muerto'` borraría el hecho de haber
+sido señalado, que es lo que R8 dice que no hay que perder. La base ya lo acepta
+y `supabase/tests/senalada.test.sql` lo fija. **Consecuencia: la mortalidad se
+cuenta con `fecha_muerte is not null`, nunca con `estado = 'muerto'`.**
+
+**Ninguna vista nace con permiso de lectura.** Los privilegios por defecto del
+schema `public` le dan a `authenticated` todo menos `SELECT`, así que toda vista
+necesita su `grant` y su `security_invoker` explícitos —`partos_resumen` estuvo
+dos meses sin que nadie pudiera leerla—. Lo verifica `supabase/tests/vistas.test.sql`,
+que recorre todas las vistas y falla si a alguna le falta cualquiera de las dos.
+
 ### Pendiente aparte
 
-Las **cuentas del equipo** (4–6 personas). El script está probado:
+Las **cuentas del equipo** (4–6 personas). Se crean con el script o desde el
+panel de Supabase, no desde la web: hacerlo desde el navegador exigiría una
+Edge Function con la llave de administración.
 
 ```bash
 python3 scripts/crear-cuenta.py --email X --nombre "Y" --rol operador
@@ -276,8 +320,14 @@ src/lib/powersync/subida.ts    clasificación de errores de subida
 src/lib/powersync/escritura.ts el único camino para editar algo guardado
 src/lib/powersync/conector.ts  fetchCredentials + uploadData
 src/lib/powersync/esquema.ts   réplica local (SQLite)
+src/lib/historial.ts           el botón atrás del navegador, sobre la misma pila
+src/lib/perfil.ts              el rol, con sus tres estados
+src/lib/consultas-online.ts    lo único que la web admin lee por internet
+src/lib/exportacion.ts         el CSV que abre en un Excel en español
 src/pantallas/                 Login, Inicio, RegistrarParto, PartosRegistrados,
-                               FichaParto, FichaCordero, Rechazados
+                               FichaParto, FichaCordero, Senalada, Rechazados
+src/pantallas/admin/           WebAdmin, TablaPartos, TablaCorderos, Revision,
+                               Exportar, Ediciones
 supabase/migrations/           esquema, RLS, auditoría, publicación
 scripts/                       migraciones, rol de PowerSync, verificación SQL
 powersync/sync-config.yaml     qué se replica a cada dispositivo

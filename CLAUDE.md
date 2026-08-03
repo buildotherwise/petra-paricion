@@ -54,7 +54,7 @@ La marca en encabezados se compone con el **emblema del carnero solo** —`publi
 
 ### Usuarios y permisos
 
-**Autenticación:** Supabase Auth con email + contraseña. **Registro público deshabilitado** — las cuentas las crea el administrador (desde la web admin o el panel de Supabase). Escala esperada: 4–6 cuentas.
+**Autenticación:** Supabase Auth con email + contraseña. **Registro público deshabilitado** — las cuentas las crea el administrador con `scripts/crear-cuenta.py` o desde el panel de Supabase. **No desde la web admin:** crear un usuario exige `service_role`, o sea una Edge Function con la llave de administración expuesta a una pantalla, para cuatro o seis cuentas. Escala esperada: 4–6 cuentas.
 
 **Roles**, guardados en una tabla `perfiles`:
 
@@ -81,6 +81,8 @@ create table perfiles (
 **Baja de personal:** desactivar la cuenta, nunca eliminarla, para que la auditoría histórica conserve quién registró qué.
 
 ## 4. Modelo de datos (Postgres / Supabase)
+
+> **El SQL de abajo es el diseño; la base tiene cuatro diferencias que conviene tener presentes.** `creado_por` y `actualizado_por` son `uuid not null references auth.users(id)`, no `text`: el aparato va en una columna aparte, `dispositivo text`, que también existe en `ovejas`, `partos` y `corderos` junto con `creado_en` y `actualizado_en`. La tabla `cambios` tiene además `tipo` (`creacion`/`actualizacion`), `dispositivo` y `reportado_en` —el reloj del dispositivo, contra `realizado_en` que es el del servidor—, su `campo` es *nullable* (null en las creaciones), y **la escribe un trigger `auditar()`, no la app**. `causa_muerte_t` existe con siete valores (migración 0006) aunque su `create type` no figure abajo. Y `partos.collar_puesto` existe desde la 0008.
 
 Principio central: **el cordero es una única entidad** que se crea en la parición y se completa en la señalada. No existen dos registros a vincular a posteriori.
 
@@ -251,10 +253,16 @@ group by p.id, o.caravana;
 Misma app, vistas habilitadas por rol admin, pensada para escritorio con conexión:
 
 - Tablas de partos y corderos con filtros (fecha, estado, tipo de nacimiento, discrepancias) y edición con registro en `cambios`.
-- **Panel de revisión:** ovejas de alta manual, discrepancias de sexo, collares duplicados, pesos fuera de rango, corderos sin señalar con más de 15 días.
+- **Panel de revisión: ocho preguntas.** Las cinco de esta lista —ovejas de alta manual, discrepancias de sexo, collares duplicados, pesos fuera de rango, corderos sin señalar con más de 15 días— más tres que salieron de maquetar: **partos sin corderos** (la más importante: el conector descarta la transacción entera desde la operación que falla y el parto se inserta antes que sus corderos, así que es la única de las ocho sin falsos positivos), **marcas repetidas dentro de un parto** y **fechas de señalada imposibles**. Cada fila trae el contexto que la vuelve accionable —el tipo de parto al lado de un peso bajo, los hermanos al lado de una discrepancia, las precargadas parecidas al lado de un alta manual— y **el cero se muestra**: «ninguno» es una respuesta, y una lista vacía parece una consulta rota.
 - **Importación** de la lista de inseminadas: CSV con columnas `caravana,fecha_inseminacion,padre` (validar duplicados y formato antes de insertar).
 - **Exportación** CSV/Excel: planilla plana de corderos con columnas equivalentes a los formularios Zoho históricos, más una exportación completa del modelo.
+- **Historial de cambios** al pie de cada ficha, y solo en la web: `cambios` sigue fuera de la replicación, así que es lo único que la web admin lee por internet.
+- **Correcciones que el teléfono no hace:** la fecha de la señalada, la muerte de un cordero ya señalado (sin tocar `estado`) y deshacer una anulación.
 - Sección de **Dashboards** integrada (ver §9).
+
+**Ojo con el alcance del rol.** Ninguna política de RLS distingue admin de operador en `ovejas`, `partos` ni `corderos`: las tres son `using (perfil_activo())`. Lo único que el servidor protege de verdad es `cambios` (solo `es_admin()`) y `perfiles`. Esconder botones separa superficies, no permisos.
+
+**Ninguna vista nace legible.** Los privilegios por defecto del schema `public` le dan a `authenticated` todo menos `SELECT`, así que toda vista nueva necesita `grant select ... to authenticated` y `security_invoker = true` explícitos, o PostgREST devuelve 42501 y la vista saltea el RLS de quien consulta. Lo verifica `supabase/tests/vistas.test.sql`.
 
 ## 9. Dashboards (integrados en la web admin)
 
@@ -264,7 +272,7 @@ Tarjetas del dashboard:
 
 1. Avance: % de ovejas paridas sobre inseminadas, curva diaria de partos (comparable contra fechas esperadas si hay fecha de inseminación).
 2. Distribución de tipo de nacimiento (únicos/mellizos/trillizos) y % de mellicería.
-3. Mortalidad: al nacer y entre nacimiento y señalada.
+3. Mortalidad: al nacer y entre nacimiento y señalada. **Se cuenta con `fecha_muerte is not null`, nunca con `estado = 'muerto'`:** un cordero que muere después de señalado conserva su estado `senalado`, porque perderlo borraría el hecho de haberlo sido (R8).
 4. Peso promedio al nacer por sexo y tipo de nacimiento.
 5. Señaladas pendientes (conteo y antigüedad).
 6. Prevalencias fenotípicas: entropión, pigmentación, halo hair, canela, lunar.
@@ -282,7 +290,7 @@ ficha del parto y del cordero, edición de lo guardado, cambio de madre, registr
 buscador de pendientes + flujo de señalada + confirmación de sexo (R6) + tatuaje correlativo (R14). Llega antes de la primera señalada real. Maquetas y decisiones en `diseno/fase3-pantallas.html`.
 
 **Fase 4 — Web admin y reportes (semanas 2–3):**
-tablas, panel de revisión, exportaciones, vistas SQL de métricas y sección de dashboards. Al cerrar esta fase se retira el respaldo Zoho.
+tablas, panel de revisión, exportaciones, vistas SQL de métricas y sección de dashboards. Al cerrar esta fase se retira el respaldo Zoho. Va en dos tandas: la primera —tablas, revisión, historial y exportación— está hecha; la segunda es la importación de inseminadas y los tableros. Maquetas y decisiones en `diseno/fase4-pantallas.html`.
 
 ## 11. Protocolo de pruebas de sincronización (obligatorio antes del día 1)
 
