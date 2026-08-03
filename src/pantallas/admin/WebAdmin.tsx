@@ -6,6 +6,7 @@ import type { Perfil } from '../../lib/powersync/esquema';
 import { TablaPartos } from './TablaPartos';
 import { TablaCorderos } from './TablaCorderos';
 import { Revision } from './Revision';
+import { Exportar } from './Exportar';
 import '../../estilos/admin.css';
 
 /**
@@ -152,7 +153,7 @@ function Seccion({
       {seccion === 'revision' && (
         <Revision onAbrirParto={onAbrirParto} onAbrirCordero={onAbrirCordero} />
       )}
-      {seccion === 'exportar' && <p className="admin-espera">Todavía no está construida.</p>}
+      {seccion === 'exportar' && <Exportar />}
     </>
   );
 }
