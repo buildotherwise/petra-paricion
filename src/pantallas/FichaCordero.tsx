@@ -23,6 +23,7 @@ import {
   puedeRegistrarMuerte,
   puedeSenalar,
   validarFechaMuerte,
+  validarFechaSenalada,
   type CanelaLunar,
   type CausaMuerte,
   type MotivoAnulacion,
@@ -46,17 +47,31 @@ interface FilaCorderoFicha extends FilaCorderoGuardado {
   collar_puesto: number | null;
 }
 
-type Vista = 'ficha' | 'editar' | 'muerte' | 'nodriza' | 'anular';
+type Vista = 'ficha' | 'editar' | 'muerte' | 'nodriza' | 'anular'
+  // Las dos que solo existen en la web.
+  | 'fecha-senalada' | 'desanular';
 
 export function FichaCordero({
   corderoId,
   onVolver,
   onSenalar,
+  admin = false,
   pie,
 }: {
   corderoId: string;
   onVolver: () => void;
   onSenalar: (corderoId: string) => void;
+  /**
+   * Habilita las correcciones que no existen en el teléfono: la fecha de la
+   * señalada, la muerte de un señalado y deshacer una anulación. Las tres
+   * tocan corderos que ya tienen el tatuaje puesto o que ya se dieron por
+   * cargados de más, y se hacen sentado — no con el animal entre las piernas.
+   *
+   * Ojo con lo que esto NO es: ninguna política de RLS distingue admin de
+   * operador en `corderos`, así que esconder los botones separa superficies,
+   * no permisos. Está dicho también en `perfil.ts`.
+   */
+  admin?: boolean;
   /**
    * Lo que se agrega al pie desde afuera. Hoy es el historial de cambios, que
    * solo corresponde en la web (§7). La ficha no sabe quién se lo pasa ni por
@@ -108,6 +123,7 @@ export function FichaCordero({
           <Ficha
             cordero={cordero}
             hermanos={hermanos}
+            admin={admin}
             onIr={setVista}
             onSenalar={() => onSenalar(cordero.id)}
           />
@@ -132,6 +148,12 @@ export function FichaCordero({
             onListo={() => setVista('ficha')}
           />
         )}
+        {vista === 'fecha-senalada' && (
+          <CorregirFechaSenalada cordero={cordero} onListo={() => setVista('ficha')} />
+        )}
+        {vista === 'desanular' && (
+          <DesanularCordero cordero={cordero} onListo={() => setVista('ficha')} />
+        )}
 
         {/* Solo mirando: debajo de un formulario abierto el historial es ruido,
             y encima invita a leer mientras se edita. */}
@@ -154,11 +176,13 @@ const ESTADO: Record<string, string> = {
 function Ficha({
   cordero,
   hermanos,
+  admin,
   onIr,
   onSenalar,
 }: {
   cordero: FilaCorderoFicha;
   hermanos: readonly FilaCorderoGuardado[];
+  admin: boolean;
   onIr: (vista: Vista) => void;
   onSenalar: () => void;
 }) {
@@ -275,13 +299,16 @@ function Ficha({
           <button type="button" className="boton boton--secundario" onClick={() => onIr('nodriza')}>
             {cordero.nodriza_caravana !== null ? 'Cambiar la nodriza' : 'Asignar nodriza'}
           </button>
+          {/* En el teléfono un señalado no puede morirse: R8 manda ese caso a
+              la web, para no perder el hecho de haber sido señalado con un
+              toque apurado. Acá sí, y sin tocar `estado`. */}
           <button
             type="button"
             className="boton boton--secundario boton--riesgo"
             onClick={() => onIr('muerte')}
-            disabled={!permisoMuerte.puede}
+            disabled={!permisoMuerte.puede && !(admin && senalado)}
           >
-            Registrar muerte
+            {senalado ? 'Registrar que murió' : 'Registrar muerte'}
           </button>
           <button
             type="button"
@@ -293,6 +320,31 @@ function Ficha({
           </button>
           {/* Un botón apagado sin explicación se lee como una falla de la app. */}
           {!permisoAnular.puede && <p className="nota-boton">{permisoAnular.motivo}</p>}
+
+          {admin && senalado && (
+            <button
+              type="button"
+              className="boton boton--secundario"
+              onClick={() => onIr('fecha-senalada')}
+            >
+              Corregir la fecha de la señalada
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Equivocarse anulando es un error de carga más, y R13 es justamente
+          para los errores de carga. Solo desde la web: en el teléfono, con
+          guantes, deshacer una baja a un toque de distancia sería peor. */}
+      {anulado && admin && (
+        <div style={{ display: 'grid', gap: 'var(--sp-3)', marginTop: 'var(--sp-4)' }}>
+          <button
+            type="button"
+            className="boton boton--secundario"
+            onClick={() => onIr('desanular')}
+          >
+            Deshacer la anulación
+          </button>
         </div>
       )}
     </>
@@ -443,6 +495,21 @@ function RegistrarMuerte({
 
   const validacion = validarFechaMuerte(fecha, cordero.parto_fecha, hoyISO());
 
+  /**
+   * En un cordero ya señalado NO se toca `estado`.
+   *
+   * R8 dice que la muerte de un señalado «perdería el hecho de haberlo sido».
+   * Poner `estado = 'muerto'` haría exactamente eso: el tatuaje seguiría en la
+   * fila pero el animal dejaría de figurar como señalado, y ese hecho no se
+   * recupera. Se escriben la fecha y la causa, y listo — la base lo acepta
+   * porque con `condicion = 'vivo'` la primera rama de `muerte_documentada` ya
+   * es verdadera. Lo verifica `supabase/tests/senalada.test.sql`.
+   *
+   * CONSECUENCIA: la mortalidad se cuenta con `fecha_muerte is not null`,
+   * nunca con `estado = 'muerto'`.
+   */
+  const yaSenalado = cordero.estado === 'senalado';
+
   async function guardar() {
     if (causa === '') return;
     setGuardando(true);
@@ -453,7 +520,9 @@ function RegistrarMuerte({
           tx,
           'corderos',
           cordero.id,
-          { estado: 'muerto', fecha_muerte: fecha, causa_muerte: causa },
+          yaSenalado
+            ? { fecha_muerte: fecha, causa_muerte: causa }
+            : { estado: 'muerto', fecha_muerte: fecha, causa_muerte: causa },
           usuarioId,
         );
       });
@@ -471,6 +540,13 @@ function RegistrarMuerte({
         {sexoLegible(cordero.sexo)} de <Caravana numero={cordero.caravana} /> · nacido el{' '}
         {fechaLarga(cordero.parto_fecha)}
       </p>
+
+      {yaSenalado && (
+        <p className="aviso">
+          Sigue figurando como señalado, con su tatuaje {cordero.tatuaje ?? ''}. Se le agrega que
+          murió, no se le quita el haber sido señalado.
+        </p>
+      )}
 
       {error !== null && (
         <p className="aviso aviso--error" role="alert">
@@ -787,6 +863,183 @@ function AnularCordero({
           disabled={guardando || !listo}
         >
           {guardando ? 'Anulando…' : 'Anular cordero'}
+        </button>
+      </div>
+    </>
+  );
+}
+
+// ───────────────────────────────────────────────────────────────────────
+// Lo que solo se puede arreglar desde la web
+// ───────────────────────────────────────────────────────────────────────
+
+/**
+ * Corregir la fecha de la señalada.
+ *
+ * En el campo no se pide: es siempre hoy, y un control más por cordero,
+ * seiscientas veces, para un dato que en la práctica nunca difiere (R11). Pero
+ * «nunca» no es «jamás» —una tanda cargada al otro día, un aparato con el reloj
+ * corrido— y entonces hay que poder arreglarla desde algún lado.
+ */
+function CorregirFechaSenalada({
+  cordero,
+  onListo,
+}: {
+  cordero: FilaCorderoFicha;
+  onListo: () => void;
+}) {
+  const usuarioId = useUsuarioId();
+  const [fecha, setFecha] = useState(cordero.fecha_senalada ?? hoyISO());
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const validacion = validarFechaSenalada(fecha, cordero.parto_fecha, hoyISO());
+
+  async function guardar() {
+    if (validacion.estado === 'bloqueo') return;
+    setGuardando(true);
+    setError(null);
+    try {
+      await db.writeTransaction(async (tx) => {
+        await actualizar(tx, 'corderos', cordero.id, { fecha_senalada: fecha }, usuarioId);
+      });
+      onListo();
+    } catch (fallo) {
+      setError(fallo instanceof Error ? fallo.message : 'No se pudo guardar la corrección.');
+      setGuardando(false);
+    }
+  }
+
+  return (
+    <>
+      <h1 className="titulo">Corregir la señalada</h1>
+      <p className="subtitulo">
+        Tatuaje {cordero.tatuaje ?? '—'} · madre <Caravana numero={cordero.caravana} /> · nació el{' '}
+        {fechaLarga(cordero.parto_fecha)}
+      </p>
+
+      {error !== null && (
+        <p className="aviso aviso--error" role="alert">
+          {error}
+        </p>
+      )}
+
+      <div className="campo">
+        <label className="etiqueta" htmlFor="fecha-senalada">
+          Fecha de la señalada
+        </label>
+        <input
+          id="fecha-senalada"
+          className="entrada"
+          type="date"
+          value={fecha}
+          min={cordero.parto_fecha}
+          max={hoyISO()}
+          onChange={(e) => setFecha(e.target.value)}
+        />
+      </div>
+
+      {/* Aviso y bloqueo se ven distintos porque significan cosas distintas:
+          uno pide mirar, el otro no deja pasar. */}
+      {validacion.estado !== 'ok' && (
+        <p
+          className={validacion.estado === 'bloqueo' ? 'aviso aviso--error' : 'aviso aviso--atencion'}
+          role={validacion.estado === 'bloqueo' ? 'alert' : undefined}
+        >
+          {validacion.mensaje}
+        </p>
+      )}
+
+      <div style={{ display: 'grid', gap: 'var(--sp-3)', marginTop: 'var(--sp-4)' }}>
+        <button
+          type="button"
+          className="boton boton--principal"
+          onClick={() => void guardar()}
+          disabled={guardando || validacion.estado === 'bloqueo'}
+        >
+          Guardar la corrección
+        </button>
+        <button type="button" className="boton boton--texto" onClick={onListo}>
+          Cancelar
+        </button>
+      </div>
+
+      <p className="nota-boton">
+        Queda registrado en el historial: <b>fecha_senalada</b>, el valor anterior y el nuevo, tu
+        nombre y este navegador.
+      </p>
+    </>
+  );
+}
+
+/**
+ * Deshacer una anulación.
+ *
+ * La anulación es para el error de carga (R13), y equivocarse anulando es un
+ * error de carga más. Son los tres campos a NULL, que `anulacion_completa`
+ * acepta porque la restricción pide que vayan los tres juntos o ninguno.
+ */
+function DesanularCordero({
+  cordero,
+  onListo,
+}: {
+  cordero: FilaCorderoFicha;
+  onListo: () => void;
+}) {
+  const usuarioId = useUsuarioId();
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function guardar() {
+    setGuardando(true);
+    setError(null);
+    try {
+      await db.writeTransaction(async (tx) => {
+        await actualizar(
+          tx,
+          'corderos',
+          cordero.id,
+          { anulado_en: null, anulado_por: null, anulado_motivo: null },
+          usuarioId,
+        );
+      });
+      onListo();
+    } catch (fallo) {
+      setError(fallo instanceof Error ? fallo.message : 'No se pudo deshacer la anulación.');
+      setGuardando(false);
+    }
+  }
+
+  return (
+    <>
+      <h1 className="titulo">Deshacer la anulación</h1>
+      <p className="subtitulo">
+        {sexoLegible(cordero.sexo)} de <Caravana numero={cordero.caravana} /> · nacido el{' '}
+        {fechaLarga(cordero.parto_fecha)}
+      </p>
+
+      {error !== null && (
+        <p className="aviso aviso--error" role="alert">
+          {error}
+        </p>
+      )}
+
+      <p className="aviso">
+        Vuelve a contar para el tipo de nacimiento y para la señalada, y su marca de collar vuelve a
+        estar ocupada dentro del parto.
+      </p>
+
+      <div style={{ display: 'grid', gap: 'var(--sp-3)', marginTop: 'var(--sp-4)' }}>
+        <button
+          type="button"
+          className="boton boton--principal"
+          onClick={() => void guardar()}
+          disabled={guardando}
+        >
+          Deshacer la anulación
+        </button>
+        <button type="button" className="boton boton--texto" onClick={onListo}>
+          Cancelar
         </button>
       </div>
     </>

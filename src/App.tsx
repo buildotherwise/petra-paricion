@@ -75,6 +75,7 @@ function Ruteo() {
           corderoId={pantalla.corderoId}
           onVolver={volver}
           onSenalar={(corderoId) => ir({ nombre: 'senalar-cordero', corderoId })}
+          admin={enAdmin}
           pie={historialDe('corderos', pantalla.corderoId)}
         />
       );

@@ -819,3 +819,67 @@ export function marcasDuplicadasEnParto<T extends CorderoConMarca>(
   }
   return duplicadas;
 }
+
+// ---------------------------------------------------------------------------
+// Fecha de señalada — la corrección que solo existe en la web
+// ---------------------------------------------------------------------------
+
+/**
+ * A partir de cuántos días desde el parto conviene mirar una fecha de señalada.
+ *
+ * Lo habitual son 5 a 10 días. Treinta deja pasar sin ruido el cordero que se
+ * encontró tarde o la tanda que se corrió por lluvia, y avisa cuando el número
+ * empieza a parecer un error de tipeo.
+ */
+export const DIAS_SENALADA_PARA_AVISAR = 30;
+
+/**
+ * La fecha de señalada, corregida desde la web.
+ *
+ * **No usa `rangoTemporada`, y esa es la razón de que exista.** La maqueta de la
+ * Fase 3 lo dejó anotado antes de que el problema existiera: un cordero nacido
+ * el 28 de noviembre se señala en diciembre, fuera de la ventana de parición,
+ * así que `validarFechaNacimiento` la rechazaría siendo correcta.
+ *
+ * Sus reglas son otras tres: no anterior al parto, no futura, y **aviso —no
+ * bloqueo—** si pasaron más de treinta días. Devuelve los tres estados de
+ * `validarPeso` por lo mismo: hay fechas raras que son ciertas.
+ */
+export function validarFechaSenalada(
+  fecha: string | null,
+  fechaParto: string,
+  hoy: string,
+): ValidacionPeso {
+  if (fecha === null || fecha === '') {
+    return { estado: 'bloqueo', mensaje: 'Falta la fecha de la señalada.' };
+  }
+
+  const dia = aDiasEpoca(fecha);
+  if (dia === null) return { estado: 'bloqueo', mensaje: 'La fecha no tiene un formato válido.' };
+
+  const parto = aDiasEpoca(fechaParto);
+  const ahora = aDiasEpoca(hoy);
+  if (parto === null || ahora === null) {
+    return { estado: 'bloqueo', mensaje: 'Las fechas de referencia no son válidas.' };
+  }
+
+  if (dia < parto) {
+    return {
+      estado: 'bloqueo',
+      mensaje: `No puede ser anterior al parto, que fue el ${formatearDia(fechaParto)}.`,
+    };
+  }
+  if (dia > ahora) {
+    return { estado: 'bloqueo', mensaje: 'No puede ser posterior a hoy.' };
+  }
+
+  const dias = dia - parto;
+  if (dias > DIAS_SENALADA_PARA_AVISAR) {
+    return {
+      estado: 'aviso',
+      mensaje: `Pasaron ${dias} días desde el parto. Es posible —un cordero puede señalarse tarde— pero conviene mirarlo: lo habitual son 5 a 10 días.`,
+    };
+  }
+
+  return { estado: 'ok' };
+}

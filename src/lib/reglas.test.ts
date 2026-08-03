@@ -23,6 +23,7 @@ import {
   tipoNacimiento,
   validarFechaMuerte,
   validarFechaNacimiento,
+  validarFechaSenalada,
   validarPeso,
   SIN_CANELA_NI_LUNAR,
   type BorradorSenalada,
@@ -855,5 +856,59 @@ describe('marcasDuplicadasEnParto', () => {
 
   test('un parto único con su cordero marcado no es duplicado', () => {
     expect(marcasDuplicadasEnParto([cordero('a', 'p1', 'punto_abajo')])).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// La fecha de señalada: la deuda que la Fase 3 dejó escrita
+// ---------------------------------------------------------------------------
+
+describe('validarFechaSenalada', () => {
+  const parto = '2026-08-02';
+  const hoy = '2026-08-20';
+
+  test('lo normal pasa sin decir nada', () => {
+    expect(validarFechaSenalada('2026-08-10', parto, hoy).estado).toBe('ok');
+    // El mismo día del parto es raro pero posible, y no es un error de dato.
+    expect(validarFechaSenalada(parto, parto, hoy).estado).toBe('ok');
+  });
+
+  test('anterior al parto se bloquea, y dice cuándo fue el parto', () => {
+    const r = validarFechaSenalada('2026-08-01', parto, hoy);
+    expect(r.estado).toBe('bloqueo');
+    if (r.estado !== 'ok') expect(r.mensaje).toContain('2 de agosto');
+  });
+
+  test('futura se bloquea', () => {
+    expect(validarFechaSenalada('2026-08-21', parto, hoy).estado).toBe('bloqueo');
+  });
+
+  test('vacía o mal formada se bloquea', () => {
+    expect(validarFechaSenalada(null, parto, hoy).estado).toBe('bloqueo');
+    expect(validarFechaSenalada('', parto, hoy).estado).toBe('bloqueo');
+    expect(validarFechaSenalada('20 de agosto', parto, hoy).estado).toBe('bloqueo');
+  });
+
+  // Aviso y no bloqueo: hay corderos que se señalan tarde y siguen siendo un
+  // dato cierto. Bloquearlo obligaría a mentir la fecha para poder guardar.
+  test('más de treinta días avisa pero deja guardar', () => {
+    const r = validarFechaSenalada('2026-09-15', parto, '2026-09-20');
+    expect(r.estado).toBe('aviso');
+    if (r.estado !== 'ok') expect(r.mensaje).toContain('44 días');
+  });
+
+  test('justo en el umbral todavía no avisa', () => {
+    expect(validarFechaSenalada('2026-09-01', parto, '2026-09-20').estado).toBe('ok');
+  });
+
+  /**
+   * El caso con nombre y apellido, el que motivó toda la función: un cordero
+   * nacido el 28 de noviembre se señala en diciembre, FUERA de la ventana de
+   * parición. `validarFechaNacimiento` lo rechazaría siendo correcto.
+   */
+  test('un 12 de diciembre es válido, aunque la parición termine el 30 de noviembre', () => {
+    expect(validarFechaSenalada('2026-12-12', '2026-11-28', '2026-12-20').estado).toBe('ok');
+    // Y para que no queden dudas de contra qué se está comparando:
+    expect(validarFechaNacimiento('2026-12-12', '2026-12-20', 2026).valida).toBe(false);
   });
 });
