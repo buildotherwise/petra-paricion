@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useQuery } from '@powersync/react';
 import { Encabezado } from '../componentes/Encabezado';
 import { Caravana } from '../componentes/Caravana';
@@ -52,10 +52,17 @@ export function FichaCordero({
   corderoId,
   onVolver,
   onSenalar,
+  pie,
 }: {
   corderoId: string;
   onVolver: () => void;
   onSenalar: (corderoId: string) => void;
+  /**
+   * Lo que se agrega al pie desde afuera. Hoy es el historial de cambios, que
+   * solo corresponde en la web (§7). La ficha no sabe quién se lo pasa ni por
+   * qué: si lo decidiera ella, tendría que conocer el rol y la superficie.
+   */
+  pie?: ReactNode;
 }) {
   const [vista, setVista] = useState<Vista>('ficha');
 
@@ -125,6 +132,10 @@ export function FichaCordero({
             onListo={() => setVista('ficha')}
           />
         )}
+
+        {/* Solo mirando: debajo de un formulario abierto el historial es ruido,
+            y encima invita a leer mientras se edita. */}
+        {vista === 'ficha' && pie}
       </main>
     </div>
   );

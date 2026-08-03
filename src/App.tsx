@@ -14,6 +14,7 @@ import { Senalada } from './pantallas/Senalada';
 import { SenalarParto } from './pantallas/SenalarParto';
 import { SenalarCordero } from './pantallas/SenalarCordero';
 import { Rechazados } from './pantallas/Rechazados';
+import { HistorialDelRegistro } from './componentes/HistorialDelRegistro';
 
 /**
  * La web admin no viaja en el bundle que abre el campo.
@@ -26,7 +27,17 @@ import { Rechazados } from './pantallas/Rechazados';
 const WebAdmin = lazy(() => import('./pantallas/admin/WebAdmin'));
 
 function Ruteo() {
-  const { pantalla, ir, volver, reemplazar, alInicio } = useNavegacion();
+  const { pantalla, enAdmin, ir, volver, reemplazar, alInicio } = useNavegacion();
+
+  /**
+   * El historial va al pie de las fichas, pero solo en la web.
+   *
+   * CLAUDE.md §7 lo saca del teléfono a propósito, y la ficha no tiene por qué
+   * enterarse de por qué: recibe un nodo y lo pone abajo. Si lo decidiera ella,
+   * tendría que conocer el rol y la superficie desde la que se la abrió.
+   */
+  const historialDe = (tabla: 'partos' | 'corderos', registroId: string) =>
+    enAdmin ? <HistorialDelRegistro tabla={tabla} registroId={registroId} /> : undefined;
 
   switch (pantalla.nombre) {
     case 'registrar-parto':
@@ -54,6 +65,7 @@ function Ruteo() {
           partoId={pantalla.partoId}
           onVolver={volver}
           onAbrirCordero={(corderoId) => ir({ nombre: 'ficha-cordero', corderoId })}
+          pie={historialDe('partos', pantalla.partoId)}
         />
       );
 
@@ -63,6 +75,7 @@ function Ruteo() {
           corderoId={pantalla.corderoId}
           onVolver={volver}
           onSenalar={(corderoId) => ir({ nombre: 'senalar-cordero', corderoId })}
+          pie={historialDe('corderos', pantalla.corderoId)}
         />
       );
 

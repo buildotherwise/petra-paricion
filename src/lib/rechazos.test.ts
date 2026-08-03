@@ -1,5 +1,10 @@
 import { describe, expect, test } from 'vitest';
-import { camposDeLaCarga, motivoLegible, tituloDeLaCarga } from './rechazos';
+import {
+  camposDeLaCarga,
+  mensajeDeLectura,
+  motivoLegible,
+  tituloDeLaCarga,
+} from './rechazos';
 
 describe('el motivo del rechazo se cuenta en castellano', () => {
   test('una oveja que ya tenía parto', () => {
@@ -154,5 +159,44 @@ describe('lo que se había cargado se muestra legible', () => {
 
   test('una tabla desconocida no rompe', () => {
     expect(camposDeLaCarga('otra_cosa', { algo: 1 })).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// El otro lado: cuando falla una lectura de la web admin
+// ---------------------------------------------------------------------------
+
+describe('mensajeDeLectura distingue las situaciones', () => {
+  // Sin conexión gana sobre cualquier código: si no hay red, lo que haya
+  // llegado antes ya no explica nada.
+  test('sin conexión, aunque venga un código del servidor', () => {
+    expect(mensajeDeLectura(null, false)).toMatch(/sin conexión/i);
+    expect(mensajeDeLectura('42501', false)).toMatch(/sin conexión/i);
+  });
+
+  // Son las dos situaciones que se resuelven al revés: sin señal se espera y
+  // se reintenta; sin permiso se avisa al administrador.
+  test('42501 es RLS, y no se confunde con falta de señal', () => {
+    const mensaje = mensajeDeLectura('42501', true);
+    expect(mensaje).toMatch(/permiso/i);
+    expect(mensaje).not.toMatch(/conexión/i);
+  });
+
+  test('la sesión vencida se dice como lo que es', () => {
+    expect(mensajeDeLectura('PGRST301', true)).toMatch(/sesión/i);
+  });
+
+  test('otros PGRST son culpa de la app, no de los datos', () => {
+    expect(mensajeDeLectura('PGRST100', true)).toMatch(/error de la app/i);
+  });
+
+  test('un código desconocido igual se muestra, para poder buscarlo', () => {
+    expect(mensajeDeLectura('23514', true)).toContain('23514');
+  });
+
+  test('ningún caso queda mudo', () => {
+    for (const codigo of [null, undefined, '', '42501', 'PGRST301', 'XX000']) {
+      expect(mensajeDeLectura(codigo, true).length).toBeGreaterThan(0);
+    }
   });
 });

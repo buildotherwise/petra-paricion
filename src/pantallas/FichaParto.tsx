@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useQuery } from '@powersync/react';
 import { Encabezado } from '../componentes/Encabezado';
 import { Caravana } from '../componentes/Caravana';
@@ -109,10 +109,13 @@ export function FichaParto({
   partoId,
   onVolver,
   onAbrirCordero,
+  pie,
 }: {
   partoId: string;
   onVolver: () => void;
   onAbrirCordero: (corderoId: string) => void;
+  /** Lo que se agrega al pie desde afuera. Ver el mismo prop en FichaCordero. */
+  pie?: ReactNode;
 }) {
   const [vista, setVista] = useState<Vista>('ficha');
 
@@ -174,6 +177,8 @@ export function FichaParto({
         {vista === 'cordero' && (
           <AgregarCordero parto={parto} corderos={activos} onListo={() => setVista('ficha')} />
         )}
+
+        {vista === 'ficha' && pie}
       </main>
     </div>
   );

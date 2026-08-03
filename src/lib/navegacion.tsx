@@ -68,6 +68,15 @@ interface Navegacion {
   reemplazar: (destino: Pantalla) => void;
   /** Vuelve al inicio y descarta la pila: se usa al terminar de cargar algo. */
   alInicio: () => void;
+  /**
+   * Si se está mirando desde la administración.
+   *
+   * Las fichas son las mismas en los dos lados —esa es la decisión de §05— pero
+   * hay cosas que solo corresponden en la web: el historial de cambios, que
+   * CLAUDE.md §7 saca explícitamente del teléfono. Es el mismo predicado que
+   * usa `urlDe` para decidir si una ficha tiene URL propia.
+   */
+  enAdmin: boolean;
 }
 
 const Contexto = createContext<Navegacion | null>(null);
@@ -161,7 +170,14 @@ export function ProveedorNavegacion({ children }: { children: ReactNode }) {
   }, [aplicar]);
 
   const valor = useMemo(
-    () => ({ pantalla: pila[pila.length - 1] ?? INICIO, ir, volver, reemplazar, alInicio }),
+    () => ({
+      pantalla: pila[pila.length - 1] ?? INICIO,
+      enAdmin: pila.some((p) => p.nombre === 'admin'),
+      ir,
+      volver,
+      reemplazar,
+      alInicio,
+    }),
     [pila, ir, volver, reemplazar, alInicio],
   );
 

@@ -5,6 +5,7 @@ import type { SeccionAdmin } from '../../lib/navegacion';
 import type { Perfil } from '../../lib/powersync/esquema';
 import { TablaPartos } from './TablaPartos';
 import { TablaCorderos } from './TablaCorderos';
+import { Ediciones } from './Ediciones';
 import '../../estilos/admin.css';
 
 /**
@@ -148,9 +149,8 @@ function Seccion({
       </p>
       {seccion === 'partos' && <TablaPartos onAbrir={onAbrirParto} />}
       {seccion === 'corderos' && <TablaCorderos onAbrir={onAbrirCordero} />}
-      {(seccion === 'revision' || seccion === 'exportar') && (
-        <p className="admin-espera">Todavía no está construida.</p>
-      )}
+      {seccion === 'revision' && <Ediciones />}
+      {seccion === 'exportar' && <p className="admin-espera">Todavía no está construida.</p>}
     </>
   );
 }

@@ -208,3 +208,44 @@ export function camposDeLaCarga(
   }
   return campos;
 }
+
+// ---------------------------------------------------------------------------
+// El otro lado: cuando falla una LECTURA de la web admin
+// ---------------------------------------------------------------------------
+
+/**
+ * Por qué no se pudo leer del servidor.
+ *
+ * Vive acá y no junto al hook que la usa por una razón práctica: el módulo del
+ * hook importa el cliente de Supabase, que toca `window` al cargarse, y
+ * entonces no se podría testear sin traer jsdom. Pero también encaja: es la
+ * misma tarea que el resto del archivo —error crudo de Postgres, frase en
+ * castellano— del lado de la lectura en vez del de la escritura.
+ *
+ * Lo que hay que no confundir son dos situaciones que se resuelven al revés:
+ * **sin señal se espera y se reintenta; sin permiso se avisa al
+ * administrador.** Un «algo salió mal» genérico deja a cualquiera reintentando
+ * un problema que no se arregla reintentando.
+ */
+export function mensajeDeLectura(
+  codigo: string | null | undefined,
+  hayConexion: boolean,
+): string {
+  if (!hayConexion) {
+    return 'Sin conexión. El historial se guarda en el servidor, así que hace falta señal para verlo.';
+  }
+  if (codigo === null || codigo === undefined || codigo === '') {
+    return 'No se pudo cargar el historial.';
+  }
+
+  // 42501 es lo que devuelve RLS cuando `cambios_lectura_admin` no deja pasar.
+  // Es informativo, no un bug: la política existe y funcionó.
+  if (codigo === '42501') return 'Tu cuenta no tiene permiso para ver el historial de cambios.';
+  if (codigo === 'PGRST301' || codigo === '401') {
+    return 'La sesión venció. Cerrá sesión y volvé a entrar.';
+  }
+  if (codigo.startsWith('PGRST')) {
+    return 'La consulta al servidor no es válida. Es un error de la app, no de los datos.';
+  }
+  return `No se pudo cargar el historial (${codigo}).`;
+}
