@@ -12,6 +12,7 @@ import {
   apilarEnHistorial,
   escucharHistorial,
   leerPilaDelHistorial,
+  pilaDesdeUrl,
   rebobinarAlInicio,
   reemplazarEnHistorial,
   retrocederEnHistorial,
@@ -36,6 +37,9 @@ import {
  * `history.state` sin que ninguna pantalla se entere.
  */
 
+/** Las cuatro secciones de la web admin. Son también su URL. */
+export type SeccionAdmin = 'partos' | 'corderos' | 'revision' | 'exportar';
+
 export type Pantalla =
   | { nombre: 'inicio' }
   | { nombre: 'registrar-parto' }
@@ -45,7 +49,8 @@ export type Pantalla =
   | { nombre: 'senalada' }
   | { nombre: 'senalar-parto'; partoId: string }
   | { nombre: 'senalar-cordero'; corderoId: string }
-  | { nombre: 'rechazados' };
+  | { nombre: 'rechazados' }
+  | { nombre: 'admin'; seccion: SeccionAdmin };
 
 const INICIO: Pantalla = { nombre: 'inicio' };
 
@@ -86,17 +91,25 @@ export function ProveedorNavegacion({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // Al arrancar puede haber una pila nuestra guardada —una recarga sobre una
-    // pantalla profunda— y entonces se restaura. Si no, se siembra el inicio en
-    // la entrada actual, sin crear una nueva.
+    // Tres formas de arrancar, en orden de precedencia.
     //
-    // Restaurar es seguro incluso con un id que ya no está: las dos fichas
-    // muestran «no encontrado», que es una pantalla prevista.
+    // 1. Hay una pila nuestra en la entrada actual: es una recarga sobre una
+    //    pantalla profunda, y se restaura. Los navegadores conservan
+    //    `history.state` a través de un F5. Es seguro incluso con un id que ya
+    //    no está: las dos fichas muestran «no encontrado», que es una pantalla
+    //    prevista.
+    // 2. La dirección dice /admin: alguien la tipeó o la tiene en favoritos.
+    // 3. Cualquier otra cosa: el inicio, sembrado en la entrada actual sin
+    //    crear una nueva.
     const guardada = leerPilaDelHistorial();
-    if (guardada === null) {
-      sembrarHistorial(pilaRef.current);
-    } else {
+    if (guardada !== null) {
+      sembrarHistorial(guardada);
       aplicar(guardada);
+    } else {
+      const deLaUrl = pilaDesdeUrl(window.location.pathname);
+      const inicial = deLaUrl ?? pilaRef.current;
+      sembrarHistorial(inicial);
+      aplicar(inicial);
     }
 
     return escucharHistorial((restaurada) => aplicar(restaurada ?? [INICIO]));

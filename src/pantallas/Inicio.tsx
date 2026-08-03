@@ -4,6 +4,7 @@ import { Caravana } from '../componentes/Caravana';
 import { entorno } from '../lib/entorno';
 import { hoyISO } from '../lib/reglas';
 import { nombreTipo } from '../lib/parto';
+import { useEsAdmin } from '../lib/perfil';
 
 interface Contadores {
   partos_hoy: number;
@@ -24,13 +25,16 @@ export function Inicio({
   onSenalada,
   onVerPartos,
   onAbrirParto,
+  onAdministracion,
 }: {
   onRegistrarParto: () => void;
   onSenalada: () => void;
   onVerPartos: () => void;
   onAbrirParto: (partoId: string) => void;
+  onAdministracion: () => void;
 }) {
   const hoy = hoyISO();
+  const esAdmin = useEsAdmin();
 
   // Todo sale de la réplica local: la pantalla carga igual sin señal.
   // Los anulados no cuentan en ningún contador (R1).
@@ -156,6 +160,21 @@ export function Inicio({
               </span>
             </button>
           </li>
+          {/* La administración entra con la misma forma que la fila de arriba y
+              no como tercer botón grande: el inicio conserva dos objetivos para
+              el pulgar. Solo se dibuja con el rol resuelto — `undefined` es
+              «todavía no sé», y un enlace que aparece y desaparece medio segundo
+              después de arrancar es un reporte de bug, no una demora. */}
+          {esAdmin === true && (
+            <li>
+              <button type="button" onClick={onAdministracion}>
+                <span className="ver-todos">Administración</span>
+                <span className="nota" aria-hidden="true">
+                  ›
+                </span>
+              </button>
+            </li>
+          )}
         </ul>
       </main>
     </div>

@@ -1,0 +1,229 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   La web admin
+   ═══════════════════════════════════════════════════════════════════════
+
+   Un tercer archivo de estilos, y no más secciones al final de app.css, por
+   tres razones:
+
+   1. app.css pasa las mil doscientas líneas y ya está en el límite de lo que
+      se puede recorrer buscando una clase.
+   2. Es otro medio. app.css está calibrado para un teléfono a pleno sol con
+      guantes: 17px de base, 56px de área táctil, sin hover. Acá hay un mouse,
+      una pantalla de 1280 y la densidad es una virtud. Interpolar las dos
+      calibraciones en un archivo las mezcla en la cabeza de quien lo edita.
+   3. Este archivo ANULA cosas que app.css afirma globalmente —la primera,
+      `.app { max-width: 32rem }`— y en un solo archivo ese orden de anulación
+      sería accidental. Por eso el armazón no usa `.app`: tiene su propia raíz.
+
+   Se importa desde WebAdmin.tsx y no desde main.tsx, para que Vite lo cuelgue
+   del chunk lazy en vez del bundle que baja el teléfono.
+
+   Los tokens son los mismos de siempre (tokens.css). Lo que cambia es la
+   escala, no la paleta.
+*/
+
+.admin {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--fondo);
+  font-size: 13.5px;
+}
+
+/* ── La barra superior ─────────────────────────────────────────────────
+   En el teléfono la marca completa no entra: el límite medido son 363px y
+   abajo de 384 se esconde la línea de la raza. Acá sobran mil, así que va
+   entera — emblema, «Petra» en serif y la raza espaciada debajo. */
+
+.admin-barra {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  background: var(--superficie);
+  padding: 0.7rem 1.25rem;
+  border-bottom: 1px solid var(--linea);
+}
+
+.admin-marca {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  flex: none;
+}
+
+.admin-marca img {
+  height: 34px;
+  width: auto;
+  display: block;
+}
+
+.admin-marca .nombre {
+  font-family: var(--serif);
+  font-size: 21px;
+  line-height: 1;
+  color: var(--tinta);
+}
+
+.admin-marca .raza {
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--tinta-tenue);
+  font-weight: 800;
+  margin-top: 3px;
+}
+
+.admin-temporada {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--tinta-suave);
+  letter-spacing: 0.04em;
+}
+
+.admin-barra .empuje {
+  flex: 1;
+}
+
+.admin-quien {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--tinta-suave);
+}
+
+/* ── El marco: barra lateral y lienzo ──────────────────────────────────
+   La lateral se eligió sobre las pestañas por un solo número: el de revisión.
+   Si hay siete cosas para mirar, ese siete tiene que verse desde cualquier
+   sección, y una fila de pestañas es el lugar donde menos se mira. */
+
+.admin-marco {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.admin-lateral {
+  width: 196px;
+  flex: none;
+  background: var(--superficie-honda);
+  padding: 0.875rem 0.625rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-right: 1px solid var(--linea);
+}
+
+.admin-lateral button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  border: 0;
+  border-radius: 11px;
+  background: none;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--tinta-suave);
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-lateral button:hover {
+  background: rgba(43, 37, 25, 0.05);
+}
+
+.admin-lateral button[aria-current='page'] {
+  background: var(--marca);
+  color: #fff;
+  box-shadow: 0 6px 14px -8px rgba(107, 90, 30, 0.7);
+}
+
+.admin-lateral .cuenta {
+  font-family: var(--serif);
+  font-size: 14px;
+  color: var(--tinta-tenue);
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-lateral button[aria-current='page'] .cuenta {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+/* El único número del armazón que pide una acción. */
+.admin-lateral .cuenta--viva {
+  background: var(--alerta);
+  color: #fff;
+  border-radius: var(--r-pastilla);
+  padding: 1px 7px;
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.admin-lateral .salida {
+  margin-top: auto;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--linea);
+}
+
+.admin-lienzo {
+  flex: 1;
+  padding: 1.125rem 1.375rem;
+  min-width: 0;
+  overflow: auto;
+}
+
+.admin-titulo {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 25px;
+  line-height: 1.1;
+  margin: 0 0 2px;
+}
+
+.admin-bajada {
+  font-size: 12px;
+  color: var(--tinta-suave);
+  font-weight: 600;
+  margin: 0 0 0.875rem;
+}
+
+/* ── Pantalla angosta ──────────────────────────────────────────────────
+   No se bloquea. Bloquear crea un callejón sin salida justo el día que el
+   administrador está en el campo con el teléfono; el aviso es honesto y las
+   tablas ya scrollean solas. */
+
+.admin-angosto {
+  display: none;
+  background: var(--marca-tenue);
+  color: var(--tinta);
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 0.625rem 1.25rem;
+  border-bottom: 1px solid var(--linea);
+}
+
+@media (max-width: 60rem) {
+  .admin-angosto {
+    display: block;
+  }
+}
+
+/* ── Estados vacíos y de espera ────────────────────────────────────────
+   «Sincronizando» y «no hay resultados» NO son lo mismo, y confundirlos en
+   una tabla se lee como pérdida de datos. Es el mismo error que resolver el
+   rol desconocido como operador, y acá duele más. */
+
+.admin-espera {
+  padding: var(--sp-6) 0;
+  text-align: center;
+  color: var(--tinta-suave);
+  font-weight: 700;
+  font-size: 13px;
+}
+
+/* La pantalla que ve quien entra a /admin sin ser administrador NO está acá:
+   usa las clases de app.css. Este archivo viaja en el chunk lazy, y esa
+   pantalla es justamente la que se muestra en vez de cargarlo. */

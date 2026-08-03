@@ -1,7 +1,9 @@
+import { Suspense, lazy } from 'react';
 import { PowerSyncContext } from '@powersync/react';
 import { db } from './lib/powersync/db';
 import { ProveedorSesion, useSesion } from './lib/sesion';
-import { ProveedorNavegacion, useNavegacion } from './lib/navegacion';
+import { ProveedorNavegacion, useNavegacion, type SeccionAdmin } from './lib/navegacion';
+import { usePerfil } from './lib/perfil';
 import { Login } from './pantallas/Login';
 import { Inicio } from './pantallas/Inicio';
 import { RegistrarParto } from './pantallas/RegistrarParto';
@@ -12,6 +14,16 @@ import { Senalada } from './pantallas/Senalada';
 import { SenalarParto } from './pantallas/SenalarParto';
 import { SenalarCordero } from './pantallas/SenalarCordero';
 import { Rechazados } from './pantallas/Rechazados';
+
+/**
+ * La web admin no viaja en el bundle que abre el campo.
+ *
+ * Ojo con lo que ahorra: Workbox precachea `**​/*.js`, así que el chunk se
+ * descarga igual en los teléfonos. Esto ahorra parseo, no descarga — y a cambio
+ * la administración funciona sin señal, igual que todo lo demás. Para Recharts,
+ * cuando llegue, ese trato deja de convenir y hay que sacarlo del precache.
+ */
+const WebAdmin = lazy(() => import('./pantallas/admin/WebAdmin'));
 
 function Ruteo() {
   const { pantalla, ir, volver, reemplazar, alInicio } = useNavegacion();
@@ -88,6 +100,19 @@ function Ruteo() {
     case 'rechazados':
       return <Rechazados onVolver={volver} />;
 
+    case 'admin':
+      return (
+        <PuertaAdmin
+          seccion={pantalla.seccion}
+          // Cambiar de sección reemplaza en vez de apilar: la lateral es una
+          // botonera, no un camino. Si apilara, salir de la administración con
+          // el botón atrás pediría deshacer cada clic de la barra.
+          onSeccion={(seccion) => reemplazar({ nombre: 'admin', seccion })}
+          onSalirAlCampo={alInicio}
+          onVerRechazados={() => ir({ nombre: 'rechazados' })}
+        />
+      );
+
     default:
       return (
         <Inicio
@@ -95,9 +120,83 @@ function Ruteo() {
           onSenalada={() => ir({ nombre: 'senalada' })}
           onVerPartos={() => ir({ nombre: 'partos' })}
           onAbrirParto={(partoId) => ir({ nombre: 'ficha-parto', partoId })}
+          onAdministracion={() => ir({ nombre: 'admin', seccion: 'partos' })}
         />
       );
   }
+}
+
+/**
+ * Quién puede abrir la administración.
+ *
+ * Por rol, nunca por ancho de pantalla: la tablet Android es el dispositivo
+ * principal de captura y en horizontal mide 1024–1280px CSS, así que cualquier
+ * umbral que sirva para una laptop se dispara en la tablet y le pone la
+ * administración en las manos a quien registra partos a las seis de la mañana.
+ *
+ * Y no se decide nada mientras el perfil sea desconocido. Un rechazo que
+ * parpadea y se convierte en la pantalla buena es peor que medio segundo de
+ * espera: parece que la app se equivocó.
+ */
+function PuertaAdmin({
+  seccion,
+  onSeccion,
+  onSalirAlCampo,
+  onVerRechazados,
+}: {
+  seccion: SeccionAdmin;
+  onSeccion: (seccion: SeccionAdmin) => void;
+  onSalirAlCampo: () => void;
+  onVerRechazados: () => void;
+}) {
+  const perfil = usePerfil();
+
+  if (perfil.estado === 'cargando') return <Esperando />;
+
+  if (perfil.estado === 'sin-perfil' || perfil.perfil.rol !== 'admin') {
+    // Con las clases de app.css a propósito: admin.css viaja en el chunk lazy
+    // y esta pantalla es justamente la que se muestra en vez de cargarlo.
+    return (
+      <div className="app">
+        <main className="contenido area-segura">
+          <h1 className="titulo">Esta sección es para administradores</h1>
+          <p className="subtitulo">
+            {perfil.estado === 'sin-perfil'
+              ? 'Tu cuenta todavía no está habilitada. Pedile al administrador que la active para poder cargar y ver datos.'
+              : 'Tu cuenta está habilitada para el trabajo de campo.'}
+          </p>
+          <button
+            type="button"
+            className="boton boton--principal"
+            style={{ marginTop: 'var(--sp-5)' }}
+            onClick={onSalirAlCampo}
+          >
+            Ir a la app de campo
+          </button>
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <Suspense fallback={<Esperando />}>
+      <WebAdmin
+        seccion={seccion}
+        perfil={perfil.perfil}
+        onSeccion={onSeccion}
+        onSalirAlCampo={onSalirAlCampo}
+        onVerRechazados={onVerRechazados}
+      />
+    </Suspense>
+  );
+}
+
+/**
+ * El mismo hueco para las dos esperas —el perfil y el chunk— para que quien
+ * mira vea una sola pausa y no dos pantallas distintas encadenadas.
+ */
+function Esperando() {
+  return <div className="login" />;
 }
 
 function Puerta() {

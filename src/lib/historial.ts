@@ -1,4 +1,4 @@
-import type { Pantalla } from './navegacion';
+import type { Pantalla, SeccionAdmin } from './navegacion';
 
 /**
  * El botón atrás del navegador, mapeado sobre la pila de `navegacion.tsx`.
@@ -20,13 +20,56 @@ import type { Pantalla } from './navegacion';
  * la pila de React una entrada respecto de la del navegador, y a los tres pasos
  * el botón atrás llevaría a cualquier lado.
  *
- * Las pantallas no tienen URL propia todavía; todas viven en `/`. Eso alcanza
- * para el botón atrás, que es lo que resuelve este archivo. Las URLs de la web
- * admin llegan con la pantalla de administración.
+ * Las pantallas de campo no tienen URL propia y siguen sin necesitarla: la app
+ * se usa instalada y todas viven en `/`. Las de administración sí, porque se
+ * usan en una pestaña con barra de direcciones y conviene poder dejar abierta
+ * la de revisión. La regla que decide cuáles: **una URL solo dice lo que un F5
+ * puede restaurar.** Escribir una que al recargar no lleva a ninguna parte es
+ * mentirle a la barra de direcciones.
  */
 
 interface Estado {
   pila: Pantalla[];
+}
+
+/**
+ * La URL que le corresponde a una pila.
+ *
+ * Las fichas tienen URL solo estando adentro de la administración, porque ahí
+ * la pestaña es el lugar de trabajo. Abiertas desde el campo son la misma
+ * pantalla y viven en `/`, como todo lo demás.
+ */
+export function urlDe(pila: Pantalla[]): string {
+  const cima = pila[pila.length - 1];
+  if (cima === undefined) return '/';
+  if (cima.nombre === 'admin') return `/admin/${cima.seccion}`;
+
+  if (!pila.some((p) => p.nombre === 'admin')) return '/';
+  if (cima.nombre === 'ficha-parto') return `/admin/parto/${cima.partoId}`;
+  if (cima.nombre === 'ficha-cordero') return `/admin/cordero/${cima.corderoId}`;
+  return '/admin/partos';
+}
+
+const SECCIONES: readonly SeccionAdmin[] = ['partos', 'corderos', 'revision', 'exportar'];
+
+/**
+ * La pila con la que arranca la app según la dirección tipeada.
+ *
+ * Devuelve `null` para todo lo que no sea administración: el campo entra por
+ * `/` y no hay nada que parsear.
+ *
+ * Cualquier `/admin/loquesea` cae en una sección válida en vez de tirar un 404
+ * propio, y `sembrarHistorial` reescribe la barra de direcciones a la URL
+ * canónica. Un enlace pegado a una ficha —`/admin/parto/<id>`— también termina
+ * en la tabla: la URL sola no sabría de dónde se entró, y la pila completa solo
+ * existe en `history.state`, que una recarga sí conserva pero un pegado no.
+ */
+export function pilaDesdeUrl(ruta: string): Pantalla[] | null {
+  if (!/^\/admin(\/|$)/.test(ruta)) return null;
+
+  const pedida = ruta.split('/')[2];
+  const seccion = SECCIONES.find((s) => s === pedida) ?? 'partos';
+  return [{ nombre: 'admin', seccion }];
 }
 
 /**
@@ -69,15 +112,15 @@ export function leerPilaDelHistorial(): Pantalla[] | null {
 
 /** Deja la pila en la entrada actual, sin crear una nueva. */
 export function sembrarHistorial(pila: Pantalla[]): void {
-  window.history.replaceState({ pila } satisfies Estado, '');
+  window.history.replaceState({ pila } satisfies Estado, '', urlDe(pila));
 }
 
 export function apilarEnHistorial(pila: Pantalla[]): void {
-  window.history.pushState({ pila } satisfies Estado, '');
+  window.history.pushState({ pila } satisfies Estado, '', urlDe(pila));
 }
 
 export function reemplazarEnHistorial(pila: Pantalla[]): void {
-  window.history.replaceState({ pila } satisfies Estado, '');
+  window.history.replaceState({ pila } satisfies Estado, '', urlDe(pila));
 }
 
 export function retrocederEnHistorial(): void {
