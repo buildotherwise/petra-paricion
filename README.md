@@ -428,9 +428,20 @@ CLAUDE.md §11, con los dispositivos reales. Se corrió en Fase 1, pero desde
 entonces entraron la señalada, la edición, la anulación, la muerte, la web
 admin y el tablero — o sea casi todos los caminos de escritura—, así que hay
 que repetirlo sobre el código final. Es el criterio de salida y no es
-negociable. De paso: verificar que los iPhones del equipo estén en **iOS 16.4
-o más nuevo** (OPFS); un aparato más viejo ahora lo dice en pantalla en vez de
-fallar mudo, pero mejor saberlo antes.
+negociable.
+
+El paso a paso, con qué mirar en cada uno, está en
+[`docs/protocolo-11.md`](docs/protocolo-11.md). Dos cosas de ahí que conviene
+saber antes: **las ovejas de la prueba se dan de alta a mano** (`PRUEBA-1`,
+`PRUEBA-2`…) porque un parto de prueba sobre una oveja real le bloquea el parto
+de verdad —`partos` tiene `unique (oveja_id)`—, y **la limpieza va el mismo
+día**, con `scripts/limpiar-datos-de-prueba.sql`.
+
+Para mirar la base durante la prueba, sin abrir la consola de Supabase:
+
+```bash
+python3 scripts/estado-de-la-base.py --watch
+```
 
 ---
 

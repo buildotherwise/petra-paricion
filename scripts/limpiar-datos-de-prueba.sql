@@ -1,6 +1,6 @@
--- Borra los tres partos de prueba que subí por error el 2 de agosto de 2026.
+-- Deja la base como el día 1: las 503 madres y sus servicios, y nada más.
 --
---   Supabase → SQL Editor → pegar y ejecutar.
+--   Supabase → SQL Editor → ajustar `corte` (abajo) → ejecutar.
 --
 -- Se corre desde el editor de Supabase y no desde la app ni desde un script,
 -- porque el borrado físico está revocado para `authenticated` y para
@@ -9,65 +9,108 @@
 -- base y saltea ese revoke — que es exactamente el único lugar donde debería
 -- poder hacerse.
 --
--- Qué borra, y nada más que eso: los partos de las ovejas 0001, 0013 y 0015 con
--- fecha 2026-08-01 y dispositivo 'prueba', sus 6 corderos y las filas de
--- auditoría que generaron. Los partos reales de las ovejas 2509 y 3633,
--- cargados desde el iPhone el 2 de agosto, NO se tocan.
+-- QUÉ BORRA: todos los partos y corderos creados hasta `corte`, sus filas de
+-- auditoría, y las ovejas de alta manual (R9) que se hayan creado al probar.
+-- NO toca las 503 madres precargadas ni los 1.359 servicios.
 --
--- Los ids van escritos y no derivados de una condición: una condición mal
--- escrita en producción borra de más, y una lista de ids no puede.
+-- Por qué «todos» y no una lista de ids. La versión anterior enumeraba tres
+-- UUID y afirmaba que debían quedar dos partos; quedaron seis —los tres del
+-- dispositivo `prueba` MÁS los tres del iPhone, que también eran de prueba— así
+-- que su red de seguridad se disparaba y el script ya no corría. Una lista de
+-- ids envejece cada vez que alguien prueba algo; un corte temporal, no.
+--
+-- La seguridad la da `corte`: si apareció un parto REAL después de ese momento,
+-- el script se niega a hacer nada. O sea que sirve mientras no haya llegado el
+-- primer parto de verdad — que es exactamente cuando corresponde usarlo.
 
 begin;
 
-create temp table a_borrar (parto_id uuid primary key) on commit drop;
+-- ───────────────────────────────────────────────────────────────────────
+-- EL CORTE — ajustar antes de ejecutar.
+--
+-- Un momento posterior a la última carga de prueba y anterior a cualquier
+-- carga real. El `-03` es la hora de Uruguay; la base guarda en UTC y la
+-- conversión la hace Postgres.
+-- ───────────────────────────────────────────────────────────────────────
+create temp table corte on commit drop as
+  select timestamptz '2026-08-04 23:59:00-03' as momento;
 
-insert into a_borrar (parto_id) values
-  ('29d9fb00-eb26-4e37-ae8c-bf654e8b37d5'),  -- oveja 0001 · collar 7  · 3 corderos
-  ('93c3252f-0e1d-4ec4-906b-84cd7efeda57'),  -- oveja 0013 · sin collar · 1 cordero
-  ('15bfa024-414e-4450-961e-120544b46cc8');  -- oveja 0015 · collar 12 · 2 corderos
-
--- Red de seguridad: si alguno de esos ids no es lo que se cree que es, no se
--- borra nada. Los tres tienen que ser del 1 de agosto y del dispositivo
--- 'prueba'; los reales son del 2 y del iPhone.
+-- Red de seguridad 1: nada creado después del corte. Si esto falla es porque
+-- llegó un parto real, y entonces este script no es la herramienta correcta.
 do $$
 declare
   n int;
+  m timestamptz;
 begin
-  select count(*) into n
-    from partos p join a_borrar b on b.parto_id = p.id
-   where p.fecha = date '2026-08-01' and p.dispositivo = 'prueba';
+  select momento into m from corte;
 
-  if n <> 3 then
-    raise exception 'Se esperaban 3 partos de prueba y coinciden %. No se borra nada.', n;
+  select count(*) into n from partos where creado_en > m;
+  if n > 0 then
+    raise exception
+      'Hay % parto(s) creados después del corte (%). Pueden ser reales: no se borra nada.', n, m;
+  end if;
+
+  select count(*) into n from corderos where creado_en > m;
+  if n > 0 then
+    raise exception
+      'Hay % cordero(s) creados después del corte (%). Pueden ser reales: no se borra nada.', n, m;
   end if;
 end $$;
 
--- La auditoría primero: no tiene clave foránea, así que si se borrara después
--- quedarían filas apuntando a registros que ya no existen.
-delete from cambios
- where tabla = 'corderos'
-   and registro_id in (select id from corderos where parto_id in (select parto_id from a_borrar));
+-- Qué se va a borrar, para que quede en la consola antes de desaparecer.
+select 'a borrar' as que,
+       (select count(*) from partos)                           as partos,
+       (select count(*) from corderos)                         as corderos,
+       (select count(*) from ovejas where precargada = false)   as ovejas_alta_manual,
+       (select count(*) from cambios)                          as filas_de_auditoria;
+
+-- ───────────────────────────────────────────────────────────────────────
+-- El borrado. La auditoría primero: `cambios` no tiene clave foránea, así que
+-- borrarla después dejaría filas apuntando a registros que ya no existen.
+-- ───────────────────────────────────────────────────────────────────────
 
 delete from cambios
- where tabla = 'partos' and registro_id in (select parto_id from a_borrar);
+ where (tabla = 'corderos' and registro_id in (select id from corderos))
+    or (tabla = 'partos'   and registro_id in (select id from partos))
+    or (tabla = 'ovejas'   and registro_id in (select id from ovejas where precargada = false));
 
-delete from corderos where parto_id in (select parto_id from a_borrar);
-delete from partos   where id       in (select parto_id from a_borrar);
+delete from corderos;
+delete from partos;
 
--- Verificación antes de confirmar. Tiene que quedar 2: las ovejas 2509 y 3633.
+-- Las ovejas de alta manual que se hayan cargado al probar. Las 503
+-- precargadas no se tocan: `precargada = true` es lo que las distingue, y es
+-- lo que escribe el importador.
+delete from ovejas where precargada = false;
+
+-- Red de seguridad 2: el estado final es exactamente el del día 1.
 do $$
 declare
-  n int;
+  o int; s int; p int; c int;
 begin
-  select count(*) into n from partos;
-  if n <> 2 then
-    raise exception 'Quedaron % partos y deberían quedar 2. Se revierte.', n;
+  select count(*) into o from ovejas;
+  select count(*) into s from servicios;
+  select count(*) into p from partos;
+  select count(*) into c from corderos;
+
+  if o <> 503 then
+    raise exception 'Quedaron % ovejas y deberían quedar 503. Se revierte.', o;
+  end if;
+  if s <> 1359 then
+    raise exception 'Quedaron % servicios y deberían quedar 1359. Se revierte.', s;
+  end if;
+  if p <> 0 or c <> 0 then
+    raise exception 'Quedaron % partos y % corderos. Se revierte.', p, c;
   end if;
 end $$;
 
 commit;
 
-select o.caravana, p.fecha, p.collar_numero, p.dispositivo,
-       (select count(*) from corderos c where c.parto_id = p.id) as corderos
-  from partos p join ovejas o on o.id = p.oveja_id
- order by o.caravana;
+-- Cómo queda. Los collares y los tatuajes vuelven a estar libres: el 001 lo va
+-- a llevar el primer cordero señalado de verdad.
+select
+  (select count(*) from ovejas)                             as ovejas,
+  (select count(*) from servicios)                          as servicios,
+  (select count(*) from partos)                             as partos,
+  (select count(*) from corderos)                           as corderos,
+  (select count(*) from cambios)                            as auditoria,
+  (select count(*) from corderos where tatuaje is not null) as tatuajes_usados;
