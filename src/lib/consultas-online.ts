@@ -6,6 +6,7 @@ import type {
   FilaAvance,
   FilaCondicion,
   FilaMortalidad,
+  FilaPaternidad,
   FilaPendientes,
   FilaPeso,
   FilaPrevalencia,
@@ -221,3 +222,11 @@ export const condicionCorporal = (temporada: number) =>
 
 export const resumenDeLaTemporada = (temporada: number) =>
   deLaVista<FilaResumen>('v_resumen_temporada', temporada);
+
+/**
+ * Una fila por parto — la única de estas consultas que no viene agregada. Con
+ * ~500 partos por temporada sigue lejos del tope de 1.000 de PostgREST, pero
+ * es la primera que habría que paginar si el rodeo creciera.
+ */
+export const paternidadDeLaTemporada = (temporada: number) =>
+  deLaVista<FilaPaternidad>('v_paternidad', temporada, 'fecha_parto');

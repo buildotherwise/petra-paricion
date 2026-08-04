@@ -3,6 +3,7 @@ import {
   distribucionTipos,
   histogramaCondicion,
   matrizCanelaLunar,
+  paternidadPorPadre,
   pendientesConAntiguedad,
   pesosPorSexoYTipo,
   prevalenciaDe,
@@ -13,6 +14,7 @@ import {
   type FilaAvance,
   type FilaCondicion,
   type FilaMortalidad,
+  type FilaPaternidad,
   type FilaPendientes,
   type FilaPeso,
   type FilaPrevalencia,
@@ -395,5 +397,65 @@ describe('histogramaCondicion: los cuartos de la escala', () => {
     expect(h.barras.every((b) => b.partos === 0)).toBe(true);
     expect(h.mediana).toBeNull();
     expect(h.sinDato).toBe(0);
+  });
+});
+
+const paternidad = (filas: Partial<FilaPaternidad>[]): FilaPaternidad[] =>
+  filas.map((f, i) => ({
+    temporada: 2026,
+    parto_id: `p${i}`,
+    oveja_id: `o${i}`,
+    caravana: '1740',
+    fecha_parto: '2026-08-10',
+    candidatos: 1,
+    padre: '32',
+    cabana: null,
+    servicio_tipo: 'inseminacion',
+    servicio_inicio: '2026-03-15',
+    servicio_fin: '2026-03-15',
+    gestacion_min: 148,
+    gestacion_max: 148,
+    ...f,
+  }));
+
+describe('paternidadPorPadre: partos por padre, con los sin-padre a la vista', () => {
+  test('agrupa por padre y ordena del que más partos tiene al que menos', () => {
+    const p = paternidadPorPadre(
+      paternidad([
+        { padre: '32', cabana: 'La Petra' },
+        { padre: '32', cabana: 'La Petra' },
+        { padre: '7', cabana: null },
+      ]),
+    );
+    expect(p.padres).toHaveLength(2);
+    expect(p.padres[0]).toEqual({ etiqueta: '32 · La Petra', partos: 2, porcentaje: (2 / 3) * 100 });
+    expect(p.padres[1]?.etiqueta).toBe('7');
+    expect(p.conPadre).toBe(3);
+  });
+
+  test('separa los sin servicio de los ambiguos, y los manda a revisar', () => {
+    const p = paternidadPorPadre(
+      paternidad([
+        { padre: '32' },
+        { padre: null, candidatos: 0, caravana: '209 V', fecha_parto: '2026-08-20' },
+        { padre: null, candidatos: 2, caravana: '1802', fecha_parto: '2026-08-05' },
+      ]),
+    );
+    expect(p.sinServicio).toBe(1);
+    expect(p.ambiguos).toBe(1);
+    expect(p.conPadre).toBe(1);
+    // Los más viejos primero: el ambiguo del 5 de agosto antes que el del 20.
+    expect(p.revisar.map((r) => r.caravana)).toEqual(['1802', '209 V']);
+  });
+
+  test('sin datos: ceros explícitos y listas vacías, nunca NaN', () => {
+    expect(paternidadPorPadre([])).toEqual({
+      partos: 0,
+      conPadre: 0,
+      sinServicio: 0,
+      ambiguos: 0,
+      padres: [],
+      revisar: [],
+    });
   });
 });

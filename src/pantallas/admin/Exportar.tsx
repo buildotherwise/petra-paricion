@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery, useStatus } from '@powersync/react';
 import { entorno } from '../../lib/entorno';
 import { aCSV, descargar, nombreDeArchivo, type ColumnaCSV } from '../../lib/exportacion';
+import { paternidadDeLaTemporada, useConsultaOnline } from '../../lib/consultas-online';
 import { IndicadorSync } from '../../componentes/IndicadorSync';
 
 /**
@@ -56,7 +57,19 @@ interface FilaExport {
 }
 
 /**
- * Las veintinueve de la planilla de trabajo.
+ * Lo que se exporta: la fila de la réplica local más el padre derivado, que
+ * es lo único del archivo que llega del servidor (`v_paternidad` cuelga de
+ * `servicios`, que no se replica).
+ */
+type FilaConPadre = FilaExport & {
+  tipo: number;
+  padre: string | null;
+  cabana_padre: string | null;
+  servicio_tipo: string | null;
+};
+
+/**
+ * La planilla de trabajo.
  *
  * Los códigos van CRUDOS —halo hair 0/1, pigmentación 0–4, las cuatro de canela
  * y lunar— porque esa es literalmente la razón de la continuidad de codificación
@@ -68,13 +81,19 @@ interface FilaExport {
  * de Zoho para calzar nombres, eso es una tabla de equivalencias y no un
  * rediseño.
  */
-const PLANILLA: readonly ColumnaCSV<FilaExport>[] = [
+const PLANILLA: readonly ColumnaCSV<FilaConPadre>[] = [
   { clave: 'temporada', valor: (f) => f.temporada },
   { clave: 'caravana_madre', valor: (f) => f.caravana_madre },
   { clave: 'fecha_parto', valor: (f) => f.fecha_parto },
   // R1: se cuenta, nunca se lee de un campo. Lo resuelve la consulta.
-  { clave: 'tipo_nacimiento', valor: (f) => (f as FilaExport & { tipo: number }).tipo },
+  { clave: 'tipo_nacimiento', valor: (f) => f.tipo },
   { clave: 'condicion_corporal_madre', valor: (f) => f.condicion_corporal_madre },
+  // El padre tampoco se carga: se deriva de los servicios (v_paternidad, §9)
+  // y llega del servidor al armar el archivo. Sin señal van vacías, y el
+  // aviso al pie lo dice.
+  { clave: 'padre', valor: (f) => f.padre },
+  { clave: 'cabana_padre', valor: (f) => f.cabana_padre },
+  { clave: 'servicio_tipo', valor: (f) => f.servicio_tipo },
   { clave: 'collar_numero', valor: (f) => f.collar_numero },
   { clave: 'collar_marca', valor: (f) => f.collar_marca },
   { clave: 'tatuaje', valor: (f) => f.tatuaje },
@@ -102,7 +121,7 @@ const PLANILLA: readonly ColumnaCSV<FilaExport>[] = [
 ];
 
 /** El respaldo: lo mismo más lo que hace falta para reconstruir el modelo. */
-const COMPLETA: readonly ColumnaCSV<FilaExport>[] = [
+const COMPLETA: readonly ColumnaCSV<FilaConPadre>[] = [
   ...PLANILLA,
   { clave: 'cordero_id', valor: (f) => f.cordero_id },
   { clave: 'parto_id', valor: (f) => f.parto_id },
@@ -153,9 +172,30 @@ export function Exportar() {
     [entorno.temporada],
   );
 
-  const aExportar = excluirAnulados ? corderos.filter((c) => c.anulado === 0) : corderos;
+  const paternidad = useConsultaOnline(
+    paternidadDeLaTemporada(entorno.temporada),
+    [entorno.temporada],
+    'la paternidad',
+  );
+  const padrePorParto = useMemo(
+    () => new Map(paternidad.datos.map((p) => [p.parto_id, p])),
+    [paternidad.datos],
+  );
 
-  const bajar = (que: string, columnas: readonly ColumnaCSV<FilaExport>[]) => {
+  const aExportar = useMemo(() => {
+    const filtrados = excluirAnulados ? corderos.filter((c) => c.anulado === 0) : corderos;
+    return filtrados.map((c): FilaConPadre => {
+      const p = padrePorParto.get(c.parto_id);
+      return {
+        ...c,
+        padre: p?.padre ?? null,
+        cabana_padre: p?.cabana ?? null,
+        servicio_tipo: p?.servicio_tipo ?? null,
+      };
+    });
+  }, [corderos, excluirAnulados, padrePorParto]);
+
+  const bajar = (que: string, columnas: readonly ColumnaCSV<FilaConPadre>[]) => {
     descargar(
       aCSV(aExportar, columnas),
       nombreDeArchivo(que, entorno.temporada, new Date()),
@@ -225,6 +265,18 @@ export function Exportar() {
           . La fecha y hora del corte van en el nombre del archivo.
         </p>
       </div>
+
+      {paternidad.error !== null && (
+        <div className="admin-aviso-export">
+          <p>
+            Las columnas del padre (<b>padre</b>, <b>cabana_padre</b>, <b>servicio_tipo</b>) se
+            derivan en el servidor y no se pudieron consultar: si descargás ahora, van vacías.{' '}
+            <button type="button" className="boton boton--texto" onClick={paternidad.recargar}>
+              Reintentar
+            </button>
+          </p>
+        </div>
+      )}
 
       {!sincronizacion.hasSynced && (
         <p className="admin-espera">Sincronizando la temporada…</p>

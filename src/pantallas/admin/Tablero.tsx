@@ -14,6 +14,7 @@ import {
   avanceParicion,
   condicionCorporal,
   mortalidad,
+  paternidadDeLaTemporada,
   pesoAlNacer,
   prevalenciasFenotipicas,
   resumenDeLaTemporada,
@@ -28,6 +29,7 @@ import {
   distribucionTipos,
   histogramaCondicion,
   matrizCanelaLunar,
+  paternidadPorPadre,
   pendientesConAntiguedad,
   pesosPorSexoYTipo,
   prevalenciaDe,
@@ -41,7 +43,7 @@ import {
 import '../../estilos/tablero.css';
 
 /**
- * Cómo viene la temporada, en siete tarjetas.
+ * Cómo viene la temporada, en nueve tarjetas.
  *
  * Es la única sección de la web admin que **no** sale de la réplica local. Las
  * métricas son vistas de Postgres (0011_vistas_metricas.sql) por dos razones
@@ -97,6 +99,7 @@ export default function Tablero() {
       <Avance temporada={temporada} c={c} />
       <Pendientes temporada={temporada} c={c} />
       <Tipos temporada={temporada} c={c} />
+      <Paternidad temporada={temporada} c={c} />
       <Mortalidad temporada={temporada} c={c} />
       <Pesos temporada={temporada} c={c} />
       <Condicion temporada={temporada} c={c} />
@@ -458,6 +461,64 @@ function Pendientes({ temporada, c }: { temporada: number; c: Colores }) {
 // ---------------------------------------------------------------------------
 // 3 · Tipo de nacimiento
 // ---------------------------------------------------------------------------
+
+/**
+ * Partos por padre derivado. La unidad es el parto y no el cordero: el padre
+ * sale del servicio de la madre, así que los mellizos lo comparten por
+ * construcción y contarlos inflaría la mellicería en un gráfico de carneros.
+ *
+ * Los sin-padre van al pie con su caravana, no escondidos en un «otros»: son
+ * los casos que `v_paternidad` se negó a adivinar (0 o 2+ candidatos), y la
+ * regla de §9 es que se miran a mano.
+ */
+function Paternidad({ temporada, c }: { temporada: number; c: Colores }) {
+  const estado = useConsultaOnline(
+    paternidadDeLaTemporada(temporada),
+    [temporada],
+    'la paternidad',
+  );
+  const p = useMemo(() => paternidadPorPadre(estado.datos), [estado.datos]);
+
+  const sinPadre = [
+    p.sinServicio > 0 ? `${p.sinServicio} sin servicio compatible` : null,
+    p.ambiguos > 0 ? `${p.ambiguos} con más de un servicio posible` : null,
+  ]
+    .filter((parte) => parte !== null)
+    .join(' · ');
+
+  return (
+    <Tarjeta
+      titulo="Paternidad"
+      porque="Partos por padre, derivado de los servicios — nunca se tipea"
+      cifra={
+        <>
+          {p.conPadre} <small>de {p.partos} con padre</small>
+        </>
+      }
+      estado={estado}
+      vacio={p.partos === 0 ? { titulo: 'Ninguno', detalle: 'Todavía no hay partos.' } : null}
+    >
+      <BarrasHorizontales
+        color={c.marca}
+        filas={p.padres.map((b) => ({
+          etiqueta: b.etiqueta,
+          valor: b.partos,
+          porcentaje: b.porcentaje,
+        }))}
+      />
+      {p.revisar.length > 0 && (
+        <p className="pie-tablero">
+          Sin padre asignado: {sinPadre}. Se miran a mano — caravana{' '}
+          {p.revisar
+            .slice(0, 8)
+            .map((r) => r.caravana)
+            .join(', ')}
+          {p.revisar.length > 8 && ` y ${p.revisar.length - 8} más`}.
+        </p>
+      )}
+    </Tarjeta>
+  );
+}
 
 function Tipos({ temporada, c }: { temporada: number; c: Colores }) {
   const estado = useConsultaOnline(tipoDeNacimiento(temporada), [temporada], 'el tipo de nacimiento');

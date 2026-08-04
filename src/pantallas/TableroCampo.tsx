@@ -16,7 +16,7 @@ const cargarTablero = () => import('./admin/Tablero');
 /**
  * El tablero de la web admin, montado como pantalla de campo.
  *
- * Es la misma pieza —mismas ocho tarjetas, mismo chunk— dentro del cascarón del
+ * Es la misma pieza —mismas nueve tarjetas, mismo chunk— dentro del cascarón del
  * campo: encabezado con Volver, una columna, y la escala tipográfica de
  * `.tablero-campo` en vez de la de escritorio. Es la única pantalla de la app
  * de campo que necesita señal, porque las métricas son vistas de Postgres
@@ -82,9 +82,9 @@ export function TableroCampo({ onVolver }: { onVolver: () => void }) {
  * Ataja el rechazo del `import()` del chunk.
  *
  * Sin señal y sin haberlo bajado nunca, el import rechaza — y sin este borde
- * React desmontaría el árbol entero: la app en blanco por tocar un link. No hay
- * otro ErrorBoundary en el repo porque ninguna otra pantalla carga código bajo
- * demanda fuera del precache.
+ * lo atajaría el BordeGlobal de main.tsx, que solo puede ofrecer recargar la
+ * app entera. Este existe aparte para reintentar el import en el lugar, porque
+ * es la única pantalla que carga código bajo demanda fuera del precache.
  *
  * El fallback usa solo clases de app.css: las de tablero.css viajan con el
  * chunk que justamente acaba de fallar.

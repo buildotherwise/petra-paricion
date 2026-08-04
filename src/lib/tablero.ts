@@ -95,6 +95,24 @@ export interface FilaResumen {
   corderos_senalados: number;
 }
 
+/** Una fila de `v_paternidad`: un parto, con su padre derivado o sin él. */
+export interface FilaPaternidad {
+  temporada: number;
+  parto_id: string;
+  oveja_id: string;
+  caravana: string;
+  fecha_parto: string;
+  /** 0 = ningún servicio compatible; 1 = derivado; 2+ = ambiguo. */
+  candidatos: number;
+  padre: string | null;
+  cabana: string | null;
+  servicio_tipo: 'inseminacion' | 'encarnerada' | null;
+  servicio_inicio: string | null;
+  servicio_fin: string | null;
+  gestacion_min: number | null;
+  gestacion_max: number | null;
+}
+
 /** Un porcentaje que no explota cuando todavía no hay de qué. */
 function porciento(parte: number, total: number): number {
   return total > 0 ? (parte / total) * 100 : 0;
@@ -503,5 +521,86 @@ export function histogramaCondicion(filas: readonly FilaCondicion[]): Histograma
     barras,
     mediana,
     sinDato: filas.find((f) => f.condicion_corporal === null)?.partos ?? 0,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// 9. Paternidad
+// ---------------------------------------------------------------------------
+
+export interface BarraPadre {
+  /** «32 · La Petra» — el padre con su cabaña, cuando la tiene. */
+  etiqueta: string;
+  partos: number;
+  /** Sobre el total de partos de la temporada, no solo los con padre. */
+  porcentaje: number;
+}
+
+export interface CasoSinPadre {
+  caravana: string;
+  fecha: string;
+  candidatos: number;
+}
+
+export interface Paternidad {
+  partos: number;
+  conPadre: number;
+  /** candidatos = 0: el parto no cae en la ventana de ningún servicio. */
+  sinServicio: number;
+  /** candidatos ≥ 2: la vista no adivina y deja el padre en null. */
+  ambiguos: number;
+  padres: BarraPadre[];
+  /** Los partos sin padre, para mirarlos a mano, los más viejos primero. */
+  revisar: CasoSinPadre[];
+}
+
+/**
+ * Partos por padre derivado, con los casos sin padre a la vista.
+ *
+ * La unidad es el PARTO y no el cordero porque esa es la unidad de la vista:
+ * el padre se deriva del servicio de la madre, así que los mellizos lo
+ * comparten por construcción y contarlos duplicaría el peso de la mellicería
+ * en un gráfico que habla de carneros.
+ *
+ * Los sin-padre no se esconden en un «otros»: un cordero con padre equivocado
+ * en un plantel de cabaña es peor que uno sin padre (CLAUDE.md §9), así que
+ * los casos que la vista se negó a adivinar son exactamente los que hay que
+ * mostrar.
+ */
+export function paternidadPorPadre(filas: readonly FilaPaternidad[]): Paternidad {
+  const porPadre = new Map<string, { cabana: string | null; partos: number }>();
+  const revisar: CasoSinPadre[] = [];
+  let sinServicio = 0;
+  let ambiguos = 0;
+
+  for (const f of filas) {
+    if (f.padre !== null) {
+      const actual = porPadre.get(f.padre);
+      if (actual === undefined) porPadre.set(f.padre, { cabana: f.cabana, partos: 1 });
+      else actual.partos += 1;
+    } else {
+      if (f.candidatos === 0) sinServicio += 1;
+      else ambiguos += 1;
+      revisar.push({ caravana: f.caravana, fecha: f.fecha_parto, candidatos: f.candidatos });
+    }
+  }
+
+  const padres = [...porPadre.entries()]
+    .map(([padre, { cabana, partos }]) => ({
+      etiqueta: cabana === null ? padre : `${padre} · ${cabana}`,
+      partos,
+      porcentaje: porciento(partos, filas.length),
+    }))
+    .sort((a, b) => b.partos - a.partos || a.etiqueta.localeCompare(b.etiqueta));
+
+  revisar.sort((a, b) => a.fecha.localeCompare(b.fecha));
+
+  return {
+    partos: filas.length,
+    conPadre: filas.length - sinServicio - ambiguos,
+    sinServicio,
+    ambiguos,
+    padres,
+    revisar,
   };
 }
