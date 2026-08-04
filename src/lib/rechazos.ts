@@ -82,6 +82,9 @@ export function motivoLegible(codigo: string | null, mensaje: string): string {
   if (codigo !== null) {
     const porCodigo = POR_CODIGO[codigo];
     if (porCodigo !== undefined) return porCodigo;
+    // Los centinelas PGRST-LOCAL-* los fabrica la propia app, con el mensaje
+    // ya escrito en castellano: no hay nada que traducir.
+    if (codigo.startsWith('PGRST-LOCAL')) return texto;
     if (codigo.startsWith('PGRST')) {
       return `El servidor no entendió lo que mandó la app. ${texto}`.trim();
     }

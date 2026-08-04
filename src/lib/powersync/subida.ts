@@ -28,9 +28,18 @@ export function clasificarErrorSubida(error: unknown): AccionSubida {
   // señal. Ante la duda se reintenta — descartar acá perdería un parto.
   if (codigo === null) return 'reintentar';
 
-  // PostgREST rechazó el request antes de llegar a Postgres (columna que no
-  // existe, filtro mal armado). Reintentarlo da exactamente lo mismo.
-  if (codigo.startsWith('PGRST')) return 'descartar';
+  // Códigos de PostgREST. No todos son un problema del dato:
+  //  - PGRST0xx: PostgREST no llega a la base (arrancando, recargando el
+  //    schema cache, timeout de conexión). Se resuelve solo — reintentar.
+  //  - PGRST3xx: el JWT vencido o inválido. El token se renueva solo al
+  //    reconectar; descartar acá convertiría una sesión vencida en una
+  //    jornada entera de rechazos para retipear.
+  //  - El resto (PGRST1xx/2xx y los centinelas PGRST-LOCAL-*): el request en
+  //    sí está mal, y reintentarlo da exactamente lo mismo.
+  if (codigo.startsWith('PGRST')) {
+    const grupo = codigo.charAt(5);
+    return grupo === '0' || grupo === '3' ? 'reintentar' : 'descartar';
+  }
 
   if (/^[0-9A-Z]{5}$/.test(codigo)) {
     return CLASES_TRANSITORIAS.has(codigo.slice(0, 2)) ? 'reintentar' : 'descartar';

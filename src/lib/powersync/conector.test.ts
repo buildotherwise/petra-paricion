@@ -3,8 +3,10 @@ import type { AbstractPowerSyncDatabase, CrudEntry } from '@powersync/web';
 
 // El cliente de Supabase toca `window.localStorage` al construirse, y acá no hay
 // navegador. Los tests miran qué se guarda cuando una subida falla, no cómo se
-// sube: el cliente real no hace falta.
-vi.mock('../supabase', () => ({ supabase: { from: () => ({}) } }));
+// sube: el cliente real no hace falta. `from` es reemplazable por test para
+// poder simular la respuesta del servidor donde sí importa (el PATCH sin filas).
+const mocks = vi.hoisted(() => ({ from: vi.fn<(tabla: string) => unknown>(() => ({})) }));
+vi.mock('../supabase', () => ({ supabase: { from: mocks.from } }));
 
 // El tipo se importa aparte porque `import type` se borra al compilar: traerlo
 // con el import normal evaluaría el módulo antes de que corra el mock.
@@ -141,5 +143,41 @@ describe('una carga rechazada deja constancia de todo lo que se perdió', () => 
     await expect(conector.uploadData(base)).rejects.toBeDefined();
     expect(rechazos).toHaveLength(0);
     expect(seCompleto()).toBe(false);
+  });
+});
+
+describe('el UPDATE verifica que el registro exista en el servidor', () => {
+  /** Una edición en la cola y la respuesta del servidor al UPDATE. */
+  function editar(filas: unknown[]) {
+    const crud = [
+      { table: 'corderos', id: 'c9', op: 'PATCH', opData: { peso_kg: 4.5 } } as unknown as CrudEntry,
+    ];
+    mocks.from.mockReturnValue({
+      update: () => ({ eq: () => ({ select: async () => ({ data: filas, error: null }) }) }),
+    });
+    return baseFalsa(crud);
+  }
+
+  test('un UPDATE que no matchea ninguna fila se rechaza, no se da por subido', async () => {
+    // El alta del registro fue rechazada antes, así que no existe en el
+    // servidor. PostgREST contesta eso sin error: sin la verificación, la
+    // edición saldría de la cola como subida con éxito — la única pérdida
+    // totalmente silenciosa del sistema.
+    const { base, rechazos, seCompleto } = editar([]);
+
+    await new ConectorSupabase().uploadData(base);
+
+    expect(rechazos).toHaveLength(1);
+    expect(rechazos[0]?.[5]).toBe('PGRST-LOCAL-SIN-FILA');
+    expect(seCompleto()).toBe(true);
+  });
+
+  test('un UPDATE que sí matchea sale de la cola sin dejar rastro', async () => {
+    const { base, rechazos, seCompleto } = editar([{ id: 'c9' }]);
+
+    await new ConectorSupabase().uploadData(base);
+
+    expect(rechazos).toHaveLength(0);
+    expect(seCompleto()).toBe(true);
   });
 });

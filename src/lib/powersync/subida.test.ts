@@ -32,6 +32,31 @@ describe('clasificación de errores de subida', () => {
     expect(clasificarErrorSubida(error)).toBe('descartar');
   });
 
+  test('un filtro mal armado (PGRST1xx) se descarta', () => {
+    const error = { code: 'PGRST100', message: 'parse error in query string' };
+    expect(clasificarErrorSubida(error)).toBe('descartar');
+  });
+
+  test('el JWT vencido se reintenta: el token se renueva solo al reconectar', () => {
+    // PGRST301 es exactamente el caso del aparato que vuelve a la señal después
+    // de días: el primer intento sale con el token viejo. Descartarlo mandaría
+    // una jornada de partos a la bandeja de rechazos.
+    const error = { code: 'PGRST301', message: 'JWT expired' };
+    expect(clasificarErrorSubida(error)).toBe('reintentar');
+  });
+
+  test('PostgREST sin llegar a la base (PGRST0xx) se reintenta', () => {
+    // Típico de Supabase recargando el schema cache tras una migración.
+    const error = { code: 'PGRST002', message: 'could not query the database for the schema cache' };
+    expect(clasificarErrorSubida(error)).toBe('reintentar');
+    expect(clasificarErrorSubida({ code: 'PGRST001', message: 'db connection' })).toBe('reintentar');
+  });
+
+  test('los centinelas locales PGRST-LOCAL-* se descartan siempre', () => {
+    expect(clasificarErrorSubida({ code: 'PGRST-LOCAL-DELETE', message: 'x' })).toBe('descartar');
+    expect(clasificarErrorSubida({ code: 'PGRST-LOCAL-SIN-FILA', message: 'x' })).toBe('descartar');
+  });
+
   test('una falla de conexión se reintenta', () => {
     // Clase 08 de SQLSTATE: connection exception.
     const error = { code: '08006', message: 'connection failure' };

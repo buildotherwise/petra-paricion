@@ -103,8 +103,22 @@ export class ConectorSupabase implements PowerSyncBackendConnector {
 
       case UpdateType.PATCH: {
         const datos = normalizarParaPostgres(tabla, { ...operacion.opData });
-        const { error } = await consulta.update(datos).eq(columnaId, operacion.id);
+        const { data, error } = await consulta
+          .update(datos)
+          .eq(columnaId, operacion.id)
+          .select(columnaId);
         if (error !== null) throw error;
+        // PostgREST contesta sin error aunque el UPDATE no matchee ninguna
+        // fila. Acá eso significa que el registro nunca llegó al servidor —su
+        // alta fue rechazada antes— y darlo por subido perdería la edición sin
+        // dejar rastro en ninguna parte: ni en la cola, ni en rechazados, ni
+        // en la auditoría.
+        if ((data ?? []).length === 0) {
+          throw Object.assign(
+            new Error('La edición no se aplicó: el registro no existe en el servidor.'),
+            { code: 'PGRST-LOCAL-SIN-FILA' },
+          );
+        }
         return;
       }
 
