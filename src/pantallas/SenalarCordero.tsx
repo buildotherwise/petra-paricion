@@ -50,6 +50,15 @@ const PIGMENTACIONES = Array.from({ length: PIGMENTACION_MAXIMA + 1 }, (_, i) =>
  * no pasaría la restricción `senalada_completa`, así que se leen como 0 sin
  * inventar nada.
  */
+function mismaCanelaLunar(a: CanelaLunar, b: CanelaLunar): boolean {
+  return (
+    a.canela_vellon === b.canela_vellon &&
+    a.canela_no_vellon === b.canela_no_vellon &&
+    a.lunar_vellon === b.lunar_vellon &&
+    a.lunar_no_vellon === b.lunar_no_vellon
+  );
+}
+
 function canelaLunarGuardada(fila: {
   canela_vellon: number | null;
   canela_no_vellon: number | null;
@@ -80,6 +89,7 @@ interface FilaSenalar {
 
   // Lo ya cargado, para corregir una señalada sin volver a preguntarlo todo.
   tatuaje: string | null;
+  fecha_senalada: string | null;
   entropion: Entropion | null;
   canela_vellon: number | null;
   canela_no_vellon: number | null;
@@ -111,7 +121,8 @@ export function SenalarCordero({
   const { data: filas } = useQuery<FilaSenalar>(
     `SELECT c.id, c.parto_id, c.sexo, c.estado, c.peso_kg, c.collar_marca,
             c.observaciones, c.anulado_en,
-            c.tatuaje, c.entropion, c.halo_hair, c.pigmentacion, c.sexo_discrepancia,
+            c.tatuaje, c.fecha_senalada,
+            c.entropion, c.halo_hair, c.pigmentacion, c.sexo_discrepancia,
             c.canela_vellon, c.canela_no_vellon, c.lunar_vellon, c.lunar_no_vellon,
             o.caravana, p.fecha AS parto_fecha, p.collar_numero
        FROM corderos c
@@ -199,6 +210,11 @@ function Formulario({
   const [confirmandoSalida, setConfirmandoSalida] = useState(false);
   const [guardado, setGuardado] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Tocó el botón apagado: a partir de ahí la pantalla dice qué falta, en vez
+  // de dejar que lo adivine — que es la peor pantalla posible (ver
+  // camposFaltantes en reglas.ts). Se enciende una vez y las etiquetas se
+  // van apagando solas a medida que se completa.
+  const [avisado, setAvisado] = useState(false);
 
   const sugerido = siguienteTatuaje(usados.map((u) => u.tatuaje));
   const tatuaje = tatuajeEscrito ?? sugerido ?? '';
@@ -236,6 +252,8 @@ function Formulario({
       entropion !== cordero.entropion ||
       pigmentacion !== cordero.pigmentacion ||
       haloHair !== cordero.halo_hair ||
+      canelaLunar === null ||
+      !mismaCanelaLunar(canelaLunar, canelaLunarGuardada(cordero)) ||
       observaciones !== null
     : sexo !== null ||
       tatuajeEscrito !== null ||
@@ -265,7 +283,10 @@ function Formulario({
           sexo,
           sexo_discrepancia: discrepancia || cordero.sexo_discrepancia === 1 ? 1 : 0,
           tatuaje: normalizado,
-          fecha_senalada: hoyISO(),
+          // La fecha es la del acto de señalar, no la de cualquier corrección
+          // posterior: pisarla con hoy deshacía en silencio el único arreglo
+          // de fecha que la spec reserva para la web.
+          fecha_senalada: corrigiendo ? cordero.fecha_senalada : hoyISO(),
           canela_vellon: canelaLunar.canela_vellon,
           canela_no_vellon: canelaLunar.canela_no_vellon,
           lunar_vellon: canelaLunar.lunar_vellon,
@@ -422,6 +443,9 @@ function Formulario({
           <MatrizCanelaLunar
             valor={canelaLunar}
             onChange={setCanelaLunar}
+            // La matriz es el único campo cuyo «sin contestar» no se ve: una
+            // casilla apagada no distingue «no tiene» de «todavía no lo miré».
+            faltante={avisado && faltantes.some((f) => f.campo === 'canelaLunar')}
           />
         </div>
 
@@ -481,7 +505,20 @@ function Formulario({
 
         {error !== null && <p className="aviso aviso--error">{error}</p>}
 
-        <div className="barra-accion">
+        {avisado && faltantes.length > 0 && (
+          <p className="aviso aviso--atencion" role="alert">
+            Falta: {faltantes.map((f) => f.etiqueta).join(' · ')}.
+          </p>
+        )}
+
+        {/* El toque sobre el botón apagado cae en este contenedor (el botón
+            deshabilitado no dispara nada) y enciende la lista de arriba. */}
+        <div
+          className="barra-accion"
+          onClick={() => {
+            if (!listo) setAvisado(true);
+          }}
+        >
           <button
             type="button"
             className="boton boton--principal"
