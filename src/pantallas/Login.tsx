@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { supabase } from '../lib/supabase';
+import { usarPendientes, usarRechazados } from '../componentes/IndicadorSync';
 
 /**
  * Único momento en que la app pide credenciales: la primera vez, con conexión.
@@ -7,11 +8,28 @@ import { supabase } from '../lib/supabase';
  *
  * No hay registro público — las cuentas las crea el administrador.
  */
+
+/**
+ * Si la sesión se cayó con trabajo local adentro, esta pantalla es lo único
+ * que se ve — y sin el aviso, nada dice que hay cargas por perder. Entrar con
+ * OTRA cuenta las perdería igual: la cola se subiría con el usuario nuevo y
+ * el servidor la rechaza (`actualizado_por = auth.uid()`).
+ */
+function avisoDeTrabajoLocal(pendientes: number, rechazados: number): string | null {
+  const cargas = (n: number) => `${n} ${n === 1 ? 'carga' : 'cargas'}`;
+  const partes: string[] = [];
+  if (pendientes > 0) partes.push(`${cargas(pendientes)} sin subir`);
+  if (rechazados > 0) partes.push(`${cargas(rechazados)} con error`);
+  if (partes.length === 0) return null;
+  return `Este aparato tiene ${partes.join(' y ')}. Entrá con la misma cuenta que las registró para no perderlas.`;
+}
+
 export function Login() {
   const [email, setEmail] = useState('');
   const [clave, setClave] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [entrando, setEntrando] = useState(false);
+  const trabajoLocal = avisoDeTrabajoLocal(usarPendientes(), usarRechazados());
 
   async function entrar(evento: FormEvent) {
     evento.preventDefault();
@@ -39,6 +57,12 @@ export function Login() {
 
       <h1 className="titulo">Parición</h1>
       <p className="subtitulo">Entrá una vez con señal. Después funciona sin conexión.</p>
+
+      {trabajoLocal !== null && (
+        <p className="aviso aviso--atencion" role="alert">
+          {trabajoLocal}
+        </p>
+      )}
 
       {error !== null && (
         <p className="aviso aviso--error" role="alert">

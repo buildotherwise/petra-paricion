@@ -31,18 +31,31 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (sesion === null) return;
     // connect() es idempotente y reintenta solo si no hay señal, así que no
-    // hace falta esperar a estar online para llamarlo.
-    void conectarSync();
+    // hace falta esperar a estar online para llamarlo. Si la base local no
+    // abrió, App ya lo muestra; acá solo se deja rastro de lo demás.
+    conectarSync().catch((error: unknown) => {
+      console.error('[sync] no se pudo conectar', error);
+    });
   }, [sesion]);
 
   const salir = async () => {
-    // disconnectAndClear borra la réplica local. Es correcto al cerrar sesión
-    // (el próximo usuario no debería ver los datos del anterior), pero se
-    // bloquea si hay cambios sin subir: eso sería pérdida de datos.
+    // disconnectAndClear borra la réplica local ENTERA, incluidas las tablas
+    // que solo viven en el aparato. Por eso la doble guarda: con pendientes
+    // sería pérdida directa, y con rechazos también — `subidas_rechazadas` es
+    // la última copia de esos datos, y salir se los llevaría sin pasar por la
+    // confirmación de la bandeja.
     const pendientes = await db.getUploadQueueStats();
     if (pendientes.count > 0) {
       throw new Error(
         `Hay ${pendientes.count} cambios sin sincronizar. Conectate a internet antes de cerrar sesión.`,
+      );
+    }
+    const rechazadas = await db.get<{ n: number }>(
+      'SELECT count(*) AS n FROM subidas_rechazadas',
+    );
+    if (rechazadas.n > 0) {
+      throw new Error(
+        'Hay cargas con error guardadas en este aparato: son la última copia de esos datos. Resolvelas desde la pastilla roja antes de cerrar sesión.',
       );
     }
     await db.disconnectAndClear();

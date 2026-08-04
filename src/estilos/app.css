@@ -235,6 +235,9 @@
 
 .boton:disabled {
   cursor: not-allowed;
+  /* El click no muere en el botón: pasa al contenedor, que es lo que permite
+     que tocar el botón apagado de la señalada conteste qué falta. */
+  pointer-events: none;
 }
 
 .boton--principal {
@@ -609,6 +612,24 @@
   font-size: 0.9375rem;
   font-weight: 800;
   color: var(--tinta-suave);
+  cursor: pointer;
+}
+
+/* Cerrar sesión va al pie del inicio, discreto: existe para la tablet
+   compartida y para las pruebas con otras cuentas, no para el día a día. */
+.cerrar-sesion {
+  display: block;
+  width: 100%;
+  min-height: var(--toque);
+  padding: var(--sp-3);
+  background: none;
+  border: 0;
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--tinta-suave);
+  text-decoration: underline;
+  text-underline-offset: 3px;
   cursor: pointer;
 }
 
@@ -1015,6 +1036,14 @@ textarea.entrada::placeholder {
   color: var(--tinta);
   cursor: pointer;
   transition: background 0.12s ease;
+}
+
+/* Se intentó guardar con la matriz sin contestar. Marcarla hace falta porque
+   es el único campo cuyo «sin contestar» no se ve: una casilla apagada no
+   distingue «no tiene» de «todavía no lo miré» (§7). */
+.matriz-ninguna[data-faltante],
+.matriz-casilla[data-faltante] {
+  box-shadow: inset 0 0 0 2px var(--error);
 }
 
 .matriz-ninguna[aria-pressed='true'] {

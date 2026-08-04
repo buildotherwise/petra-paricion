@@ -1,10 +1,13 @@
+import { useState } from 'react';
 import { useQuery } from '@powersync/react';
 import { Encabezado } from '../componentes/Encabezado';
 import { Caravana } from '../componentes/Caravana';
+import { usarPendientes, usarRechazados } from '../componentes/IndicadorSync';
 import { entorno } from '../lib/entorno';
 import { hoyISO } from '../lib/reglas';
 import { nombreTipo } from '../lib/parto';
 import { useEsAdmin } from '../lib/perfil';
+import { useSesion } from '../lib/sesion';
 
 interface Contadores {
   partos_hoy: number;
@@ -179,7 +182,96 @@ export function Inicio({
             </li>
           )}
         </ul>
+
+        <CerrarSesion />
       </main>
+    </div>
+  );
+}
+
+/**
+ * La salida soportada de la cuenta, al pie y discreta: existe para la tablet
+ * compartida y para las pruebas con distintas cuentas, no para el día a día.
+ *
+ * La doble guarda de verdad vive en `salir()` (sesion.tsx); acá se anticipa
+ * con los mismos contadores del indicador para avisar antes de confirmar.
+ */
+function CerrarSesion() {
+  const { salir } = useSesion();
+  const pendientes = usarPendientes();
+  const rechazados = usarRechazados();
+  const [confirmando, setConfirmando] = useState(false);
+  const [saliendo, setSaliendo] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const bloqueo =
+    pendientes > 0
+      ? 'Hay cargas sin subir. Conectate y esperá el «Todo sincronizado» antes de cerrar sesión.'
+      : rechazados > 0
+        ? 'Hay cargas con error guardadas en este aparato: son la última copia de esos datos. Resolvelas desde la pastilla roja antes de cerrar sesión.'
+        : null;
+
+  async function cerrar() {
+    setSaliendo(true);
+    setError(null);
+    try {
+      // Al morir la sesión, la puerta de App.tsx muestra el login sola.
+      await salir();
+    } catch (falla) {
+      setError(falla instanceof Error ? falla.message : 'No se pudo cerrar la sesión.');
+      setSaliendo(false);
+      setConfirmando(false);
+    }
+  }
+
+  return (
+    <div style={{ marginTop: 'var(--sp-5)' }}>
+      {error !== null && (
+        <p className="aviso aviso--atencion" role="alert">
+          {error}
+        </p>
+      )}
+      {confirmando ? (
+        <>
+          <p className="aviso aviso--atencion">
+            Se borran los datos de este aparato — todo lo sincronizado queda en el servidor. Para
+            volver a entrar hace falta señal.
+          </p>
+          <div style={{ display: 'flex', gap: 'var(--sp-2)' }}>
+            <button
+              type="button"
+              className="boton boton--secundario"
+              style={{ flex: 1 }}
+              onClick={() => setConfirmando(false)}
+            >
+              Quedarme
+            </button>
+            <button
+              type="button"
+              className="boton boton--principal"
+              style={{ flex: 1 }}
+              onClick={cerrar}
+              disabled={saliendo}
+            >
+              {saliendo ? 'Cerrando…' : 'Cerrar sesión'}
+            </button>
+          </div>
+        </>
+      ) : (
+        <button
+          type="button"
+          className="cerrar-sesion"
+          onClick={() => {
+            if (bloqueo !== null) setError(bloqueo);
+            else {
+              setError(null);
+              setConfirmando(true);
+            }
+          }}
+        >
+          Cerrar sesión
+        </button>
+      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import { PowerSyncContext } from '@powersync/react';
 import { db } from './lib/powersync/db';
 import { ProveedorSesion, useSesion } from './lib/sesion';
@@ -243,7 +243,49 @@ function Puerta() {
   );
 }
 
+/**
+ * Si la base local no abre, nada de la app funciona — y sin este chequeo el
+ * fallo era mudo: la pantalla se veía normal y ninguna carga iba a ninguna
+ * parte. El caso concreto es OPFS, que en iPhone exige iOS 16.4; en un aparato
+ * más viejo la app tiene que decirlo, no fingir que registra.
+ */
+function useFalloBaseLocal(): string | null {
+  const [fallo, setFallo] = useState<string | null>(null);
+  useEffect(() => {
+    db.waitForReady().catch((error: unknown) => {
+      setFallo(error instanceof Error ? error.message : String(error));
+    });
+  }, []);
+  return fallo;
+}
+
+function BaseLocalRota({ mensaje }: { mensaje: string }) {
+  return (
+    <div className="app">
+      <main className="contenido area-segura">
+        <h1 className="titulo">Este aparato no puede abrir la app</h1>
+        <p className="subtitulo">
+          La base de datos local no arranca, así que nada de lo que se registre se guardaría. En
+          iPhone hace falta iOS 16.4 o más nuevo; si el sistema está al día, cerrá la app del todo y
+          volvé a abrirla.
+        </p>
+        <p className="aviso aviso--error">{mensaje}</p>
+        <button
+          type="button"
+          className="boton boton--principal"
+          onClick={() => window.location.reload()}
+        >
+          Reintentar
+        </button>
+      </main>
+    </div>
+  );
+}
+
 export function App() {
+  const falloBase = useFalloBaseLocal();
+  if (falloBase !== null) return <BaseLocalRota mensaje={falloBase} />;
+
   return (
     <PowerSyncContext.Provider value={db}>
       <ProveedorSesion>

@@ -8,14 +8,20 @@ import '@fontsource-variable/newsreader/wght.css';
 import '@fontsource-variable/manrope/wght.css';
 
 import { App } from './App';
+import { BordeGlobal } from './componentes/BordeGlobal';
+import { registrarServiceWorker } from './lib/actualizacion-sw';
 import './estilos/tokens.css';
 import './estilos/app.css';
+
+registrarServiceWorker();
 
 const raiz = document.getElementById('root');
 if (raiz === null) throw new Error('Falta el elemento #root en index.html');
 
 createRoot(raiz).render(
   <StrictMode>
-    <App />
+    <BordeGlobal>
+      <App />
+    </BordeGlobal>
   </StrictMode>,
 );
