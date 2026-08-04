@@ -12,7 +12,7 @@ import { useQuery, useStatus } from '@powersync/react';
  * El coalesce es por si alguna escritura quedara sin tx_id: así cuenta como
  * una propia en vez de colapsar todas en una.
  */
-function usarPendientes(): number {
+export function usarPendientes(): number {
   const { data } = useQuery<{ n: number }>(
     'SELECT count(DISTINCT coalesce(tx_id, -id)) AS n FROM ps_crud',
   );
@@ -27,7 +27,7 @@ function usarPendientes(): number {
  * registros con error» para un solo parto manda a buscar tres problemas donde
  * hay uno.
  */
-function usarRechazados(): number {
+export function usarRechazados(): number {
   const { data } = useQuery<{ n: number }>(
     'SELECT count(DISTINCT carga_id) AS n FROM subidas_rechazadas',
   );
@@ -66,10 +66,34 @@ export function IndicadorSync({ onVerRechazados }: { onVerRechazados?: (() => vo
   }
 
   if (pendientes > 0) {
+    // Con conexión al servicio y la subida fallando igual, esto no es «sin
+    // señal»: es el sync roto — cuenta desactivada, sesión inválida, un bug.
+    // La diferencia importa porque esperar no lo arregla: un aparato así se
+    // veía idéntico a uno en un potrero sin señal, y se descubría cuando
+    // alguien notaba que faltaban partos.
+    if (estado.connected && estado.uploadError !== undefined) {
+      return (
+        <span className="sync sync--error" role="status">
+          <span className="sync-punto" />
+          {registros(pendientes)} sin subir — con problemas
+        </span>
+      );
+    }
     return (
       <span className="sync sync--pendiente" role="status">
         <span className="sync-punto" />
         {registros(pendientes)} sin subir
+      </span>
+    );
+  }
+
+  // Un aparato que todavía no sincronizó NUNCA no tiene nada a salvo: verde
+  // sería la señal equivocada, aunque tampoco haya nada perdido.
+  if (estado.hasSynced !== true) {
+    return (
+      <span className="sync sync--pendiente" role="status">
+        <span className="sync-punto" />
+        Sin datos aún
       </span>
     );
   }
@@ -79,7 +103,7 @@ export function IndicadorSync({ onVerRechazados }: { onVerRechazados?: (() => vo
   return (
     <span className="sync sync--ok" role="status">
       <span className="sync-punto" />
-      {estado.hasSynced === true ? 'Todo sincronizado' : 'Sin datos aún'}
+      Todo sincronizado
     </span>
   );
 }
