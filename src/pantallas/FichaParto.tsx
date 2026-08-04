@@ -363,6 +363,7 @@ function EditarParto({
   const [fecha, setFecha] = useState(parto.fecha);
   const [condicion, setCondicion] = useState<number | null>(parto.condicion_corporal);
   const [collar, setCollar] = useState(parto.collar_numero ?? '');
+  const [observaciones, setObservaciones] = useState(parto.observaciones ?? '');
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -405,6 +406,7 @@ function EditarParto({
             fecha,
             condicion_corporal: condicion,
             collar_numero: esMultiple && collar.trim() !== '' ? collar.trim() : null,
+            observaciones: observaciones.trim() === '' ? null : observaciones.trim(),
           },
           usuarioId,
         );
@@ -489,6 +491,23 @@ function EditarParto({
           )}
         </div>
       )}
+
+      {/* Va en la edición y no en el alta a propósito: §2 pide el registro en
+          menos de 45 segundos y mínimo tipeo libre, y lo que hay que anotar de
+          un parto se sabe después, no mientras se lo está cargando. */}
+      <div className="campo">
+        <label className="etiqueta" htmlFor="observaciones-parto">
+          Observaciones
+        </label>
+        <textarea
+          id="observaciones-parto"
+          className="entrada"
+          rows={2}
+          placeholder="Opcional — algo de este parto que convenga recordar"
+          value={observaciones}
+          onChange={(e) => setObservaciones(e.target.value)}
+        />
+      </div>
 
       <div className="barra-accion">
         <button type="button" className="boton boton--secundario" onClick={onListo}>
