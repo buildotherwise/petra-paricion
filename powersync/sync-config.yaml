@@ -33,3 +33,15 @@ streams:
   perfiles:
     auto_subscribe: true
     query: SELECT user_id as id, nombre, rol, activo FROM perfiles
+
+  # Los servicios bajan PROYECTADOS: solo los hechos reproductivos, sin las
+  # columnas de auditoría. No es por peso —son 1.359 filas— sino por alcance:
+  # lo que va a los cinco aparatos del campo es lo mínimo que hace falta para
+  # decir el padre probable de un parto (migración 0018), y nada más.
+  #
+  # Es la única tabla que se replica sin ser escribible desde el campo. Las
+  # políticas RLS de `servicios` no cambiaron: siguen siendo es_admin() para
+  # cualquier lectura o escritura por PostgREST.
+  servicios:
+    auto_subscribe: true
+    query: SELECT id, oveja_id, tipo, fecha_inicio, fecha_fin, padre, cabana FROM servicios

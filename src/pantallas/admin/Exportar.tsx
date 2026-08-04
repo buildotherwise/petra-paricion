@@ -66,6 +66,8 @@ type FilaConPadre = FilaExport & {
   padre: string | null;
   cabana_padre: string | null;
   servicio_tipo: string | null;
+  gestacion_dias: string | null;
+  padre_confianza: string | null;
 };
 
 /**
@@ -94,6 +96,10 @@ const PLANILLA: readonly ColumnaCSV<FilaConPadre>[] = [
   { clave: 'padre', valor: (f) => f.padre },
   { clave: 'cabana_padre', valor: (f) => f.cabana_padre },
   { clave: 'servicio_tipo', valor: (f) => f.servicio_tipo },
+  // Las dos que permiten desconfiar con fundamento: quien quiera solo lo que
+  // la regla afirmaba antes de la 0018 filtra por `padre_confianza = cierto`.
+  { clave: 'gestacion_dias', valor: (f) => f.gestacion_dias },
+  { clave: 'padre_confianza', valor: (f) => f.padre_confianza },
   { clave: 'collar_numero', valor: (f) => f.collar_numero },
   { clave: 'collar_marca', valor: (f) => f.collar_marca },
   { clave: 'tatuaje', valor: (f) => f.tatuaje },
@@ -191,6 +197,14 @@ export function Exportar() {
         padre: p?.padre ?? null,
         cabana_padre: p?.cabana ?? null,
         servicio_tipo: p?.servicio_tipo ?? null,
+        // Una inseminación da un número exacto; una encarnerada, un rango.
+        gestacion_dias:
+          p?.gestacion_min == null || p.gestacion_max == null
+            ? null
+            : p.gestacion_min === p.gestacion_max
+              ? String(p.gestacion_min)
+              : `${p.gestacion_min}-${p.gestacion_max}`,
+        padre_confianza: p?.confianza ?? null,
       };
     });
   }, [corderos, excluirAnulados, padrePorParto]);

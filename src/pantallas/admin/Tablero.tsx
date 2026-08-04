@@ -479,13 +479,6 @@ function Paternidad({ temporada, c }: { temporada: number; c: Colores }) {
   );
   const p = useMemo(() => paternidadPorPadre(estado.datos), [estado.datos]);
 
-  const sinPadre = [
-    p.sinServicio > 0 ? `${p.sinServicio} sin servicio compatible` : null,
-    p.ambiguos > 0 ? `${p.ambiguos} con más de un servicio posible` : null,
-  ]
-    .filter((parte) => parte !== null)
-    .join(' · ');
-
   return (
     <Tarjeta
       titulo="Paternidad"
@@ -506,14 +499,26 @@ function Paternidad({ temporada, c }: { temporada: number; c: Colores }) {
           porcentaje: b.porcentaje,
         }))}
       />
+      {/* Cuánto se confía, no solo cuántos hay. Un padre «probable» es el que
+          la regla anterior habría dejado sin asignar (migración 0018), y quien
+          analiza el plantel tiene derecho a saber cuál es cuál. */}
+      {p.conPadre > 0 && (
+        <p className="pie-tablero">
+          {p.ciertos} cierto{p.ciertos === 1 ? '' : 's'} <small>145–155 días</small> y {p.probables}{' '}
+          probable{p.probables === 1 ? '' : 's'} <small>140–160 días</small>
+          {p.conAlternativa > 0 &&
+            ` · ${p.conAlternativa} con otro servicio posible, para mirar`}
+        </p>
+      )}
       {p.revisar.length > 0 && (
         <p className="pie-tablero">
-          Sin padre asignado: {sinPadre}. Se miran a mano — caravana{' '}
+          Sin padre: {p.revisar.length} parto{p.revisar.length === 1 ? '' : 's'} cuya fecha no la
+          explica ningún servicio de la madre — caravana{' '}
           {p.revisar
             .slice(0, 8)
             .map((r) => r.caravana)
             .join(', ')}
-          {p.revisar.length > 8 && ` y ${p.revisar.length - 8} más`}.
+          {p.revisar.length > 8 && ` y ${p.revisar.length - 8} más`}. Se miran a mano.
         </p>
       )}
     </Tarjeta>

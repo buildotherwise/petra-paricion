@@ -633,6 +633,74 @@
   cursor: pointer;
 }
 
+/* ── El padre probable ──────────────────────────────────────────────────
+   Se dibuja mientras se carga el parto. No usa el amarillo de las caravanas
+   ni el champán de los collares: no es una chapa que se compare contra el
+   animal, es información derivada. Por eso el oro suave del fondo y nada
+   más. El estado de aviso sí toma el ámbar semántico, que es el que ya
+   significa «mirá esto» en toda la app. */
+.padre {
+  margin-top: var(--sp-3);
+  padding: var(--sp-3) var(--sp-3);
+  border-radius: var(--r-medio);
+  background: rgba(140, 122, 46, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(140, 122, 46, 0.22);
+}
+
+.padre-etiqueta {
+  display: block;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--oro);
+  margin-bottom: 4px;
+}
+
+.padre-quien {
+  font-family: var(--serif);
+  font-size: 1.375rem;
+  line-height: 1.1;
+  margin: 0;
+  color: var(--tinta);
+}
+
+.padre-quien small {
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--tinta-suave);
+}
+
+.padre-gestacion {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--tinta-suave);
+  margin: 3px 0 0;
+  line-height: 1.45;
+}
+
+.padre--dudoso {
+  background: rgba(163, 75, 0, 0.09);
+  box-shadow: inset 0 0 0 1px rgba(163, 75, 0, 0.25);
+}
+
+.padre--dudoso .padre-etiqueta {
+  color: var(--alerta);
+}
+
+/* En el resumen, donde el padre es una línea más de lo que se va a guardar. */
+.padre-dias {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--tinta-suave);
+}
+
+.padre-sin {
+  color: var(--alerta);
+  font-size: 0.8125rem;
+}
+
 /* ── Avisos ─────────────────────────────────────────────────────────── */
 
 .aviso {

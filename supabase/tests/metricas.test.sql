@@ -116,7 +116,11 @@ select cordero_a2, parto_a, 2026, 'hembra', 'muerto', 'muerto',
 from ctx;
 
 -- ---------------------------------------------------------------------------
--- 1. v_paternidad: se deriva, o no se afirma.
+-- 1. v_paternidad: se deriva el que mejor explica la fecha, o no se afirma.
+--
+-- Desde la 0018 la pregunta no es «¿quién entra en la ventana?» sino «¿cuál
+-- explica mejor esta fecha?»: gana el servicio cuya gestación queda más cerca
+-- de 150 días, y solo se calla si ni el mejor entra en 140–160.
 -- ---------------------------------------------------------------------------
 
 do $$
@@ -142,21 +146,29 @@ begin
   end if;
   ok := ok + 1;
 
-  -- 1.2. Dos servicios compatibles de padres distintos: NO se elige uno. Este
-  --      es el caso que la temporada 2026 no tiene —se midió: ninguna oveja
-  --      tiene dos ventanas solapadas con padres distintos— y que la vista
-  --      tiene que aguantar igual el día que aparezca.
+  -- 1.2. Dos servicios compatibles de padres distintos: desde la 0018 SÍ se
+  --      elige, y gana el que explica mejor la fecha. B parió el 3-ago con IA
+  --      el 9 y el 11 de marzo: son 147 y 145 días, y 147 está más cerca de
+  --      150. El caso se sigue marcando en `alternativas` para el panel de
+  --      revisión — elegir no es lo mismo que no tener nada que mirar.
   select * into r from v_paternidad where parto_id = c.parto_b;
   if r.candidatos <> 2 then
-    raise exception 'B: debería tener 2 servicios compatibles, tiene %', r.candidatos;
+    raise exception 'B: debería tener 2 servicios posibles, tiene %', r.candidatos;
   end if;
-  if r.padre is not null then
-    raise exception 'B: con paternidad ambigua no se afirma un padre (dijo %)', r.padre;
+  if r.padre <> '3020' then
+    raise exception 'B: debería ganar el 3020, que implica 147 días (dijo %)', r.padre;
+  end if;
+  if r.gestacion_min <> 147 or r.gestacion_max <> 147 then
+    raise exception 'B: la gestación del elegido salió [%, %], se esperaba 147',
+      r.gestacion_min, r.gestacion_max;
+  end if;
+  if r.alternativas <> 1 then
+    raise exception 'B: debería quedar 1 alternativa de otro padre, quedaron %', r.alternativas;
   end if;
   ok := ok + 1;
 
   -- 1.3. La encarnerada también deriva, con su rango real de gestación
-  --      acotado a lo posible: [145, 153] y no [139, 153].
+  --      acotado a lo posible: [140, 153] y no [139, 153].
   select * into r from v_paternidad where parto_id = c.parto_c;
   if r.candidatos <> 1 or r.padre <> '4459' then
     raise exception 'C: el repaso debería derivar al carnero 4459 (candidatos %, padre %)',
@@ -165,9 +177,13 @@ begin
   if r.servicio_tipo <> 'encarnerada' then
     raise exception 'C: el servicio derivado debería ser la encarnerada, es %', r.servicio_tipo;
   end if;
-  if r.gestacion_min <> 145 or r.gestacion_max <> 153 then
-    raise exception 'C: la gestación posible salió [%, %], se esperaba [145, 153]',
+  if r.gestacion_min <> 140 or r.gestacion_max <> 153 then
+    raise exception 'C: la gestación posible salió [%, %], se esperaba [140, 153]',
       r.gestacion_min, r.gestacion_max;
+  end if;
+  -- Un rango que CONTIENE a 150 es tan bueno como una IA exacta: distancia 0.
+  if r.confianza <> 'cierto' then
+    raise exception 'C: un rango que contiene 150 es cierto, no % ', r.confianza;
   end if;
   ok := ok + 1;
 
@@ -188,24 +204,34 @@ begin
   end if;
   ok := ok + 1;
 
-  -- 1.5. Y un parto que no cae en ninguna ventana: tampoco se adivina «el más
-  --      cercano». Queda sin padre y el caso se mira a mano.
+  -- 1.5. El límite de la regla nueva: un parto que ni con el servicio más
+  --      cercano entra en lo biológicamente posible. E tiene una IA de enero
+  --      —209 días— y un repaso de mayo —74—: ninguno explica un parto de
+  --      agosto, y ahí sí se calla. Es el único silencio que queda.
   select * into r from v_paternidad where parto_id = c.parto_e;
   if r.candidatos <> 0 or r.padre is not null then
-    raise exception 'E: un parto fuera de toda ventana no tiene padre (candidatos %, padre %)',
+    raise exception 'E: fuera de lo biológico no hay padre (candidatos %, padre %)',
       r.candidatos, r.padre;
   end if;
   if r.gestacion_min is not null then
-    raise exception 'E: fuera de la ventana tampoco hay gestación (salió %)', r.gestacion_min;
+    raise exception 'E: sin padre tampoco hay gestación (salió %)', r.gestacion_min;
+  end if;
+  if r.confianza is not null then
+    raise exception 'E: sin padre no hay confianza que informar (salió %)', r.confianza;
   end if;
   ok := ok + 1;
 
-  -- 1.5.b Y con paternidad ambigua, lo mismo: dos servicios compatibles no dan
-  --       «la gestación», dan dos gestaciones posibles y ninguna es la buena.
-  select * into r from v_paternidad where parto_id = c.parto_b;
-  if r.gestacion_min is not null or r.gestacion_max is not null then
-    raise exception 'B: con dos candidatos no hay una gestación (salió [%, %])',
-      r.gestacion_min, r.gestacion_max;
+  -- 1.5.b Las dos etiquetas de confianza, que son lo que separa «lo que la
+  --       vista afirmaba antes» de «lo que agrega la 0018». Filtrar por
+  --       `confianza = 'cierto'` tiene que devolver exactamente los partos que
+  --       la versión vieja derivaba.
+  select * into r from v_paternidad where parto_id = c.parto_a;
+  if r.confianza <> 'cierto' then
+    raise exception 'A: 146 días está dentro de [145,155], debería ser cierto (es %)', r.confianza;
+  end if;
+  if (select count(*) from v_paternidad
+       where temporada = 2026 and confianza not in ('cierto', 'probable')) <> 0 then
+    raise exception 'confianza solo puede ser cierto, probable o null';
   end if;
   ok := ok + 1;
 

@@ -102,8 +102,10 @@ export interface FilaPaternidad {
   oveja_id: string;
   caravana: string;
   fecha_parto: string;
-  /** 0 = ningún servicio compatible; 1 = derivado; 2+ = ambiguo. */
+  /** Servicios de la madre biológicamente compatibles con esta fecha. */
   candidatos: number;
+  /** Otros servicios posibles de un padre distinto: la ambigüedad de verdad. */
+  alternativas: number;
   padre: string | null;
   cabana: string | null;
   servicio_tipo: 'inseminacion' | 'encarnerada' | null;
@@ -111,6 +113,8 @@ export interface FilaPaternidad {
   servicio_fin: string | null;
   gestacion_min: number | null;
   gestacion_max: number | null;
+  /** cierto = gestación 145–155 · probable = 140–160 · null = sin padre. */
+  confianza: 'cierto' | 'probable' | null;
 }
 
 /** Un porcentaje que no explota cuando todavía no hay de qué. */
@@ -545,10 +549,12 @@ export interface CasoSinPadre {
 export interface Paternidad {
   partos: number;
   conPadre: number;
-  /** candidatos = 0: el parto no cae en la ventana de ningún servicio. */
-  sinServicio: number;
-  /** candidatos ≥ 2: la vista no adivina y deja el padre en null. */
-  ambiguos: number;
+  /** De los que tienen padre: gestación dentro de 145–155. */
+  ciertos: number;
+  /** De los que tienen padre: gestación dentro de 140–160, pero no de 145–155. */
+  probables: number;
+  /** Con padre asignado y OTRO servicio posible de padre distinto (0018). */
+  conAlternativa: number;
   padres: BarraPadre[];
   /** Los partos sin padre, para mirarlos a mano, los más viejos primero. */
   revisar: CasoSinPadre[];
@@ -570,19 +576,23 @@ export interface Paternidad {
 export function paternidadPorPadre(filas: readonly FilaPaternidad[]): Paternidad {
   const porPadre = new Map<string, { cabana: string | null; partos: number }>();
   const revisar: CasoSinPadre[] = [];
-  let sinServicio = 0;
-  let ambiguos = 0;
+  let ciertos = 0;
+  let probables = 0;
+  let conAlternativa = 0;
 
   for (const f of filas) {
-    if (f.padre !== null) {
-      const actual = porPadre.get(f.padre);
-      if (actual === undefined) porPadre.set(f.padre, { cabana: f.cabana, partos: 1 });
-      else actual.partos += 1;
-    } else {
-      if (f.candidatos === 0) sinServicio += 1;
-      else ambiguos += 1;
+    if (f.padre === null) {
       revisar.push({ caravana: f.caravana, fecha: f.fecha_parto, candidatos: f.candidatos });
+      continue;
     }
+
+    const actual = porPadre.get(f.padre);
+    if (actual === undefined) porPadre.set(f.padre, { cabana: f.cabana, partos: 1 });
+    else actual.partos += 1;
+
+    if (f.confianza === 'cierto') ciertos += 1;
+    else probables += 1;
+    if (f.alternativas > 0) conAlternativa += 1;
   }
 
   const padres = [...porPadre.entries()]
@@ -597,9 +607,10 @@ export function paternidadPorPadre(filas: readonly FilaPaternidad[]): Paternidad
 
   return {
     partos: filas.length,
-    conPadre: filas.length - sinServicio - ambiguos,
-    sinServicio,
-    ambiguos,
+    conPadre: ciertos + probables,
+    ciertos,
+    probables,
+    conAlternativa,
     padres,
     revisar,
   };

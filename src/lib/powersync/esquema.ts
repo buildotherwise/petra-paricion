@@ -19,8 +19,8 @@ const ovejas = new Table(
     temporada: column.integer,
     caravana: column.text,
     // La inseminación y el padre NO viven acá: son hasta cuatro hechos por
-    // oveja, con padres distintos, y viven en `servicios` — que no se replica
-    // (ver migración 0010). El teléfono no muestra el padre en ningún flujo.
+    // oveja, con padres distintos, y viven en `servicios` (migración 0010),
+    // que desde la 0018 también se replica.
     precargada: column.integer,
     observaciones: column.text,
     creado_en: column.text,
@@ -117,6 +117,36 @@ const perfiles = new Table({
 });
 
 /**
+ * Los servicios de cada madre — solo para leer.
+ *
+ * Es la única tabla que baja al aparato sin que el campo pueda escribirla: la
+ * carga es server-side (`scripts/importar-servicios.py`) y RLS la deja en
+ * es_admin() para cualquier escritura por PostgREST.
+ *
+ * Baja porque el padre probable de un parto se calcula con esto (0018), y ese
+ * cálculo tiene que pasar EN EL CORRAL: es el único control contra la caravana
+ * equivocada, y la caravana se elige sin señal.
+ *
+ * Llegan las columnas de la sync rule y ninguna más — sin `creado_en`, sin
+ * autor. Lo que no hace falta para nombrar un padre, no viaja.
+ */
+const servicios = new Table(
+  {
+    oveja_id: column.text,
+    tipo: column.text,
+    fecha_inicio: column.text,
+    fecha_fin: column.text,
+    padre: column.text,
+    cabana: column.text,
+  },
+  {
+    // La consulta siempre es «los servicios de esta madre», una vez por parto
+    // que se carga.
+    indexes: { por_oveja: ['oveja_id'] },
+  },
+);
+
+/**
  * Tabla local, fuera del sync.
  *
  * Cuando el servidor rechaza una subida por un problema del dato (constraint,
@@ -157,6 +187,7 @@ export const EsquemaApp = new Schema({
   partos,
   corderos,
   perfiles,
+  servicios,
   subidas_rechazadas,
 });
 
@@ -165,4 +196,5 @@ export type Oveja = BaseDatos['ovejas'];
 export type Parto = BaseDatos['partos'];
 export type Cordero = BaseDatos['corderos'];
 export type Perfil = BaseDatos['perfiles'];
+export type Servicio = BaseDatos['servicios'];
 export type SubidaRechazada = BaseDatos['subidas_rechazadas'];

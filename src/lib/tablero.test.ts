@@ -408,6 +408,7 @@ const paternidad = (filas: Partial<FilaPaternidad>[]): FilaPaternidad[] =>
     caravana: '1740',
     fecha_parto: '2026-08-10',
     candidatos: 1,
+    alternativas: 0,
     padre: '32',
     cabana: null,
     servicio_tipo: 'inseminacion',
@@ -415,6 +416,7 @@ const paternidad = (filas: Partial<FilaPaternidad>[]): FilaPaternidad[] =>
     servicio_fin: '2026-03-15',
     gestacion_min: 148,
     gestacion_max: 148,
+    confianza: 'cierto',
     ...f,
   }));
 
@@ -433,27 +435,46 @@ describe('paternidadPorPadre: partos por padre, con los sin-padre a la vista', (
     expect(p.conPadre).toBe(3);
   });
 
-  test('separa los sin servicio de los ambiguos, y los manda a revisar', () => {
+  test('separa ciertos de probables, que es lo que la 0018 vino a distinguir', () => {
+    const p = paternidadPorPadre(
+      paternidad([
+        { padre: '32', confianza: 'cierto' },
+        { padre: '32', confianza: 'probable' },
+        { padre: '7', confianza: 'probable' },
+      ]),
+    );
+    expect(p.conPadre).toBe(3);
+    expect(p.ciertos).toBe(1);
+    expect(p.probables).toBe(2);
+  });
+
+  test('los sin padre van a revisar, los más viejos primero', () => {
     const p = paternidadPorPadre(
       paternidad([
         { padre: '32' },
-        { padre: null, candidatos: 0, caravana: '209 V', fecha_parto: '2026-08-20' },
-        { padre: null, candidatos: 2, caravana: '1802', fecha_parto: '2026-08-05' },
+        { padre: null, confianza: null, candidatos: 0, caravana: '209 V', fecha_parto: '2026-08-20' },
+        { padre: null, confianza: null, candidatos: 0, caravana: '1802', fecha_parto: '2026-08-05' },
       ]),
     );
-    expect(p.sinServicio).toBe(1);
-    expect(p.ambiguos).toBe(1);
     expect(p.conPadre).toBe(1);
-    // Los más viejos primero: el ambiguo del 5 de agosto antes que el del 20.
     expect(p.revisar.map((r) => r.caravana)).toEqual(['1802', '209 V']);
+  });
+
+  test('se cuentan los que tienen padre pero además otro servicio posible', () => {
+    // Elegir no es lo mismo que no tener nada que mirar: estos van al panel.
+    const p = paternidadPorPadre(
+      paternidad([{ padre: '32', alternativas: 1 }, { padre: '7', alternativas: 0 }]),
+    );
+    expect(p.conAlternativa).toBe(1);
   });
 
   test('sin datos: ceros explícitos y listas vacías, nunca NaN', () => {
     expect(paternidadPorPadre([])).toEqual({
       partos: 0,
       conPadre: 0,
-      sinServicio: 0,
-      ambiguos: 0,
+      ciertos: 0,
+      probables: 0,
+      conAlternativa: 0,
       padres: [],
       revisar: [],
     });

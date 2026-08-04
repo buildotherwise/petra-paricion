@@ -109,8 +109,10 @@ create table ovejas (
   unique (temporada, caravana)
 );
 
--- Los hechos reproductivos de cada madre (migración 0010). NO se replica a los
--- dispositivos y su lectura es solo para admin, como `cambios`.
+-- Los hechos reproductivos de cada madre (migración 0010). Su lectura por
+-- PostgREST es solo para admin, como `cambios`; desde la 0018 sí se replica a
+-- los dispositivos —proyectada, sin auditoría— porque el padre probable del
+-- alta se calcula en el corral, sin señal (§7).
 --
 -- SERVICIO = inseminación artificial: fecha puntual, padre cierto, hasta tres
 -- por oveja separadas ~15 días (el ciclo estral). ENCARNERADA = el repaso, el
@@ -235,7 +237,7 @@ group by p.id, o.caravana;
 
 ## 6. Sincronización (PowerSync + Supabase)
 
-- **Alcance del sync:** todos los dispositivos replican la temporada activa completa (ovejas, partos, corderos). El volumen es chico (miles de filas), así que sync total es simple y suficiente; no hace falta particionar por dispositivo.
+- **Alcance del sync:** todos los dispositivos replican la temporada activa completa (ovejas, partos, corderos) más `perfiles` y `servicios`. El volumen es chico (miles de filas), así que sync total es simple y suficiente; no hace falta particionar por dispositivo. **`servicios` es la única que baja sin ser escribible desde el campo** y baja *proyectada* —solo los hechos reproductivos, sin auditoría—: la necesita el padre probable del alta (§7), que tiene que calcularse sin señal. Sus políticas RLS no cambiaron: siguen en `es_admin()` para cualquier lectura o escritura por PostgREST. **Las sync rules se pegan a mano en el panel de PowerSync**, así que tocar `powersync/sync-config.yaml` no alcanza — hay que copiarlo allá.
 - **Escrituras:** cada alta/edición se aplica primero a la base SQLite local y entra en la cola de subida de PowerSync. El backend valida y persiste en Postgres.
 - **Conflictos:** el perfil de uso hace casi imposible que dos dispositivos editen el mismo registro simultáneamente (cada parto lo registra quien lo encuentra). Estrategia: last-write-wins por registro + tabla `cambios` para reconstruir cualquier pisada accidental desde la web.
 - **Identificadores:** UUIDs generados en el dispositivo. Jamás depender de secuencias del servidor para crear registros offline.
@@ -248,7 +250,7 @@ group by p.id, o.caravana;
 
 **Registrar parto:**
 1. Buscador de caravana: campo numérico que filtra la lista precargada al escribir. Opción "No está en la lista" → alta manual (R9). Si la oveja ya tiene parto registrado, avisar y ofrecer abrirlo (evita duplicados).
-2. Fecha (default hoy) y condición corporal (selector 1–5 con descripciones cortas).
+2. Fecha (default hoy) y condición corporal (selector 1–5 con descripciones cortas). Debajo de la fecha, el **padre probable** de ese parto (§9) — ahí y no en el paso de la caravana porque depende de la fecha, y si alguien la corrige el padre se corrige con ella. **No es un adorno informativo: es el control de la caravana.** El error más caro del sistema es registrar el parto en la oveja equivocada, y que ningún servicio de esa madre explique la fecha es la única señal disponible en el corral, con el animal delante y antes de guardar. Avisa y no bloquea (como R7 y R14): un parto adelantado de verdad existe, y quien mira al animal sabe más que una cuenta de días. Se repite en una línea del resumen, que es el último lugar donde se puede frenar algo. En una oveja de alta manual (R9), que nunca va a tener servicios, no se dice nada — un cartel permanente en un caso normal es ruido que enseña a no mirar.
 3. Corderos: botón "+ Agregar cordero" → sexo (dos botones), vivo/muerto, peso (teclado numérico), collar si corresponde (R2).
 4. Resumen ("Mellizos: 1 macho vivo 4,2 kg — collar 12 punto arriba / 1 hembra viva 3,8 kg — collar 13 punto arriba") → Guardar.
 
@@ -281,7 +283,7 @@ Misma app, vistas habilitadas por rol admin, pensada para escritorio con conexi�
 - Tablas de partos y corderos con filtros (fecha, estado, tipo de nacimiento, discrepancias) y edición con registro en `cambios`.
 - **Panel de revisión: ocho preguntas.** Las cinco de esta lista —ovejas de alta manual, discrepancias de sexo, collares duplicados, pesos fuera de rango, corderos sin señalar con más de 15 días— más tres que salieron de maquetar: **partos sin corderos** (la más importante: el conector descarta la transacción entera desde la operación que falla y el parto se inserta antes que sus corderos, así que es la única de las ocho sin falsos positivos), **marcas repetidas dentro de un parto** y **fechas de señalada imposibles**. Cada fila trae el contexto que la vuelve accionable —el tipo de parto al lado de un peso bajo, los hermanos al lado de una discrepancia, las precargadas parecidas al lado de un alta manual— y **el cero se muestra**: «ninguno» es una respuesta, y una lista vacía parece una consulta rota.
 - **Importación de servicios: no está en la web.** Es una carga que se hace **una vez** —no una por temporada; si el proyecto se reutiliza el año que viene, cómo entran los datos del año que viene se decide entonces—, así que vive en `scripts/importar-servicios.py`, hermano de `importar-madres.py`: openpyxl, `--dry-run` con informe antes de escribir, y `Prefer: resolution=ignore-duplicates` sobre el `unique` de la tabla, que hace inocuo reejecutarlo. Una pantalla usada una sola vez es mantenimiento sin uso: parser de xlsx en el navegador, seriales de fecha a mano y un chunk más fuera del precache. Una caravana que no cruza contra `ovejas` **se reporta y no se inserta**; las madres no se crean solas.
-- **Exportación** CSV/Excel: planilla plana de corderos con columnas equivalentes a los formularios Zoho históricos, más una exportación completa del modelo. Lleva además el **padre derivado** (`padre`, `cabana_padre`, `servicio_tipo`), que es lo único del archivo que llega del servidor —`v_paternidad` cuelga de `servicios`, que no se replica—; sin señal esas tres columnas van vacías y la pantalla lo avisa.
+- **Exportación** CSV/Excel: planilla plana de corderos con columnas equivalentes a los formularios Zoho históricos, más una exportación completa del modelo. Lleva además el **padre derivado** (`padre`, `cabana_padre`, `servicio_tipo`, `gestacion_dias`, `padre_confianza`), que es lo único del archivo que llega del servidor: la exportación lee `v_paternidad`, que es una vista y no se replica. Sin señal esas columnas van vacías y la pantalla lo avisa. `padre_confianza` es lo que permite quedarse solo con lo que la regla vieja afirmaba (§9).
 - **Historial de cambios** al pie de cada ficha, y solo en la web: `cambios` sigue fuera de la replicación, así que es lo único que la web admin lee por internet.
 - **Correcciones que el teléfono no hace:** la fecha de la señalada, la muerte de un cordero ya señalado (sin tocar `estado`) y deshacer una anulación.
 - Sección de **Dashboards** integrada (ver §9).
@@ -296,7 +298,11 @@ Los reportes se implementan como una sección de la propia plataforma web, con g
 
 Las ocho vistas nacieron en `0011_vistas_metricas.sql` —`v_avance_paricion` se redefinió después en la `0014`, la `0015` y la `0016`, que es la vigente— y **cada una lleva sus dos líneas** —`security_invoker = true` y el `grant select`— o `supabase/tests/vistas.test.sql` falla: ese test recorre todas las vistas de `public` y no perdona ninguna. `src/lib/tablero.ts` traduce las filas a lo que dibuja cada tarjeta y es lo único con tests: **el caso difícil de un tablero es el vacío**, y cada transformación tiene su aserción de entrada vacía ⇒ ceros. El tablero va detrás de su propio `lazy()` —con **dos** importadores dinámicos del mismo módulo: `WebAdmin.tsx` y `TableroCampo.tsx`— y su chunk queda **fuera del precache** (`globIgnores`): es lo único de la app que no funciona sin señal. En la web va sin bajada (decirlo cada vez es explicarle la arquitectura a quien vino a mirar cómo viene la parición); la pantalla de campo sí lo advierte en la suya, y en los dos lados cada tarjeta degrada sola, con su error en castellano y su botón de reintentar.
 
-**El padre del cordero se deriva, no se carga** (`v_paternidad`): un parto cae en la ventana `[servicio + 145, servicio + 155]` de a lo sumo un servicio. Esa ventana es más angosta que la de la curva esperada (140–160) **a propósito**: son preguntas opuestas. La curva quiere colas porque sin ellas inventa días en cero; la paternidad quiere ser angosta porque ensancharla crea ambigüedades, y prefiere no afirmar. Se midió contra el archivo real de 2026 —1.149 comparaciones de padres distintos— y **no hay una sola paternidad ambigua**. Con 0 candidatos o con 2+, el padre es `null` y el caso se mira a mano: un cordero con padre equivocado en un plantel de cabaña es peor que uno sin padre asignado, porque el segundo se investiga y el primero se hereda.
+**El padre del cordero se deriva, no se carga** (`v_paternidad`). La pregunta no es «¿quién entra en la ventana?» sino **«¿cuál explica mejor esta fecha?»**: se ordenan los servicios de la madre por qué tan lejos de **150 días** queda la gestación que implican, y gana el primero. Así siempre hay un candidato, y el único silencio que queda es que ni el mejor entre en **140–160** — el mismo rango que usa la curva esperada, para que el proyecto tenga *una* definición de gestación posible. Ante empate gana el servicio más nuevo, por el mismo argumento de la 0016: volver a servirse prueba que el anterior falló.
+
+La versión anterior exigía la ventana `[servicio + 145, servicio + 155]` y **exactamente un** candidato. Se cambió (migración 0018) porque con los primeros partos cargados dejó tres de seis sin padre, y ninguno por falta de datos: implicaban gestaciones de 142, 143 y 144 días. Un cordero nacido a los 143 días es un cordero normal. Ensanchar la ventana no alcanzaba —una ventana tiene dos formas de callarse, que el parto se caiga por un día o que entren dos servicios— así que se cambió la pregunta.
+
+Lo que se afirma viene con su reserva: **`confianza`** es `cierto` (gestación 145–155, lo que la regla vieja afirmaba) o `probable` (140–160, lo que antes se callaba), y **`alternativas`** cuenta los otros servicios posibles *de un padre distinto*, que es la ambigüedad de verdad — dos servicios del mismo carnero no tienen nada que decidir. Quien analice el plantel y quiera la exigencia vieja filtra por `confianza = 'cierto'`. Sigue valiendo el principio que ordena todo esto: un cordero con padre equivocado en un plantel de cabaña es peor que uno sin padre asignado, porque el segundo se investiga y el primero se hereda; por eso el rango se corta donde se corta.
 
 Tarjetas del dashboard:
 
@@ -309,7 +315,7 @@ Tarjetas del dashboard:
 5. Señaladas pendientes (conteo y antigüedad).
 6. Prevalencias fenotípicas: entropión, pigmentación, halo hair, canela, lunar.
 7. Distribución de condición corporal de las madres.
-8. Paternidad: **partos** por padre derivado —no corderos: los mellizos comparten padre por construcción y contarlos inflaría la mellicería en un gráfico de carneros— con los casos sin padre (0 o 2+ candidatos) al pie, con su caravana, porque son los que se miran a mano.
+8. Paternidad: **partos** por padre derivado —no corderos: los mellizos comparten padre por construcción y contarlos inflaría la mellicería en un gráfico de carneros—, con cuántos son ciertos y cuántos probables, y al pie las caravanas de los que quedaron sin padre, que son las que se miran a mano.
 
 ## 10. Plan de iteraciones (temporada arranca en días)
 

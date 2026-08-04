@@ -10,6 +10,7 @@ import { db } from '../lib/powersync/db';
 import { dispositivo, entorno } from '../lib/entorno';
 import { useUsuarioId } from '../lib/sesion';
 import { BuscadorCaravana, type OvejaElegida } from '../componentes/BuscadorCaravana';
+import { LineaPadre, PadreProbable } from '../componentes/PadreProbable';
 import { FormularioCordero, type BorradorCordero } from '../componentes/FormularioCordero';
 import { causaLegible, FilaCordero } from '../componentes/FilaCordero';
 import {
@@ -335,6 +336,10 @@ function PasoDatos({
         )}
       </div>
 
+      {/* Va acá y no en el paso de la caravana porque el padre depende de la
+          FECHA: si alguien la corrige, el padre se corrige con ella y se ve. */}
+      {validacionFecha.valida && <PadreProbable ovejaId={oveja.id} fecha={fecha} />}
+
       <div className="campo">
         <span className="etiqueta">
           Condición corporal de la madre
@@ -491,6 +496,10 @@ function PasoResumen({
           />
         ))}
       </div>
+
+      {/* El resumen es el último lugar donde se puede frenar algo, así que el
+          padre se repite acá — en una línea, sin competir con los corderos. */}
+      <LineaPadre ovejaId={oveja.id} fecha={fecha} />
 
       {/* El collar es del parto, así que la madre también lo lleva. No es un
           recordatorio opcional: es parte del dato que se está guardando. */}
