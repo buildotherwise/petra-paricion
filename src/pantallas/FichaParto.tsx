@@ -379,6 +379,10 @@ function EditarParto({
     [entorno.temporada, parto.id],
   );
 
+  // R2: en un parto múltiple el collar no puede quedar vacío — dejaría a los
+  // hermanos con marca y sin número, y sacaría al parto de la búsqueda por
+  // collar en la señalada.
+  const collarVacio = esMultiple && collar.trim() === '';
   const collarLibre =
     !esMultiple || collar.trim() === ''
       ? true
@@ -471,6 +475,11 @@ function EditarParto({
               Ese collar ya se usó esta temporada en otro parto. Elegí otro número.
             </p>
           )}
+          {collarVacio && (
+            <p className="aviso aviso--error" style={{ marginTop: 'var(--sp-2)', marginBottom: 0 }}>
+              Un parto múltiple no puede quedar sin número de collar.
+            </p>
+          )}
           {/* Cambiar el número no devuelve el anterior a la lista: el collar
               físico salió de la caja y no se sabe dónde está. */}
           {parto.collar_numero !== null && collar.trim() !== parto.collar_numero && (
@@ -489,7 +498,9 @@ function EditarParto({
           type="button"
           className="boton boton--principal"
           onClick={guardar}
-          disabled={guardando || !validacionFecha.valida || condicion === null || !collarLibre}
+          disabled={
+            guardando || !validacionFecha.valida || condicion === null || !collarLibre || collarVacio
+          }
         >
           {guardando ? 'Guardando…' : 'Guardar cambios'}
         </button>

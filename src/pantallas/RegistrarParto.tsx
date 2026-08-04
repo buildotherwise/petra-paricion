@@ -230,7 +230,9 @@ export function RegistrarParto({
         {paso === 'cordero' && (
           <FormularioCordero
             inicial={editando}
-            esMultiple={corderos.length >= 1 || editando !== null}
+            // Editar no agrega un cordero: el que se edita ya está contado en
+            // la lista, así que el parto es múltiple recién con otro más.
+            esMultiple={editando !== null ? corderos.length >= 2 : corderos.length >= 1}
             fechaParto={fecha}
             madreBiologicaId={oveja?.id ?? ''}
             collarNumero={collarNumero}

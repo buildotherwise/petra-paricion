@@ -6,6 +6,7 @@ import { BuscadorCaravana, type OvejaElegida } from '../componentes/BuscadorCara
 import { FormularioCordero, type BorradorCordero } from '../componentes/FormularioCordero';
 import { causaLegible, pesoLegible, sexoLegible } from '../componentes/FilaCordero';
 import { db } from '../lib/powersync/db';
+import { entorno } from '../lib/entorno';
 import { actualizar } from '../lib/powersync/escritura';
 import { useUsuarioId } from '../lib/sesion';
 import { fechaLarga, nombreMarca } from '../lib/parto';
@@ -385,6 +386,17 @@ function EditarCordero({
 }) {
   const usuarioId = useUsuarioId();
   const [error, setError] = useState<string | null>(null);
+  const [guardando, setGuardando] = useState(false);
+
+  // Para cuando esta pantalla pide el número de collar (parto múltiple que
+  // quedó sin él): R3 vale acá igual que en el alta.
+  const { data: usados } = useQuery<{ collar_numero: string }>(
+    `SELECT DISTINCT p.collar_numero
+       FROM partos p
+       JOIN ovejas o ON o.id = p.oveja_id
+      WHERE p.collar_numero IS NOT NULL AND o.temporada = ? AND p.id <> ?`,
+    [entorno.temporada, cordero.parto_id],
+  );
 
   // Nació vivo y murió después (R8), o ya está señalado: en los dos casos
   // tocar «al nacer» pisaría un hecho registrado.
@@ -414,10 +426,17 @@ function EditarCordero({
     observaciones: cordero.observaciones ?? '',
   };
 
-  async function guardar(editado: BorradorCordero) {
+  async function guardar(editado: BorradorCordero, numero: string | null) {
+    if (guardando) return;
+    setGuardando(true);
     setError(null);
     try {
       await db.writeTransaction(async (tx) => {
+        // El collar es del parto: si el formulario lo pidió (parto múltiple
+        // que quedó sin número), se guarda donde vive.
+        if (numero !== null) {
+          await actualizar(tx, 'partos', cordero.parto_id, { collar_numero: numero }, usuarioId);
+        }
         await actualizar(
           tx,
           'corderos',
@@ -447,6 +466,7 @@ function EditarCordero({
       onListo();
     } catch (fallo) {
       setError(fallo instanceof Error ? fallo.message : 'No se pudo guardar el cambio.');
+      setGuardando(false);
     }
   }
 
@@ -466,7 +486,7 @@ function EditarCordero({
         fechaParto={cordero.parto_fecha}
         madreBiologicaId={cordero.oveja_id}
         collarNumero={cordero.collar_numero}
-        numerosUsados={[]}
+        numerosUsados={usados.map((u) => u.collar_numero)}
         ocupadas={marcasOcupadas(activos, cordero.id)}
         nacimientoFijo={nacimientoFijo}
         onGuardar={guardar}
