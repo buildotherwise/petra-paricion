@@ -4,7 +4,6 @@ import {
   BarChart,
   CartesianGrid,
   ComposedChart,
-  LabelList,
   Line,
   ResponsiveContainer,
   Tooltip,
@@ -215,32 +214,49 @@ const GLOBO = {
 } as const;
 
 /**
- * «58 · 60,4 %» al final de una barra horizontal.
+ * Unas pocas barras horizontales con su número y su porcentaje, en HTML.
  *
- * Va como `content` y no como un `formatter`, porque el porcentaje no está en
- * el `dataKey` que la barra dibuja: se busca por índice en el arreglo que
- * alimenta el gráfico.
+ * No es un gráfico de Recharts y no es por capricho. Con `LabelList` las
+ * etiquetas se apoyan en el extremo de cada barra, así que cada una arranca en
+ * una x distinta y la columna de números queda dentada — que es justamente lo
+ * que se quiere leer de un vistazo. Alinearlas dentro del SVG pide reconstruir
+ * la escala a mano desde el ancho en píxeles de cada barra, y con un valor en
+ * cero esa cuenta ni siquiera se puede hacer.
+ *
+ * Una grilla de tres columnas lo resuelve por construcción: `auto 1fr auto`
+ * hace que la última se mida por el texto más ancho y todas las cifras empiecen
+ * en el mismo lugar. Para tres o cuatro barras sin eje ni escala visible, una
+ * librería de gráficos no estaba aportando nada.
  */
-function etiquetaDeBarra(barras: readonly { porcentaje: number }[]) {
-  return function Etiqueta(props: unknown) {
-    const { x, y, width, height, value, index } = props as {
-      x: number; y: number; width: number; height: number; value: number; index: number;
-    };
-    const porcentaje = barras[index]?.porcentaje ?? 0;
-    return (
-      <text
-        x={x + width + 8}
-        y={y + height / 2}
-        dominantBaseline="central"
-        fontSize={11.5}
-        fontWeight={700}
-        fill="#5c5342"
-      >
-        {value}
-        <tspan fill="#9a9182"> · {pct(porcentaje)}</tspan>
-      </text>
-    );
-  };
+function BarrasHorizontales({
+  filas,
+  color,
+}: {
+  filas: readonly { etiqueta: string; valor: number; porcentaje: number }[];
+  color: string;
+}) {
+  // El máximo manda la escala; el `1` evita dividir por cero cuando no hay nada
+  // todavía y deja las barras en cero, que es lo honesto.
+  const maximo = Math.max(...filas.map((f) => f.valor), 1);
+
+  return (
+    <div className="barras-h">
+      {filas.map((f) => (
+        <div key={f.etiqueta} className="fila-h">
+          <span className="et">{f.etiqueta}</span>
+          <span className="pista">
+            <span
+              className="barra"
+              style={{ width: `${(f.valor / maximo) * 100}%`, background: color }}
+            />
+          </span>
+          <span className="val">
+            <b>{f.valor}</b> · {pct(f.porcentaje)}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -432,30 +448,17 @@ function Tipos({ temporada, c }: { temporada: number; c: Colores }) {
       estado={estado}
       vacio={d.partos === 0 ? { titulo: 'Ninguno', detalle: 'Todavía no hay partos.' } : null}
     >
-      <div className="grafico">
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart
-          data={d.barras}
-          layout="vertical"
-          margin={{ top: 4, right: 92, bottom: 0, left: 0 }}
-        >
-          <XAxis type="number" hide />
-          <YAxis type="category" dataKey="etiqueta" tick={EJE} tickLine={false} axisLine={false} width={68} />
-          <Tooltip {...GLOBO} formatter={contando('Partos')} />
-          <Bar dataKey="partos" fill={c.marca} radius={[0, 4, 4, 0]} maxBarSize={16}>
-            {/* El absoluto y el porcentaje juntos, al final de la barra: el
-                absoluto dice cuántos animales y el porcentaje dice qué peso
-                tiene ese número en la temporada. Cada uno sin el otro obliga a
-                una cuenta mental. */}
-            <LabelList
-              dataKey="partos"
-              position="right"
-              content={etiquetaDeBarra(d.barras)}
-            />
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-      </div>
+      {/* El absoluto y el porcentaje juntos: el absoluto dice cuántos animales
+          y el porcentaje dice qué peso tiene ese número en la temporada. Cada
+          uno sin el otro obliga a una cuenta mental. */}
+      <BarrasHorizontales
+        color={c.marca}
+        filas={d.barras.map((b) => ({
+          etiqueta: b.etiqueta,
+          valor: b.partos,
+          porcentaje: b.porcentaje,
+        }))}
+      />
       <p className="pie-tablero">
         {d.partos} partos · {d.barras.reduce((n, b) => n + b.corderos, 0)} corderos
       </p>
@@ -488,22 +491,14 @@ function Mortalidad({ temporada, c }: { temporada: number; c: Colores }) {
             : null
       }
     >
-      <div className="grafico">
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart
-          data={m.etapas}
-          layout="vertical"
-          margin={{ top: 4, right: 84, bottom: 0, left: 0 }}
-        >
-          <XAxis type="number" hide allowDecimals={false} />
-          <YAxis type="category" dataKey="etiqueta" tick={EJE} tickLine={false} axisLine={false} width={112} />
-          <Tooltip {...GLOBO} formatter={contando('Corderos')} />
-          <Bar dataKey="corderos" fill={c.error} radius={[0, 4, 4, 0]} maxBarSize={16}>
-            <LabelList dataKey="corderos" position="right" content={etiquetaDeBarra(m.etapas)} />
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-      </div>
+      <BarrasHorizontales
+        color={c.error}
+        filas={m.etapas.map((e) => ({
+          etiqueta: e.etiqueta,
+          valor: e.corderos,
+          porcentaje: e.porcentaje,
+        }))}
+      />
       <p className="pie-tablero">{m.muertos} de {m.nacidos} nacidos</p>
     </Tarjeta>
   );
