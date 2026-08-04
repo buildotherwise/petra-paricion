@@ -1002,19 +1002,18 @@
    x sin calcular un solo píxel. Es lo que dentro del SVG obligaba a
    reconstruir la escala a mano desde el ancho de cada barra. */
 .barras-h {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  justify-content: space-evenly;
-  gap: 0.5rem;
-  margin-top: 0.625rem;
-}
-
-.barras-h .fila-h {
+  /* UNA grilla para todas las filas, no una por fila: las columnas se miden
+     una sola vez y compartida, que es lo que hace que las barras arranquen
+     todas en la misma x. Con una grilla por fila, la etiqueta más larga corre
+     su propia barra y las demás no. */
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 0.625rem;
+  align-content: space-evenly;
+  flex: 1;
+  column-gap: 0.625rem;
+  row-gap: 0.5rem;
+  margin-top: 0.625rem;
 }
 
 .barras-h .et {

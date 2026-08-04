@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from 'react';
+import { Fragment, useMemo, type ReactNode } from 'react';
 import {
   Bar,
   BarChart,
@@ -224,9 +224,16 @@ const GLOBO = {
  * cero esa cuenta ni siquiera se puede hacer.
  *
  * Una grilla de tres columnas lo resuelve por construcción: `auto 1fr auto`
- * hace que la última se mida por el texto más ancho y todas las cifras empiecen
- * en el mismo lugar. Para tres o cuatro barras sin eje ni escala visible, una
+ * hace que la primera se mida por la etiqueta más larga y la última por la
+ * cifra más ancha, así que las barras arrancan todas en la misma x y las
+ * cifras también. Para tres o cuatro barras sin eje ni escala visible, una
  * librería de gráficos no estaba aportando nada.
+ *
+ * **Las celdas son hijas directas de la grilla, sin un div por fila.** Con una
+ * grilla por fila cada una mide sus columnas por su cuenta: «Únicos» es más
+ * corto que «Trillizos» y las barras arrancan escalonadas. Que las cifras
+ * parezcan alineadas en ese caso es casualidad de que los textos midan lo
+ * mismo, no alineación.
  */
 function BarrasHorizontales({
   filas,
@@ -242,7 +249,7 @@ function BarrasHorizontales({
   return (
     <div className="barras-h">
       {filas.map((f) => (
-        <div key={f.etiqueta} className="fila-h">
+        <Fragment key={f.etiqueta}>
           <span className="et">{f.etiqueta}</span>
           <span className="pista">
             <span
@@ -253,7 +260,7 @@ function BarrasHorizontales({
           <span className="val">
             <b>{f.valor}</b> · {pct(f.porcentaje)}
           </span>
-        </div>
+        </Fragment>
       ))}
     </div>
   );
