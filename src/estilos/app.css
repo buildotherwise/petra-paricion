@@ -639,9 +639,15 @@
    animal, es información derivada. Por eso el oro suave del fondo y nada
    más. El estado de aviso sí toma el ámbar semántico, que es el que ya
    significa «mirá esto» en toda la app. */
+/* Los dos márgenes son distintos a propósito: pegado a la fecha, separado de
+   lo que sigue. El padre se deriva de esa fecha —si cambia, cambia con ella—
+   y la cercanía es lo que lo dice sin escribirlo. Abajo lleva el --sp-5 con
+   el que .campo separa una sección de la otra, porque la condición corporal
+   es otra pregunta. */
 .padre {
   margin-top: var(--sp-3);
-  padding: var(--sp-3) var(--sp-3);
+  margin-bottom: var(--sp-5);
+  padding: var(--sp-3);
   border-radius: var(--r-medio);
   background: rgba(140, 122, 46, 0.1);
   box-shadow: inset 0 0 0 1px rgba(140, 122, 46, 0.22);
