@@ -95,6 +95,7 @@ export function BuscadorCaravana({
     return (
       <AltaManual
         inicial={consulta}
+        existentes={ovejas}
         onCancelar={() => setAltaManual(false)}
         onCreada={onElegir}
       />
@@ -216,33 +217,50 @@ export function BuscadorCaravana({
  */
 function AltaManual({
   inicial,
+  existentes,
   onCancelar,
   onCreada,
 }: {
   inicial: string;
+  /** Las ovejas ya cargadas en la temporada, para frenar el duplicado acá.
+      Sin este freno, el `unique (temporada, caravana)` del servidor lo rechaza
+      igual — pero recién en la bandeja de rechazos, con la oveja ya lejos. */
+  existentes: readonly Fila[];
   onCancelar: () => void;
   onCreada: (oveja: OvejaElegida) => void;
 }) {
   const usuarioId = useUsuarioId();
   const [caravana, setCaravana] = useState(inicial);
   const [creando, setCreando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const limpia = caravana.trim();
+  const repetida = existentes.some((o) => o.caravana === limpia);
 
   async function crear() {
-    const limpia = caravana.trim();
-    if (limpia === '') return;
+    if (limpia === '' || repetida) return;
     setCreando(true);
+    setError(null);
 
-    const id = crypto.randomUUID();
-    const ahora = new Date().toISOString();
+    try {
+      const id = crypto.randomUUID();
+      const ahora = new Date().toISOString();
 
-    await db.execute(
-      `INSERT INTO ovejas
-         (id, temporada, caravana, precargada, creado_en, actualizado_en, actualizado_por, dispositivo)
-       VALUES (?, ?, ?, 0, ?, ?, ?, ?)`,
-      [id, entorno.temporada, limpia, ahora, ahora, usuarioId, dispositivo()],
-    );
+      await db.execute(
+        `INSERT INTO ovejas
+           (id, temporada, caravana, precargada, creado_en, actualizado_en, actualizado_por, dispositivo)
+         VALUES (?, ?, ?, 0, ?, ?, ?, ?)`,
+        [id, entorno.temporada, limpia, ahora, ahora, usuarioId, dispositivo()],
+      );
 
-    onCreada({ id, caravana: limpia });
+      onCreada({ id, caravana: limpia });
+    } catch (falla) {
+      // Escribir en la réplica local casi no puede fallar — pero si falla, un
+      // botón muerto sin explicación es la peor respuesta posible con la
+      // oveja delante.
+      setError(falla instanceof Error ? falla.message : 'No se pudo guardar la oveja.');
+      setCreando(false);
+    }
   }
 
   return (
@@ -264,10 +282,23 @@ function AltaManual({
         onChange={(e) => setCaravana(e.target.value)}
       />
 
-      <p className="aviso aviso--atencion" style={{ marginTop: 'var(--sp-3)' }}>
-        Escribila tal cual figura en la caravana. Queda marcada para revisar desde la web
-        antes de cerrar la temporada.
-      </p>
+      {repetida ? (
+        <p className="aviso aviso--atencion" style={{ marginTop: 'var(--sp-3)' }}>
+          La caravana <strong>{limpia}</strong> ya está en la lista de la temporada. Volvé al
+          buscador y elegila de ahí.
+        </p>
+      ) : (
+        <p className="aviso aviso--atencion" style={{ marginTop: 'var(--sp-3)' }}>
+          Escribila tal cual figura en la caravana. Queda marcada para revisar desde la web
+          antes de cerrar la temporada.
+        </p>
+      )}
+
+      {error !== null && (
+        <p className="aviso aviso--error" style={{ marginTop: 'var(--sp-3)' }} role="alert">
+          {error}
+        </p>
+      )}
 
       <div style={{ display: 'flex', gap: 'var(--sp-2)' }}>
         <button
@@ -283,7 +314,7 @@ function AltaManual({
           className="boton boton--principal"
           style={{ flex: 1 }}
           onClick={crear}
-          disabled={creando || caravana.trim() === ''}
+          disabled={creando || limpia === '' || repetida}
         >
           Agregar
         </button>
