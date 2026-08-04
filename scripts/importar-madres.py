@@ -117,21 +117,25 @@ def insertar(caravanas: list[str], temporada: int) -> None:
     ]
 
     pedido = urllib.request.Request(
-        # Upsert: correr el importador dos veces no duplica ni falla.
+        # Upsert que NO toca lo existente: correr el importador dos veces no
+        # duplica ni falla. `ignore-duplicates` y no `merge-duplicates` a
+        # propósito — merge pisaba `precargada = true` en una oveja dada de
+        # alta a mano en el campo (R9), sacándola del panel de revisión sin
+        # dejar rastro en la auditoría. Mismo criterio que importar-servicios.
         f"{url}/rest/v1/ovejas?on_conflict=temporada,caravana",
         data=json.dumps(filas).encode(),
         headers={
             "apikey": clave,
             "Authorization": f"Bearer {clave}",
             "Content-Type": "application/json",
-            "Prefer": "resolution=merge-duplicates,return=minimal",
+            "Prefer": "resolution=ignore-duplicates,return=minimal",
             "User-Agent": "petra-paricion/importador",
         },
         method="POST",
     )
     try:
         with urllib.request.urlopen(pedido, timeout=120) as r:
-            print(f"\n  insertadas/actualizadas: {len(filas)}  (HTTP {r.status})")
+            print(f"\n  enviadas: {len(filas)} — las ya existentes no se tocan  (HTTP {r.status})")
     except urllib.error.HTTPError as e:
         raise SystemExit(f"\n  ✗ HTTP {e.code}\n{e.read().decode(errors='replace')[:900]}")
 

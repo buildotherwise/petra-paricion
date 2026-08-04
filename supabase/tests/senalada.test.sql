@@ -162,10 +162,10 @@ end $$;
 -- su tatuaje, que es un animal que existe y está marcado— que además murió.
 -- Poner `estado = 'muerto'` borraría el tatuaje del relato.
 --
--- La base ya lo permite sin ninguna migración, porque con `condicion = 'vivo'`
--- la primera rama de `muerte_documentada` es verdadera. Eso es una casualidad
--- afortunada del esquema, no una decisión que alguien haya escrito — así que se
--- fija acá antes de que la web dependa de ella.
+-- Desde 0017 `muerte_documentada` exige la pareja completa también acá: la
+-- fecha sin causa entraba por una casualidad del esquema (con `condicion =
+-- 'vivo'` la primera rama era verdadera), y el análisis de mortalidad se
+-- quedaba sin la variable que justifica pedir la causa.
 --
 -- CONSECUENCIA para las vistas de métricas de la tanda 2: la mortalidad se
 -- cuenta con `fecha_muerte is not null`, NUNCA con `estado = 'muerto'`. Con
@@ -174,9 +174,10 @@ end $$;
 
 do $$
 declare
-  c  record;
-  r  record;
-  ok int := 0;
+  c     record;
+  r     record;
+  fallo boolean;
+  ok    int := 0;
 begin
   select * into c from ctx;
 
@@ -216,7 +217,19 @@ begin
   end if;
   ok := ok + 1;
 
-  raise notice 'muerte de un señalado: %/5 OK', ok;
+  -- La otra mitad de la regla (0017): la fecha de muerte no puede quedar sin
+  -- causa, tampoco en un señalado. Antes esto entraba.
+  fallo := false;
+  begin
+    update corderos set causa_muerte = null where id = c.cordero_a;
+  exception when check_violation then fallo := true;
+  end;
+  if not fallo then
+    raise exception 'muerte_documentada: quedó una fecha de muerte sin causa';
+  end if;
+  ok := ok + 1;
+
+  raise notice 'muerte de un señalado: %/6 OK', ok;
 end $$;
 
 -- ---------------------------------------------------------------------------
