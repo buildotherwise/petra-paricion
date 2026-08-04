@@ -308,6 +308,10 @@ function Resumen({ temporada }: { temporada: number }) {
 function Avance({ temporada, c }: { temporada: number; c: Colores }) {
   const estado = useConsultaOnline(avanceParicion(temporada), [temporada], 'el avance');
   const serie = useMemo(() => serieAvance(estado.datos), [estado.datos]);
+  // Solo para saber si ya hay servicios contra los que comparar. El porcentaje
+  // de avance vive en «La temporada»: repetirlo acá era decir el mismo número
+  // dos veces en la misma pantalla, y con denominadores distintos —inseminadas
+  // contra rodeo— dos números casi iguales invitan a buscar la diferencia.
   const resumen = useMemo(() => resumenAvance(estado.datos), [estado.datos]);
 
   return (
@@ -315,14 +319,6 @@ function Avance({ temporada, c }: { temporada: number; c: Colores }) {
       ancha
       titulo="Avance de la parición"
       porque="Partos por día, contra lo esperado según gestación 145–155"
-      cifra={
-        <>
-          {pct(resumen.porcentaje)}{' '}
-          <small>
-            · {resumen.paridas} de {resumen.inseminadas}
-          </small>
-        </>
-      }
       estado={estado}
       vacio={
         serie.length === 0
