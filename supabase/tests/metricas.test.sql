@@ -161,6 +161,15 @@ begin
     raise exception 'D: sin servicios no hay padre (candidatos %, padre %)',
       r.candidatos, r.padre;
   end if;
+  -- Y tampoco hay gestación. Parece obvio y no lo es: `greatest` y `least`
+  -- IGNORAN los nulos en Postgres, así que `greatest(null, 145)` da 145 — la
+  -- vista informaba una gestación de [145,155] para partos sin ningún servicio
+  -- compatible. Números inventados con cara de medidos, en la única vista cuyo
+  -- propósito es no inventar nada.
+  if r.gestacion_min is not null or r.gestacion_max is not null then
+    raise exception 'D: sin servicio no hay gestación que informar (salió [%, %])',
+      r.gestacion_min, r.gestacion_max;
+  end if;
   ok := ok + 1;
 
   -- 1.5. Y un parto que no cae en ninguna ventana: tampoco se adivina «el más
@@ -169,6 +178,18 @@ begin
   if r.candidatos <> 0 or r.padre is not null then
     raise exception 'E: un parto fuera de toda ventana no tiene padre (candidatos %, padre %)',
       r.candidatos, r.padre;
+  end if;
+  if r.gestacion_min is not null then
+    raise exception 'E: fuera de la ventana tampoco hay gestación (salió %)', r.gestacion_min;
+  end if;
+  ok := ok + 1;
+
+  -- 1.5.b Y con paternidad ambigua, lo mismo: dos servicios compatibles no dan
+  --       «la gestación», dan dos gestaciones posibles y ninguna es la buena.
+  select * into r from v_paternidad where parto_id = c.parto_b;
+  if r.gestacion_min is not null or r.gestacion_max is not null then
+    raise exception 'B: con dos candidatos no hay una gestación (salió [%, %])',
+      r.gestacion_min, r.gestacion_max;
   end if;
   ok := ok + 1;
 
@@ -179,7 +200,7 @@ begin
   end if;
   ok := ok + 1;
 
-  raise notice 'métricas · paternidad: %/6 OK', ok;
+  raise notice 'métricas · paternidad: %/7 OK', ok;
 end $$;
 
 -- ---------------------------------------------------------------------------
