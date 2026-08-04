@@ -82,6 +82,14 @@ export interface FilaCondicion {
   partos: number;
 }
 
+export interface FilaResumen {
+  temporada: number;
+  ovejas: number;
+  ovejas_paridas: number;
+  corderos_nacidos: number;
+  corderos_senalados: number;
+}
+
 /** Un porcentaje que no explota cuando todavía no hay de qué. */
 function porciento(parte: number, total: number): number {
   return total > 0 ? (parte / total) * 100 : 0;
@@ -152,25 +160,86 @@ export function serieAvance(filas: readonly FilaAvance[]): PuntoAvance[] {
 const CATEGORIA: Record<number, string> = { 1: 'Únicos', 2: 'Mellizos', 3: 'Trillizos' };
 
 export interface DistribucionTipos {
-  barras: { etiqueta: string; tipo: number; partos: number; corderos: number }[];
+  barras: {
+    etiqueta: string;
+    tipo: number;
+    partos: number;
+    corderos: number;
+    porcentaje: number;
+  }[];
   partos: number;
+  /** Partos de dos o más. Es el numerador de la mellicería, y se muestra: un
+   *  porcentaje sin su fracción obliga a confiar en vez de a entender. */
+  multiples: number;
   melliceria: number;
 }
 
 export function distribucionTipos(filas: readonly FilaTipoNacimiento[]): DistribucionTipos {
-  const barras = [...filas]
-    .sort((a, b) => a.tipo_nacimiento - b.tipo_nacimiento)
-    .map((f) => ({
-      etiqueta: CATEGORIA[f.tipo_nacimiento] ?? nombreTipo(f.tipo_nacimiento),
-      tipo: f.tipo_nacimiento,
-      partos: f.partos,
-      corderos: f.corderos,
-    }));
+  const ordenadas = [...filas].sort((a, b) => a.tipo_nacimiento - b.tipo_nacimiento);
+  const partos = ordenadas.reduce((n, f) => n + f.partos, 0);
 
-  const partos = barras.reduce((n, b) => n + b.partos, 0);
+  const barras = ordenadas.map((f) => ({
+    etiqueta: CATEGORIA[f.tipo_nacimiento] ?? nombreTipo(f.tipo_nacimiento),
+    tipo: f.tipo_nacimiento,
+    partos: f.partos,
+    corderos: f.corderos,
+    porcentaje: porciento(f.partos, partos),
+  }));
+
   const multiples = barras.filter((b) => b.tipo >= 2).reduce((n, b) => n + b.partos, 0);
 
-  return { barras, partos, melliceria: porciento(multiples, partos) };
+  return { barras, partos, multiples, melliceria: porciento(multiples, partos) };
+}
+
+// ---------------------------------------------------------------------------
+// 2.b Los dos números que se preguntan primero
+// ---------------------------------------------------------------------------
+
+export interface Resumen {
+  ovejas: number;
+  paridas: number;
+  porcentajeParidas: number;
+  nacidos: number;
+  senalados: number;
+  porcentajeSenalada: number;
+}
+
+/**
+ * Cuántas ovejas parieron, y cuántos corderos deja cada una.
+ *
+ * Dos aclaraciones sobre los denominadores, que es donde estos números se
+ * confunden con otros parecidos:
+ *
+ *  - `porcentajeParidas` va sobre el RODEO entero, no sobre las inseminadas.
+ *    El avance de la parición usa el otro denominador porque compara contra
+ *    ventanas de parto, y una oveja sin servicio no tiene ventana. En 2026 los
+ *    dos coinciden; el día que no, van a estar diciendo cosas distintas.
+ *  - `porcentajeSenalada` va sobre las ovejas PARIDAS y **puede pasar del
+ *    100 %**: mide cuántos corderos marcados deja cada oveja que parió, así que
+ *    con mellizos supera el 100 por definición. No es una tasa de
+ *    supervivencia — esa es v_mortalidad.
+ */
+export function resumenTemporada(filas: readonly FilaResumen[]): Resumen {
+  const f = filas[0];
+  if (f === undefined) {
+    return {
+      ovejas: 0,
+      paridas: 0,
+      porcentajeParidas: 0,
+      nacidos: 0,
+      senalados: 0,
+      porcentajeSenalada: 0,
+    };
+  }
+
+  return {
+    ovejas: f.ovejas,
+    paridas: f.ovejas_paridas,
+    porcentajeParidas: porciento(f.ovejas_paridas, f.ovejas),
+    nacidos: f.corderos_nacidos,
+    senalados: f.corderos_senalados,
+    porcentajeSenalada: porciento(f.corderos_senalados, f.ovejas_paridas),
+  };
 }
 
 // ---------------------------------------------------------------------------

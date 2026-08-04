@@ -423,4 +423,47 @@ begin
   raise notice 'métricas · las otras cuatro vistas: %/5 OK', ok;
 end $$;
 
+-- ---------------------------------------------------------------------------
+-- 5. v_resumen_temporada: los dos números que se preguntan primero.
+-- ---------------------------------------------------------------------------
+
+do $$
+declare
+  r  record;
+  ok int := 0;
+begin
+  select * into r from v_resumen_temporada where temporada = 2026;
+
+  -- 5.1. Las ovejas de la temporada, hayan parido o no. La F fue servida y
+  --      todavía no parió; la D parió sin haber sido servida (alta manual R9).
+  --      Las seis cuentan: el denominador es el rodeo, no la lista de servicios.
+  if r.ovejas <> 6 then
+    raise exception 'la temporada tiene 6 ovejas, la vista dice %', r.ovejas;
+  end if;
+  ok := ok + 1;
+
+  -- 5.2. Paridas: cinco de las seis.
+  if r.ovejas_paridas <> 5 then
+    raise exception 'parieron 5 ovejas, la vista dice %', r.ovejas_paridas;
+  end if;
+  ok := ok + 1;
+
+  -- 5.3. Nacidos, sin anulados.
+  if r.corderos_nacidos <> 7 then
+    raise exception 'nacieron 7 corderos, la vista dice %', r.corderos_nacidos;
+  end if;
+  ok := ok + 1;
+
+  -- 5.4. Señalados. Es el numerador del «% de señalada», que se mide contra
+  --      las ovejas PARIDAS y no contra los corderos nacidos: la pregunta es
+  --      cuántos corderos deja cada oveja que parió, así que puede pasar del
+  --      100 % y eso no es un error — son los mellizos.
+  if r.corderos_senalados <> 1 then
+    raise exception 'hay 1 cordero señalado, la vista dice %', r.corderos_senalados;
+  end if;
+  ok := ok + 1;
+
+  raise notice 'métricas · resumen de la temporada: %/4 OK', ok;
+end $$;
+
 rollback;

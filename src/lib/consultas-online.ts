@@ -9,6 +9,7 @@ import type {
   FilaPendientes,
   FilaPeso,
   FilaPrevalencia,
+  FilaResumen,
   FilaTipoNacimiento,
 } from './tablero';
 
@@ -217,3 +218,6 @@ export const prevalenciasFenotipicas = (temporada: number) =>
 
 export const condicionCorporal = (temporada: number) =>
   deLaVista<FilaCondicion>('v_condicion_corporal', temporada, 'condicion_corporal');
+
+export const resumenDeLaTemporada = (temporada: number) =>
+  deLaVista<FilaResumen>('v_resumen_temporada', temporada);

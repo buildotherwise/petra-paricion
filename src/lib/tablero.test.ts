@@ -7,6 +7,7 @@ import {
   pesosPorSexoYTipo,
   prevalenciaDe,
   resumenAvance,
+  resumenTemporada,
   serieAvance,
   tasasMortalidad,
   type FilaAvance,
@@ -15,6 +16,7 @@ import {
   type FilaPendientes,
   type FilaPeso,
   type FilaPrevalencia,
+  type FilaResumen,
   type FilaTipoNacimiento,
 } from './tablero';
 
@@ -112,14 +114,73 @@ describe('distribucionTipos: únicos, mellizos y trillizos', () => {
 
   test('la mellicería es el porcentaje de partos de dos o más', () => {
     // 38 de 96 partos.
-    expect(distribucionTipos(filas).melliceria).toBeCloseTo(39.58, 1);
+    const d = distribucionTipos(filas);
+    expect(d.melliceria).toBeCloseTo(39.58, 1);
+    // Y se acompaña de su fracción, porque «50 %» sin denominador no dice de
+    // qué mitad se habla.
+    expect(d.multiples).toBe(38);
+  });
+
+  test('cada barra trae su porcentaje sobre el total de partos', () => {
+    const d = distribucionTipos(filas);
+    expect(d.barras[0]).toMatchObject({ etiqueta: 'Únicos', partos: 58 });
+    expect(d.barras[0]?.porcentaje).toBeCloseTo(60.42, 1);
+    expect(d.barras[2]?.porcentaje).toBeCloseTo(2.08, 1);
+    // Los tres porcentajes suman 100: es la misma torta repartida.
+    const suma = d.barras.reduce((n, b) => n + b.porcentaje, 0);
+    expect(suma).toBeCloseTo(100, 5);
   });
 
   test('sin partos, cero por ciento y no NaN', () => {
     const d = distribucionTipos([]);
     expect(d.melliceria).toBe(0);
     expect(d.partos).toBe(0);
+    expect(d.multiples).toBe(0);
     expect(d.barras).toEqual([]);
+  });
+});
+
+describe('resumenTemporada: los dos números que se preguntan primero', () => {
+  const fila: FilaResumen = {
+    temporada: 2026,
+    ovejas: 503,
+    ovejas_paridas: 96,
+    corderos_nacidos: 138,
+    corderos_senalados: 41,
+  };
+
+  test('el avance del rodeo va sobre las ovejas, no sobre las inseminadas', () => {
+    const r = resumenTemporada([fila]);
+    expect(r.paridas).toBe(96);
+    expect(r.ovejas).toBe(503);
+    expect(r.porcentajeParidas).toBeCloseTo(19.09, 1);
+  });
+
+  test('el % de señalada se mide contra las paridas y puede pasar de 100', () => {
+    // 41 señalados sobre 96 paridas.
+    expect(resumenTemporada([fila]).porcentajeSenalada).toBeCloseTo(42.71, 1);
+
+    // Con mellicería alta el número supera el 100 %, y eso es lo esperado: son
+    // los corderos que deja cada oveja parida, no una tasa de supervivencia.
+    const conMellizos = { ...fila, ovejas_paridas: 50, corderos_senalados: 87 };
+    expect(resumenTemporada([conMellizos]).porcentajeSenalada).toBeCloseTo(174, 0);
+  });
+
+  test('sin ninguna oveja parida no se divide por cero', () => {
+    const r = resumenTemporada([{ ...fila, ovejas_paridas: 0, corderos_senalados: 0 }]);
+    expect(r.porcentajeSenalada).toBe(0);
+    expect(r.porcentajeParidas).toBe(0);
+  });
+
+  test('sin filas, todo en cero: la vista no devuelve nada con la base vacía', () => {
+    expect(resumenTemporada([])).toEqual({
+      ovejas: 0,
+      paridas: 0,
+      porcentajeParidas: 0,
+      nacidos: 0,
+      senalados: 0,
+      porcentajeSenalada: 0,
+    });
   });
 });
 

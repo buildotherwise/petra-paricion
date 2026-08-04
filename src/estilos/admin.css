@@ -925,3 +925,30 @@
   color: var(--tinta);
   font-variant-numeric: tabular-nums;
 }
+
+/* Las dos cifras de «La temporada»: se leen juntas, así que van en la misma
+   tarjeta y no en dos. La segunda lleva su aclaración al pie porque puede
+   pasar del 100 % y sin explicación parecería un error. */
+.par-cifras {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  margin-top: 0.625rem;
+}
+
+.par-cifras > div + div {
+  padding-top: 0.875rem;
+  border-top: 1px solid var(--linea);
+}
+
+.par-cifras .etiqueta-tablero {
+  margin: 0 0 0.25rem;
+}
+
+.par-cifras .cifra-grande {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 29px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}

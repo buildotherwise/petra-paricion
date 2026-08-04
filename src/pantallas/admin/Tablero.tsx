@@ -4,6 +4,7 @@ import {
   BarChart,
   CartesianGrid,
   ComposedChart,
+  LabelList,
   Line,
   ResponsiveContainer,
   Tooltip,
@@ -16,6 +17,7 @@ import {
   mortalidad,
   pesoAlNacer,
   prevalenciasFenotipicas,
+  resumenDeLaTemporada,
   senaladasPendientes,
   tipoDeNacimiento,
   useConsultaOnline,
@@ -31,6 +33,7 @@ import {
   pesosPorSexoYTipo,
   prevalenciaDe,
   resumenAvance,
+  resumenTemporada,
   serieAvance,
   tasasMortalidad,
 } from '../../lib/tablero';
@@ -85,6 +88,10 @@ export default function Tablero() {
 
   return (
     <div className="admin-tablero">
+      {/* Las dos primeras contestan las dos preguntas que abren cualquier
+          conversación sobre la temporada, así que van antes que los gráficos:
+          quien entra a mirar «cómo viene» las tiene sin buscar. */}
+      <Resumen temporada={temporada} />
       <Avance temporada={temporada} c={c} />
       <Pendientes temporada={temporada} c={c} />
       <Tipos temporada={temporada} c={c} />
@@ -189,6 +196,111 @@ const contando =
   (etiqueta: string) =>
   (v: unknown): [string, string] => [String(numeroDe(v)), etiqueta];
 
+/**
+ * El globo, con el texto en tinta y no en el color de la serie.
+ *
+ * Recharts pinta cada línea del globo con el color de su barra, y la barra de
+ * las hembras es champán: sobre el fondo blanco del globo quedaba ilegible. La
+ * regla general es que **el texto usa colores de texto**; el color de la serie
+ * lo lleva el cuadradito de al lado, que para eso está.
+ *
+ * El `cursor` también se baja: el gris por defecto de Recharts es un bloque que
+ * tapa media tarjeta para señalar una columna.
+ */
+const GLOBO = {
+  itemStyle: { color: '#2b2519', fontWeight: 600 },
+  labelStyle: { fontWeight: 800, color: '#2b2519' },
+  contentStyle: { borderRadius: 12, border: '1px solid #e0d9c4', fontSize: 12.5 },
+  cursor: { fill: 'rgba(43, 37, 25, 0.05)' },
+} as const;
+
+/**
+ * «58 · 60,4 %» al final de una barra horizontal.
+ *
+ * Va como `content` y no como un `formatter`, porque el porcentaje no está en
+ * el `dataKey` que la barra dibuja: se busca por índice en el arreglo que
+ * alimenta el gráfico.
+ */
+function etiquetaDeBarra(barras: readonly { porcentaje: number }[]) {
+  return function Etiqueta(props: unknown) {
+    const { x, y, width, height, value, index } = props as {
+      x: number; y: number; width: number; height: number; value: number; index: number;
+    };
+    const porcentaje = barras[index]?.porcentaje ?? 0;
+    return (
+      <text
+        x={x + width + 8}
+        y={y + height / 2}
+        dominantBaseline="central"
+        fontSize={11.5}
+        fontWeight={700}
+        fill="#5c5342"
+      >
+        {value}
+        <tspan fill="#9a9182"> · {pct(porcentaje)}</tspan>
+      </text>
+    );
+  };
+}
+
+// ---------------------------------------------------------------------------
+// 0 · Las dos preguntas de entrada
+// ---------------------------------------------------------------------------
+
+/**
+ * Cuántas ovejas parieron y cuántos corderos deja cada una.
+ *
+ * Dos cifras y ningún gráfico: son números que se miran, no series que se
+ * comparan. Comparten una sola consulta porque salen de la misma vista y de la
+ * misma pregunta —el estado del rodeo— y separarlas duplicaría el viaje para
+ * mostrar dos tarjetas que siempre se leen juntas.
+ */
+function Resumen({ temporada }: { temporada: number }) {
+  const estado = useConsultaOnline(
+    resumenDeLaTemporada(temporada),
+    [temporada],
+    'el resumen de la temporada',
+  );
+  const r = useMemo(() => resumenTemporada(estado.datos), [estado.datos]);
+
+  return (
+    <Tarjeta
+      titulo="La temporada"
+      porque="Sobre el rodeo entero, hayan sido servidas o no"
+      estado={estado}
+      vacio={r.ovejas === 0 ? { titulo: 'Sin ovejas', detalle: 'La temporada no tiene madres cargadas.' } : null}
+    >
+      <div className="par-cifras">
+        <div>
+          <p className="etiqueta-tablero">Ovejas paridas</p>
+          <p className="cifra-grande">
+            {pct(r.porcentajeParidas)}{' '}
+            <small>
+              · {r.paridas} de {r.ovejas}
+            </small>
+          </p>
+        </div>
+        <div>
+          <p className="etiqueta-tablero">Señalada</p>
+          <p className="cifra-grande">
+            {pct(r.porcentajeSenalada)}{' '}
+            <small>
+              · {r.senalados} señalados
+            </small>
+          </p>
+          {/* La aclaración no es un detalle: este número pasa del 100 % en
+              cuanto la mellicería empuja, y sin decir contra qué se mide
+              parecería un error de cálculo. */}
+          <p className="pie-tablero">
+            Corderos señalados por cada oveja que parió
+            {r.paridas > 0 && ` · ${r.paridas} paridas`}
+          </p>
+        </div>
+      </div>
+    </Tarjeta>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // 1 · Avance
 // ---------------------------------------------------------------------------
@@ -224,12 +336,13 @@ function Avance({ temporada, c }: { temporada: number; c: Colores }) {
           <XAxis dataKey="etiqueta" tick={EJE} tickLine={false} axisLine={{ stroke: c.linea }} minTickGap={44} />
           <YAxis tick={EJE} tickLine={false} axisLine={false} allowDecimals={false} />
           <Tooltip
+            {...GLOBO}
             formatter={(v: unknown, n: unknown): [string, string] =>
               n === 'esperados'
                 ? [coma(numeroDe(v)), 'Esperados']
                 : [String(numeroDe(v)), 'Partos']
             }
-            labelStyle={{ fontWeight: 800 }}
+           
           />
           <Bar dataKey="partos" name="partos" fill={c.marca} radius={[4, 4, 0, 0]} maxBarSize={14} />
           <Line
@@ -291,7 +404,7 @@ function Pendientes({ temporada, c }: { temporada: number; c: Colores }) {
         <BarChart data={p.barras} margin={{ top: 4, right: 4, bottom: 0, left: -24 }}>
           <XAxis dataKey="etiqueta" tick={EJE} tickLine={false} axisLine={{ stroke: c.linea }} minTickGap={28} />
           <YAxis tick={EJE} tickLine={false} axisLine={false} allowDecimals={false} width={38} />
-          <Tooltip formatter={contando('Sin señalar')} labelStyle={{ fontWeight: 800 }} />
+          <Tooltip {...GLOBO} formatter={contando('Sin señalar')} />
           <Bar dataKey="pendientes" fill={c.marca} radius={[4, 4, 0, 0]} maxBarSize={20} />
         </BarChart>
       </ResponsiveContainer>
@@ -315,21 +428,41 @@ function Tipos({ temporada, c }: { temporada: number; c: Colores }) {
   return (
     <Tarjeta
       titulo="Tipo de nacimiento"
-      porque="Sin contar anulados"
+      porque="Partos según cuántos corderos dieron, sin anulados"
+      // «50 % · mellizos o más» no decía de qué era la mitad. Con la fracción
+      // al lado —igual que el avance dice «6 de 503»— la cifra se explica sola:
+      // son partos múltiples sobre el total de partos.
       cifra={
         <>
-          {pct(d.melliceria)} <small>· mellizos o más</small>
+          {pct(d.melliceria)}{' '}
+          <small>
+            · {d.multiples} de {d.partos} partos múltiples
+          </small>
         </>
       }
       estado={estado}
       vacio={d.partos === 0 ? { titulo: 'Ninguno', detalle: 'Todavía no hay partos.' } : null}
     >
       <ResponsiveContainer width="100%" height={26 + d.barras.length * 30}>
-        <BarChart data={d.barras} layout="vertical" margin={{ top: 4, right: 30, bottom: 0, left: 0 }}>
+        <BarChart
+          data={d.barras}
+          layout="vertical"
+          margin={{ top: 4, right: 92, bottom: 0, left: 0 }}
+        >
           <XAxis type="number" hide />
           <YAxis type="category" dataKey="etiqueta" tick={EJE} tickLine={false} axisLine={false} width={68} />
-          <Tooltip formatter={contando('Partos')} labelStyle={{ fontWeight: 800 }} />
-          <Bar dataKey="partos" fill={c.marca} radius={[0, 4, 4, 0]} maxBarSize={16} />
+          <Tooltip {...GLOBO} formatter={contando('Partos')} />
+          <Bar dataKey="partos" fill={c.marca} radius={[0, 4, 4, 0]} maxBarSize={16}>
+            {/* El absoluto y el porcentaje juntos, al final de la barra: el
+                absoluto dice cuántos animales y el porcentaje dice qué peso
+                tiene ese número en la temporada. Cada uno sin el otro obliga a
+                una cuenta mental. */}
+            <LabelList
+              dataKey="partos"
+              position="right"
+              content={etiquetaDeBarra(d.barras)}
+            />
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
       <p className="pie-tablero">
@@ -373,7 +506,7 @@ function Mortalidad({ temporada, c }: { temporada: number; c: Colores }) {
         <BarChart data={barras} layout="vertical" margin={{ top: 4, right: 30, bottom: 0, left: 0 }}>
           <XAxis type="number" hide allowDecimals={false} />
           <YAxis type="category" dataKey="etiqueta" tick={EJE} tickLine={false} axisLine={false} width={104} />
-          <Tooltip formatter={contando('Corderos')} labelStyle={{ fontWeight: 800 }} />
+          <Tooltip {...GLOBO} formatter={contando('Corderos')} />
           <Bar dataKey="corderos" fill={c.error} radius={[0, 4, 4, 0]} maxBarSize={16} />
         </BarChart>
       </ResponsiveContainer>
@@ -410,11 +543,12 @@ function Pesos({ temporada, c }: { temporada: number; c: Colores }) {
           <XAxis dataKey="etiqueta" tick={EJE} tickLine={false} axisLine={{ stroke: c.linea }} />
           <YAxis tick={EJE} tickLine={false} axisLine={false} domain={[0, 'auto']} width={38} />
           <Tooltip
+            {...GLOBO}
             formatter={(v: unknown, n: unknown): [string, string] => [
               `${coma(numeroDe(v), 2)} kg`,
               n === 'macho' ? 'Machos' : 'Hembras',
             ]}
-            labelStyle={{ fontWeight: 800 }}
+           
           />
           {/* Machos en relleno pleno, hembras en champán con borde: la paleta no
               tiene un segundo tono que se distinga del oro, y el contraste de
@@ -476,7 +610,7 @@ function Condicion({ temporada, c }: { temporada: number; c: Colores }) {
         <BarChart data={h.barras} margin={{ top: 4, right: 4, bottom: 0, left: -24 }}>
           <XAxis dataKey="etiqueta" tick={EJE} tickLine={false} axisLine={{ stroke: c.linea }} interval={3} />
           <YAxis tick={EJE} tickLine={false} axisLine={false} allowDecimals={false} width={38} />
-          <Tooltip formatter={contando('Partos')} labelStyle={{ fontWeight: 800 }} />
+          <Tooltip {...GLOBO} formatter={contando('Partos')} />
           <Bar dataKey="partos" fill={c.marca} radius={[3, 3, 0, 0]} maxBarSize={18} />
         </BarChart>
       </ResponsiveContainer>
@@ -552,7 +686,7 @@ function Prevalencias({ temporada, c }: { temporada: number; c: Colores }) {
         <BarChart data={pigmentacion} margin={{ top: 4, right: 4, bottom: 0, left: -24 }}>
           <XAxis dataKey="etiqueta" tick={EJE} tickLine={false} axisLine={{ stroke: c.linea }} />
           <YAxis tick={EJE} tickLine={false} axisLine={false} allowDecimals={false} width={38} />
-          <Tooltip formatter={contando('Corderos')} labelStyle={{ fontWeight: 800 }} />
+          <Tooltip {...GLOBO} formatter={contando('Corderos')} />
           <Bar dataKey="corderos" fill={c.marca} radius={[3, 3, 0, 0]} maxBarSize={26} />
         </BarChart>
       </ResponsiveContainer>
