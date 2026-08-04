@@ -74,7 +74,7 @@ create table perfiles (
 
 **Cuentas y auditoría:** una cuenta por persona (recomendado, mejora la auditoría de `creado_por`/`actualizado_por`). La tablet compartida puede tener su propia cuenta (`tablet-campo`) si la usan varias personas indistintamente — decidirlo en la reunión operativa.
 
-**Sesiones y offline:** sesiones de larga duración con renovación automática de token al reconectar; en el campo la app nunca pide login. El único requisito es haber iniciado sesión una vez con conexión al instalar la app en el dispositivo.
+**Sesiones y offline:** sesiones de larga duración con renovación automática de token al reconectar; en el campo la app nunca pide login. El único requisito es haber iniciado sesión una vez con conexión al instalar la app en el dispositivo. Existe un **«Cerrar sesión»** al pie del inicio, discreto —para la tablet compartida y las pruebas con otras cuentas, no para el día a día—, con doble guarda: se bloquea con cargas sin subir y también con cargas rechazadas, porque `disconnectAndClear()` borra la réplica local entera y `subidas_rechazadas` es la última copia de esos datos. Si la sesión se cae con trabajo local adentro, la pantalla de login lo dice y pide entrar con la misma cuenta.
 
 **Dispositivo perdido o robado:** el admin desactiva la cuenta (`activo = false`) y revoca sus sesiones desde Supabase; el dispositivo pierde la capacidad de subir datos. Todo lo ya sincronizado está a salvo en el servidor; solo se perdería lo pendiente de subir en ese aparato (de nuevo: el indicador de pendientes es el hábito clave).
 
@@ -272,7 +272,7 @@ group by p.id, o.caravana;
 
 **Registros con error:** detrás de la pastilla roja del encabezado. Lista de cargas rechazadas por el servidor, con el motivo en castellano llano y todo lo que se había cargado. Quitar una de la lista **pierde datos a propósito** —es la última copia que queda— así que pasa por una confirmación que lo muestra por última vez. El historial de cambios NO está en el teléfono: `cambios` queda fuera de la replicación y su lectura es solo para admin (va en la web, §8).
 
-**Cómo viene la parición:** el tablero de la web (§9), montado como pantalla de campo — misma pieza, mismas ocho tarjetas, mismo chunk, con la escala tipográfica de campo y en una columna (`.tablero-campo` en `tablero.css`). Se entra por el pie de «Partos de hoy», **solo con rol admin**, y no tiene URL propia: la única entrada es ese link. El guard por rol va igual dentro de la pantalla (`TableroCampo.tsx`), porque `history.state` sobrevive al cambio de usuario en la tablet compartida. Es la única pantalla de la app de campo que necesita señal —las métricas son vistas de Postgres— y la bajada lo dice al entrar; su chunk queda fuera del precache, así que la primera apertura sin señal la ataja un ErrorBoundary con reintento en vez de dejar la app en blanco.
+**Cómo viene la parición:** el tablero de la web (§9), montado como pantalla de campo — misma pieza, mismas nueve tarjetas, mismo chunk, con la escala tipográfica de campo y en una columna (`.tablero-campo` en `tablero.css`). Se entra por el pie de «Partos de hoy», **solo con rol admin**, y no tiene URL propia: la única entrada es ese link. El guard por rol va igual dentro de la pantalla (`TableroCampo.tsx`), porque `history.state` sobrevive al cambio de usuario en la tablet compartida. Es la única pantalla de la app de campo que necesita señal —las métricas son vistas de Postgres— y la bajada lo dice al entrar; su chunk queda fuera del precache, así que la primera apertura sin señal la ataja un ErrorBoundary con reintento en vez de dejar la app en blanco.
 
 ## 8. Plataforma web (admin)
 
@@ -281,7 +281,7 @@ Misma app, vistas habilitadas por rol admin, pensada para escritorio con conexi�
 - Tablas de partos y corderos con filtros (fecha, estado, tipo de nacimiento, discrepancias) y edición con registro en `cambios`.
 - **Panel de revisión: ocho preguntas.** Las cinco de esta lista —ovejas de alta manual, discrepancias de sexo, collares duplicados, pesos fuera de rango, corderos sin señalar con más de 15 días— más tres que salieron de maquetar: **partos sin corderos** (la más importante: el conector descarta la transacción entera desde la operación que falla y el parto se inserta antes que sus corderos, así que es la única de las ocho sin falsos positivos), **marcas repetidas dentro de un parto** y **fechas de señalada imposibles**. Cada fila trae el contexto que la vuelve accionable —el tipo de parto al lado de un peso bajo, los hermanos al lado de una discrepancia, las precargadas parecidas al lado de un alta manual— y **el cero se muestra**: «ninguno» es una respuesta, y una lista vacía parece una consulta rota.
 - **Importación de servicios: no está en la web.** Es una carga que se hace **una vez** —no una por temporada; si el proyecto se reutiliza el año que viene, cómo entran los datos del año que viene se decide entonces—, así que vive en `scripts/importar-servicios.py`, hermano de `importar-madres.py`: openpyxl, `--dry-run` con informe antes de escribir, y `Prefer: resolution=ignore-duplicates` sobre el `unique` de la tabla, que hace inocuo reejecutarlo. Una pantalla usada una sola vez es mantenimiento sin uso: parser de xlsx en el navegador, seriales de fecha a mano y un chunk más fuera del precache. Una caravana que no cruza contra `ovejas` **se reporta y no se inserta**; las madres no se crean solas.
-- **Exportación** CSV/Excel: planilla plana de corderos con columnas equivalentes a los formularios Zoho históricos, más una exportación completa del modelo.
+- **Exportación** CSV/Excel: planilla plana de corderos con columnas equivalentes a los formularios Zoho históricos, más una exportación completa del modelo. Lleva además el **padre derivado** (`padre`, `cabana_padre`, `servicio_tipo`), que es lo único del archivo que llega del servidor —`v_paternidad` cuelga de `servicios`, que no se replica—; sin señal esas tres columnas van vacías y la pantalla lo avisa.
 - **Historial de cambios** al pie de cada ficha, y solo en la web: `cambios` sigue fuera de la replicación, así que es lo único que la web admin lee por internet.
 - **Correcciones que el teléfono no hace:** la fecha de la señalada, la muerte de un cordero ya señalado (sin tocar `estado`) y deshacer una anulación.
 - Sección de **Dashboards** integrada (ver §9).
@@ -309,6 +309,7 @@ Tarjetas del dashboard:
 5. Señaladas pendientes (conteo y antigüedad).
 6. Prevalencias fenotípicas: entropión, pigmentación, halo hair, canela, lunar.
 7. Distribución de condición corporal de las madres.
+8. Paternidad: **partos** por padre derivado —no corderos: los mellizos comparten padre por construcción y contarlos inflaría la mellicería en un gráfico de carneros— con los casos sin padre (0 o 2+ candidatos) al pie, con su caravana, porque son los que se miran a mano.
 
 ## 10. Plan de iteraciones (temporada arranca en días)
 

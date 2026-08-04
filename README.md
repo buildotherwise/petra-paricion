@@ -10,12 +10,12 @@ formularios de Zoho. La especificación funcional completa está en
 |---|---|
 | ✅ Esquema, RLS y auditoría | **aplicados en el proyecto**; 22 aserciones verdes en local y privilegios verificados en producción |
 | ✅ Rol `powersync_role` | creado, con `REPLICATION BYPASSRLS` y sin acceso a `cambios` |
-| ✅ Reglas de negocio | R1–R14 como funciones puras, con 225 tests |
+| ✅ Reglas de negocio | R1–R14 como funciones puras; 285 tests en la suite |
 | ✅ App PWA | registro de parto, fichas, corrección, muerte, nodriza, anulación y rechazados |
 | ✅ Instancia de PowerSync | replicando por IPv6; slot activo y WAL al día |
 | ✅ Las 503 madres | importadas y verificadas contra el archivo original |
 | ✅ Deploy en Vercel | desde `main`, con los headers de caché del service worker |
-| ✅ Protocolo §11 | corrido en dispositivos reales |
+| ⏳ Protocolo §11 | corrido en Fase 1; falta repetirlo sobre el código final antes del día 1 |
 | ✅ Auditoría por campo | en uso: cada edición deja su diff en `cambios` |
 | ✅ **Fase 3** | señalada — buscador de pendientes, fenotipo, confirmación de sexo y tatuaje correlativo |
 | ⏳ Cuentas del equipo | quedan para el final, a pedido del usuario |
@@ -424,8 +424,13 @@ tests SQL —auditoría, anulación, señalada, servicios, métricas y vistas—
 toca el proyecto real.
 
 Antes del día 1 hay que correr además el **protocolo de sincronización** de
-CLAUDE.md §11, con los dispositivos reales. Es el criterio de salida de la
-Fase 1 y no es negociable.
+CLAUDE.md §11, con los dispositivos reales. Se corrió en Fase 1, pero desde
+entonces entraron la señalada, la edición, la anulación, la muerte, la web
+admin y el tablero — o sea casi todos los caminos de escritura—, así que hay
+que repetirlo sobre el código final. Es el criterio de salida y no es
+negociable. De paso: verificar que los iPhones del equipo estén en **iOS 16.4
+o más nuevo** (OPFS); un aparato más viejo ahora lo dice en pantalla en vez de
+fallar mudo, pero mejor saberlo antes.
 
 ---
 
