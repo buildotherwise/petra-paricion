@@ -815,6 +815,13 @@
 /* El cero y el error son dos cosas distintas y se ven distinto: «ninguna» es
    una respuesta, «sin conexión» es la ausencia de respuesta. */
 .vacio-tablero {
+  /* Crece como el gráfico al que reemplaza: una tarjeta cuya respuesta es
+     «ninguna» ocupa su lugar igual que una con datos. */
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   margin-top: 0.5625rem;
   padding: 0.75rem;
   border-radius: var(--r-medio);
@@ -963,4 +970,27 @@
   font-size: 29px;
   line-height: 1;
   font-variant-numeric: tabular-nums;
+}
+
+/* El gráfico crece para llenar la tarjeta.
+
+   Con las alturas igualadas por fila, una tarjeta baja se estira hasta su
+   vecina más alta y antes eso dejaba un hueco blanco al pie. Ahora el que
+   crece es el gráfico: el mínimo evita que se aplaste en una fila de tarjetas
+   cortas, y de ahí para arriba usa lo que haya. */
+.admin-tarjeta .grafico {
+  flex: 1;
+  min-height: 7rem;
+  margin-top: 0.5rem;
+}
+
+.admin-tarjeta--ancha .grafico {
+  min-height: 11rem;
+}
+
+/* La tarjeta de dos cifras reparte el aire entre ellas en vez de acumularlo
+   abajo: son dos bloques del mismo peso y la tarjeta es de los dos. */
+.par-cifras {
+  flex: 1;
+  justify-content: space-evenly;
 }

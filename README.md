@@ -304,6 +304,14 @@ supuesto que no es una medición, está comentado en
 El modelo anterior repartía parejo entre todos los servicios y predecía 127
 partos para la primera quincena de agosto donde correspondían 78.
 
+**Y la forma dentro de cada ventana tampoco es plana** (migración `0015`). La
+curva es la convolución de dos cosas: el día de concepción —puntual en una IA, y
+decreciente durante la encarnerada, porque cuando el carnero se suelta las ovejas
+que están por entrar en celo lo hacen enseguida y solo las que no quedaron
+preñadas repiten un ciclo después— y los días de gestación, triangulares entre
+145 y 155 con pico en 150. Sin eso la temporada terminaba en una meseta plana de
+tres semanas, y en octubre es justamente cuando menos corderos nacen.
+
 **La importación no tiene pantalla.** Es una carga que se hace *una vez*, no una
 por temporada. Una pantalla usada una sola vez cuesta un parser de xlsx en el
 navegador, los seriales de fecha convertidos a mano y un chunk más fuera del

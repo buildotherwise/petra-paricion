@@ -265,6 +265,35 @@ begin
   end if;
   ok := ok + 1;
 
+  -- 2.2.c La cola de la encarnerada BAJA. El carnero se suelta y las ovejas
+  --       que están por entrar en celo lo hacen en los primeros días; las que
+  --       no quedaron preñadas repiten un ciclo después, y son menos. Si la
+  --       concepción se repartiera pareja sobre toda la exposición, la curva
+  --       terminaría en una meseta plana de tres semanas — que es justo lo que
+  --       una parición real no hace.
+  --
+  --       La oveja C es la única con encarnerada, y en estos dos días es la
+  --       única que puede parir: el 30 de julio está al principio de su ventana
+  --       y el 16 de agosto casi al final.
+  declare
+    temprano numeric;
+    tarde    numeric;
+  begin
+    select esperados into temprano from v_avance_paricion
+     where temporada = 2026 and dia = date '2026-07-30';
+    select esperados into tarde from v_avance_paricion
+     where temporada = 2026 and dia = date '2026-08-16';
+
+    if temprano is null or tarde is null then
+      raise exception 'faltan días de la ventana de la encarnerada en la serie';
+    end if;
+    if temprano <= tarde then
+      raise exception 'la cola de la encarnerada no baja: 30-jul %, 16-ago % (¿concepción uniforme?)',
+        temprano, tarde;
+    end if;
+  end;
+  ok := ok + 1;
+
   -- 2.3. Los partos reales del día se cuentan todos —también el de la oveja
   --      de alta manual—, pero las PARIDAS del porcentaje solo cuentan
   --      inseminadas: si no, el avance podría pasar del 100 %.
@@ -286,7 +315,7 @@ begin
   end if;
   ok := ok + 1;
 
-  raise notice 'métricas · avance: %/6 OK', ok;
+  raise notice 'métricas · avance: %/7 OK', ok;
 end $$;
 
 -- ---------------------------------------------------------------------------

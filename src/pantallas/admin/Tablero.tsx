@@ -330,7 +330,8 @@ function Avance({ temporada, c }: { temporada: number; c: Colores }) {
           : null
       }
     >
-      <ResponsiveContainer width="100%" height={190}>
+      <div className="grafico">
+      <ResponsiveContainer width="100%" height="100%">
         <ComposedChart data={serie} margin={{ top: 8, right: 8, bottom: 0, left: -18 }}>
           <CartesianGrid stroke={c.linea} vertical={false} />
           <XAxis dataKey="etiqueta" tick={EJE} tickLine={false} axisLine={{ stroke: c.linea }} minTickGap={44} />
@@ -355,6 +356,7 @@ function Avance({ temporada, c }: { temporada: number; c: Colores }) {
           />
         </ComposedChart>
       </ResponsiveContainer>
+      </div>
       {/* Sin servicios cargados hay curva real pero no hay contra qué compararla,
           y el porcentaje dice «0 de 0» — que sin esta línea se lee como si nadie
           hubiera parido. Es el estado del primer día: los partos entran antes de
@@ -400,7 +402,8 @@ function Pendientes({ temporada, c }: { temporada: number; c: Colores }) {
           : null
       }
     >
-      <ResponsiveContainer width="100%" height={120}>
+      <div className="grafico">
+      <ResponsiveContainer width="100%" height="100%">
         <BarChart data={p.barras} margin={{ top: 4, right: 4, bottom: 0, left: -24 }}>
           <XAxis dataKey="etiqueta" tick={EJE} tickLine={false} axisLine={{ stroke: c.linea }} minTickGap={28} />
           <YAxis tick={EJE} tickLine={false} axisLine={false} allowDecimals={false} width={38} />
@@ -408,6 +411,7 @@ function Pendientes({ temporada, c }: { temporada: number; c: Colores }) {
           <Bar dataKey="pendientes" fill={c.marca} radius={[4, 4, 0, 0]} maxBarSize={20} />
         </BarChart>
       </ResponsiveContainer>
+      </div>
       {p.masViejaDias !== null && (
         <p className="pie-tablero">
           La más vieja espera hace <b>{p.masViejaDias} días</b>
@@ -432,7 +436,8 @@ function Tipos({ temporada, c }: { temporada: number; c: Colores }) {
       estado={estado}
       vacio={d.partos === 0 ? { titulo: 'Ninguno', detalle: 'Todavía no hay partos.' } : null}
     >
-      <ResponsiveContainer width="100%" height={26 + d.barras.length * 30}>
+      <div className="grafico">
+      <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={d.barras}
           layout="vertical"
@@ -454,6 +459,7 @@ function Tipos({ temporada, c }: { temporada: number; c: Colores }) {
           </Bar>
         </BarChart>
       </ResponsiveContainer>
+      </div>
       <p className="pie-tablero">
         {d.partos} partos · {d.barras.reduce((n, b) => n + b.corderos, 0)} corderos
       </p>
@@ -486,7 +492,8 @@ function Mortalidad({ temporada, c }: { temporada: number; c: Colores }) {
             : null
       }
     >
-      <ResponsiveContainer width="100%" height={110}>
+      <div className="grafico">
+      <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={m.etapas}
           layout="vertical"
@@ -500,6 +507,7 @@ function Mortalidad({ temporada, c }: { temporada: number; c: Colores }) {
           </Bar>
         </BarChart>
       </ResponsiveContainer>
+      </div>
       <p className="pie-tablero">{m.muertos} de {m.nacidos} nacidos</p>
     </Tarjeta>
   );
@@ -524,7 +532,8 @@ function Pesos({ temporada, c }: { temporada: number; c: Colores }) {
           : null
       }
     >
-      <ResponsiveContainer width="100%" height={150}>
+      <div className="grafico">
+      <ResponsiveContainer width="100%" height="100%">
         <BarChart data={barras} margin={{ top: 8, right: 4, bottom: 0, left: -22 }}>
           <CartesianGrid stroke={c.linea} vertical={false} />
           <XAxis dataKey="etiqueta" tick={EJE} tickLine={false} axisLine={{ stroke: c.linea }} />
@@ -553,6 +562,7 @@ function Pesos({ temporada, c }: { temporada: number; c: Colores }) {
           />
         </BarChart>
       </ResponsiveContainer>
+      </div>
       <div className="leyenda-tablero">
         <span>
           <i style={{ background: c.marca }} />
@@ -593,7 +603,8 @@ function Condicion({ temporada, c }: { temporada: number; c: Colores }) {
           : null
       }
     >
-      <ResponsiveContainer width="100%" height={120}>
+      <div className="grafico">
+      <ResponsiveContainer width="100%" height="100%">
         <BarChart data={h.barras} margin={{ top: 4, right: 4, bottom: 0, left: -24 }}>
           <XAxis dataKey="etiqueta" tick={EJE} tickLine={false} axisLine={{ stroke: c.linea }} interval={3} />
           <YAxis tick={EJE} tickLine={false} axisLine={false} allowDecimals={false} width={38} />
@@ -601,6 +612,7 @@ function Condicion({ temporada, c }: { temporada: number; c: Colores }) {
           <Bar dataKey="partos" fill={c.marca} radius={[3, 3, 0, 0]} maxBarSize={18} />
         </BarChart>
       </ResponsiveContainer>
+      </div>
       {h.sinDato > 0 && (
         <p className="pie-tablero">
           Sin dato: <b>{h.sinDato} partos</b>
@@ -669,7 +681,8 @@ function Prevalencias({ temporada, c }: { temporada: number; c: Colores }) {
       </div>
 
       <p className="etiqueta-tablero">Pigmentación</p>
-      <ResponsiveContainer width="100%" height={92}>
+      <div className="grafico">
+      <ResponsiveContainer width="100%" height="100%">
         <BarChart data={pigmentacion} margin={{ top: 4, right: 4, bottom: 0, left: -24 }}>
           <XAxis dataKey="etiqueta" tick={EJE} tickLine={false} axisLine={{ stroke: c.linea }} />
           <YAxis tick={EJE} tickLine={false} axisLine={false} allowDecimals={false} width={38} />
@@ -677,6 +690,7 @@ function Prevalencias({ temporada, c }: { temporada: number; c: Colores }) {
           <Bar dataKey="corderos" fill={c.marca} radius={[3, 3, 0, 0]} maxBarSize={26} />
         </BarChart>
       </ResponsiveContainer>
+      </div>
 
       <p className="pie-tablero">
         Halo hair <b>{halo?.corderos ?? 0}</b> · entropión <b>{entropion}</b>
