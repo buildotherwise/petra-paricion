@@ -285,32 +285,54 @@ en vez de asumir: con 0 o con 2+, el padre queda en `null`. Guardarlo como
 columna lo dejaría viejo apenas alguien corrigiera la fecha del parto, que es
 justamente una de las correcciones para las que existe la web.
 
-**La curva esperada usa los retornos al celo.** Cada oveja aporta exactamente 1,
-repartido entre sus días posibles — una oveja con tres servicios va a parir una
-vez, no tres —, y `sum(esperados) = inseminadas` está como aserción en
-`supabase/tests/metricas.test.sql`.
+**La curva esperada se lee de los retornos al celo, en los dos sentidos.** Una
+oveja se reinsemina porque volvió al celo, así que **de sus inseminaciones solo
+cuenta la última**: que exista una posterior prueba que la anterior falló. La
+encarnerada, en cambio, cuenta siempre — el carnero anda suelto con el lote y
+expone a todas, preñadas o no, así que su presencia no prueba nada sobre la IA.
 
-Pero el reparto no es parejo, y esa es la parte que costó ver. **De las
-inseminaciones de una oveja solo cuenta la última:** que exista una posterior
-prueba que la anterior falló, porque una oveja se reinsemina cuando vuelve al
-celo. La encarnerada, en cambio, cuenta siempre — el carnero anda suelto con el
-lote y expone a todas, preñadas o no, así que su presencia no prueba nada sobre
-la IA. Entre la última IA y el repaso el peso va 38/62, derivado de los propios
-retornos: de las 487 ovejas inseminadas, 313 volvieron al celo, o sea **35,7 %
-de preñez por inseminación**. El modelo entero, con la aritmética y el único
-supuesto que no es una medición, está comentado en
-`supabase/migrations/0014_curva_esperada_con_retornos.sql`.
+Lo que costó ver es la mitad simétrica: **no volver al celo también es una
+observación**. Si una oveja tuvo por delante otra tanda de inseminación y no
+entró, se la vio no volver, y eso es evidencia de que prendió. La `0014` le daba
+a esas 320 ovejas el mismo peso que a las 167 de la última tanda, donde no hubo
+ocasión de observar nada — y era circular, porque el parámetro se había estimado
+contando esos mismos retornos. Ahora hay un solo número medido, el retorno tras
+la primera IA (248 de 484, o sea 51,2 %), y de él salen las dos lecturas:
 
-El modelo anterior repartía parejo entre todos los servicios y predecía 127
-partos para la primera quincena de agosto donde correspondían 78.
+```
+p          = 1 − R/s                  preñez por inseminación
+w_novolvio = p / (p + (1−p)(1−s))     preñada, dado que no volvió al celo
+```
 
-**Y la forma dentro de cada ventana tampoco es plana** (migración `0015`). La
-curva es la convolución de dos cosas: el día de concepción —puntual en una IA, y
+`s` —cuán bien se detecta el celo— es lo único que no sale de los datos, y vive
+en un solo lugar de la vista para poder discutirlo. Con `s = 0,90` la primera
+quincena de agosto pasó de esperar 78 partos a esperar 150, y el repaso de 300 a
+108: casi el doble de error en las dos direcciones, que se compensaban en el
+total y por eso no saltaban a la vista.
+
+**Y la curva ya no supone que toda oveja servida pare.** Hasta la `0015` había
+tres lugares que reponían por normalización la preñez que los propios parámetros
+del modelo decían que no iba a existir, y `sum(esperados) = servidas` estaba como
+aserción del test: era el defecto, no la propiedad. Ahora los pesos son
+probabilidades sin condicionar, el total da unos 460 sobre 503 servidas, y la
+tarjeta lo dice — si no, la distancia entre las barras y la línea se lee como un
+atraso de la parición.
+
+**La forma dentro de cada ventana tampoco es plana** (migración `0015`). La curva
+es la convolución de dos cosas: el día de concepción —puntual en una IA, y
 decreciente durante la encarnerada, porque cuando el carnero se suelta las ovejas
 que están por entrar en celo lo hacen enseguida y solo las que no quedaron
-preñadas repiten un ciclo después— y los días de gestación, triangulares entre
-145 y 155 con pico en 150. Sin eso la temporada terminaba en una meseta plana de
-tres semanas, y en octubre es justamente cuando menos corderos nacen.
+preñadas repiten un ciclo después— y los días de gestación. Esa gestación va de
+**140 a 160 con pico en 150**: con la triangular angosta de la `0015` la tanda de
+marzo cerraba el 14 de agosto y la siguiente abría el 16, así que el 15 la curva
+valía exactamente cero y la línea del gráfico tocaba el eje como si faltaran
+datos. El modelo entero, con la aritmética y el barrido de `s`, está comentado en
+`supabase/migrations/0016_curva_esperada_sin_normalizar.sql`.
+
+Ojo con una asimetría deliberada: acá la gestación es ancha y en `v_paternidad`
+sigue siendo [145, 155]. Son preguntas opuestas — esta quiere colas porque sin
+ellas inventa ceros, y aquella quiere ser angosta porque ensancharla crea
+paternidades ambiguas.
 
 **La importación no tiene pantalla.** Es una carga que se hace *una vez*, no una
 por temporada. Una pantalla usada una sola vez cuesta un parser de xlsx en el

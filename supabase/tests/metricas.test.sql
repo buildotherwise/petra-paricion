@@ -10,8 +10,10 @@
 --   1. La paternidad se deriva o no se afirma. Cero servicios compatibles o más
 --      de uno dan `padre` null: un cordero con padre equivocado en un plantel
 --      de cabaña es peor que uno sin padre asignado.
---   2. La curva esperada no infla. Una oveja con tres servicios va a parir UNA
---      vez, así que su peso total en la curva es 1 y no 3.
+--   2. La curva esperada usa toda la evidencia y no la repone por
+--      normalización. Una oveja con tres servicios va a parir UNA vez y no
+--      tres; y a la que se vio no volver al celo se le cree, así que pesa más
+--      que aquella de la que no se sabe nada.
 --   3. La mortalidad se cuenta con `fecha_muerte`, nunca con `estado`. Es la
 --      consecuencia que senalada.test.sql dejó escrita para esta tanda.
 --
@@ -59,19 +61,33 @@ select oveja_d, 2026, 'TEST-M-D', usuario from ctx union all
 select oveja_e, 2026, 'TEST-M-E', usuario from ctx union all
 select oveja_f, 2026, 'TEST-M-F', usuario from ctx;
 
--- Los servicios. Las ventanas de parto que generan, para tener a mano:
---   A  IA 09-mar          → [01-ago, 11-ago]
---   B  IA 09-mar + 11-mar → [01-ago, 11-ago] y [03-ago, 13-ago]  (solapan)
---   C  encarnerada 01→15-mar → [24-jul, 17-ago]
---   E  IA 05-ene          → [30-may, 09-jun]
---   F  IA 09-mar          → [01-ago, 11-ago]
+-- Los servicios. Cada uno genera DOS ventanas, porque las dos vistas usan
+-- gestaciones distintas a propósito (el porqué está en la 0016): `v_paternidad`
+-- es angosta —[145, 155], prefiere no afirmar un padre— y la curva esperada es
+-- ancha —[140, 160], sin colas inventa ceros—.
+--
+--   A  IA 09-mar             paternidad [01-ago, 11-ago]   curva [27-jul, 16-ago]
+--   B  IA 09-mar + 11-mar    dos ventanas que solapan: paternidad ambigua
+--   C  encarnerada 01→15-mar paternidad [24-jul, 17-ago]   curva [19-jul, 22-ago]
+--   E  IA 05-ene             paternidad [30-may, 09-jun]   curva [25-may, 14-jun]
+--   F  IA 20-abr                                           curva [07-set, 27-set]
+--   E y F  encarnerada 20-may→10-jun                       curva [07-oct, 17-nov]
+--
+-- E y F son las que ejercitan el peso de la última IA: las dos tienen
+-- inseminación Y repaso, pero la de E cae en una tanda con otra después —se la
+-- vio no volver al celo— y la de F es la última tanda, donde no hay nada
+-- observado. Sus ventanas están aisladas de todo lo demás justamente para poder
+-- comparar los dos pesos en la sección 2. A y B, en cambio, no tienen repaso:
+-- son las «confirmadas preñadas» que pesan 1.
 insert into servicios (oveja_id, tipo, fecha_inicio, fecha_fin, padre, cabana)
 select oveja_a, 'inseminacion'::servicio_t, date '2026-03-09', date '2026-03-09', '3050', 'PETRA' from ctx union all
 select oveja_b, 'inseminacion',             date '2026-03-09', date '2026-03-09', '3020', 'PETRA' from ctx union all
 select oveja_b, 'inseminacion',             date '2026-03-11', date '2026-03-11', '4459', 'PETRA' from ctx union all
 select oveja_c, 'encarnerada',              date '2026-03-01', date '2026-03-15', '4459', 'PETRA POLL' from ctx union all
 select oveja_e, 'inseminacion',             date '2026-01-05', date '2026-01-05', '32',   'PETRA' from ctx union all
-select oveja_f, 'inseminacion',             date '2026-03-09', date '2026-03-09', '3050', 'PETRA' from ctx;
+select oveja_e, 'encarnerada',              date '2026-05-20', date '2026-06-10', '3020', 'PETRA' from ctx union all
+select oveja_f, 'inseminacion',             date '2026-04-20', date '2026-04-20', '3050', 'PETRA' from ctx union all
+select oveja_f, 'encarnerada',              date '2026-05-20', date '2026-06-10', '3020', 'PETRA' from ctx;
 
 insert into partos (id, oveja_id, fecha, condicion_corporal,
                     creado_por, actualizado_por, dispositivo)
@@ -204,34 +220,41 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------------
--- 2. v_avance_paricion: la curva esperada no infla.
+-- 2. v_avance_paricion: la curva esperada usa toda la evidencia.
 -- ---------------------------------------------------------------------------
 
 do $$
 declare
   total_esperado numeric;
-  n_inseminadas  int;
+  n_servidas     int;
   n_paridas      int;
   n              int;
   r              record;
   ok             int := 0;
 begin
-  -- 2.1. LA aserción de esta vista. Cada oveja pesa 1 en toda la temporada,
-  --      repartido entre sus días posibles: la oveja B tiene dos servicios y
-  --      no puede parir dos veces. Sin esto la curva esperada diría 1.359 y
-  --      el porcentaje de avance nunca llegaría a nada.
-  select sum(esperados), max(inseminadas)
-    into total_esperado, n_inseminadas
+  -- 2.1. La curva suma la PREÑEZ esperada, no las servidas.
+  --
+  --      Hasta la 0015 la aserción de acá era `sum(esperados) = servidas`, y
+  --      era el defecto y no la propiedad: obligaba a que toda oveja servida
+  --      pariera, reponiendo por normalización la preñez que los propios
+  --      parámetros del modelo decían que no iba a existir. Lo que sí sigue
+  --      valiendo es que una oveja con dos servicios no puede parir dos veces:
+  --      por eso el total tiene que quedar por debajo de las servidas.
+  --
+  --      El piso del 80 % es contra el otro error posible —una curva que se
+  --      desinfla— y el techo del 98 % es el mismo defecto viejo con otra cara.
+  select sum(esperados), max(servidas)
+    into total_esperado, n_servidas
     from v_avance_paricion where temporada = 2026;
 
-  if n_inseminadas <> 5 then
-    raise exception 'las inseminadas de la temporada deberían ser 5, son %', n_inseminadas;
+  if n_servidas <> 5 then
+    raise exception 'las servidas de la temporada deberían ser 5, son %', n_servidas;
   end if;
   ok := ok + 1;
 
-  if abs(total_esperado - n_inseminadas) > 0.01 then
-    raise exception 'la curva esperada suma % y debería sumar % (una oveja, un parto)',
-      total_esperado, n_inseminadas;
+  if total_esperado < n_servidas * 0.80 or total_esperado > n_servidas * 0.98 then
+    raise exception 'la curva suma % y con % servidas tendría que caer entre el 80 %% y el 98 %%',
+      total_esperado, n_servidas;
   end if;
   ok := ok + 1;
 
@@ -255,40 +278,87 @@ begin
 
   -- 2.2.b Una IA superada por otra NO aporta a la curva. La oveja B se
   --       inseminó el 9 y el 11 de marzo: que exista la segunda prueba que la
-  --       primera falló —volvió al celo—, así que su ventana empieza el 3 de
-  --       agosto y no el 1º. El 1º de agosto solo pueden parir A, C y F.
+  --       primera falló —volvió al celo—, así que su ventana empieza el 29 de
+  --       julio y no el 27. El 28 de julio solo pueden parir A y C; si la IA
+  --       descartada contara, B haría tres.
   select * into r from v_avance_paricion
-   where temporada = 2026 and dia = date '2026-08-01';
-  if r.en_ventana <> 3 then
-    raise exception 'el 1 de agosto podían parir 3 ovejas, la vista dice % (¿se está contando la IA que falló?)',
+   where temporada = 2026 and dia = date '2026-07-28';
+  if r.en_ventana <> 2 then
+    raise exception 'el 28 de julio podían parir 2 ovejas, la vista dice % (¿se está contando la IA que falló?)',
       r.en_ventana;
   end if;
   ok := ok + 1;
 
-  -- 2.2.c La cola de la encarnerada BAJA. El carnero se suelta y las ovejas
-  --       que están por entrar en celo lo hacen en los primeros días; las que
-  --       no quedaron preñadas repiten un ciclo después, y son menos. Si la
-  --       concepción se repartiera pareja sobre toda la exposición, la curva
-  --       terminaría en una meseta plana de tres semanas — que es justo lo que
-  --       una parición real no hace.
+  -- 2.2.c LA aserción de la 0016, la simétrica de la anterior: si volver al
+  --       celo prueba que la IA falló, no volver es evidencia de que prendió, y
+  --       tiene que pesar más que no saber nada.
   --
-  --       La oveja C es la única con encarnerada, y en estos dos días es la
-  --       única que puede parir: el 30 de julio está al principio de su ventana
-  --       y el 16 de agosto casi al final.
+  --       E y F tienen las dos inseminación y repaso. La IA de E está en una
+  --       tanda que tuvo otra después —se la vio no volver—; la de F es la
+  --       última tanda, donde no hubo ocasión de observar nada. Las dos
+  --       ventanas están aisladas del resto del fixture, así que cada uno de
+  --       estos días es de una sola oveja y los valores se comparan directo.
+  declare
+    con_evidencia numeric;
+    sin_evidencia numeric;
+  begin
+    select esperados into con_evidencia from v_avance_paricion
+     where temporada = 2026 and dia = date '2026-06-04';   -- pico de E: 05-ene + 150
+    select esperados into sin_evidencia from v_avance_paricion
+     where temporada = 2026 and dia = date '2026-09-17';   -- pico de F: 20-abr + 150
+
+    if con_evidencia is null or sin_evidencia is null then
+      raise exception 'faltan los picos de E o de F en la serie';
+    end if;
+    if con_evidencia <= sin_evidencia then
+      raise exception 'la que no volvió al celo pesa % y la de la última tanda % — el no-retorno se está tirando',
+        con_evidencia, sin_evidencia;
+    end if;
+  end;
+  ok := ok + 1;
+
+  -- 2.2.d La gestación tiene colas: [140, 160] y no [145, 155]. Es lo que evita
+  --       que la curva valga CERO entre dos tandas separadas quince días — con
+  --       la ventana angosta, en 2026 el 15 de agosto daba 0,000 y la línea del
+  --       gráfico tocaba el eje como si faltaran datos. La ventana de E está
+  --       sola, así que sus dos bordes se leen directo.
+  select esperados into total_esperado from v_avance_paricion
+   where temporada = 2026 and dia = date '2026-05-25';     -- 05-ene + 140
+  if coalesce(total_esperado, 0) <= 0 then
+    raise exception 'a los 140 días de gestación la curva ya debería ser positiva, dice %',
+      total_esperado;
+  end if;
+  select esperados into total_esperado from v_avance_paricion
+   where temporada = 2026 and dia = date '2026-06-14';     -- 05-ene + 160
+  if coalesce(total_esperado, 0) <= 0 then
+    raise exception 'a los 160 días de gestación la curva todavía debería ser positiva, dice %',
+      total_esperado;
+  end if;
+  ok := ok + 1;
+
+  -- 2.2.e La cola del repaso BAJA. El carnero se suelta y las ovejas que están
+  --       por entrar en celo lo hacen en los primeros días; las que no quedaron
+  --       preñadas repiten un ciclo después, y son menos. Si la concepción se
+  --       repartiera pareja sobre toda la exposición, la temporada terminaría
+  --       en una meseta plana de tres semanas — que es justo lo que una
+  --       parición real no hace.
+  --
+  --       La encarnerada de E y F va del 20 de mayo al 10 de junio y su ventana
+  --       [07-oct, 17-nov] no la comparte con ningún otro servicio.
   declare
     temprano numeric;
     tarde    numeric;
   begin
     select esperados into temprano from v_avance_paricion
-     where temporada = 2026 and dia = date '2026-07-30';
+     where temporada = 2026 and dia = date '2026-10-17';   -- 20-may + 150
     select esperados into tarde from v_avance_paricion
-     where temporada = 2026 and dia = date '2026-08-16';
+     where temporada = 2026 and dia = date '2026-11-07';   -- 10-jun + 150
 
     if temprano is null or tarde is null then
-      raise exception 'faltan días de la ventana de la encarnerada en la serie';
+      raise exception 'faltan días de la ventana del repaso en la serie';
     end if;
     if temprano <= tarde then
-      raise exception 'la cola de la encarnerada no baja: 30-jul %, 16-ago % (¿concepción uniforme?)',
+      raise exception 'la cola del repaso no baja: 17-oct %, 07-nov % (¿concepción uniforme?)',
         temprano, tarde;
     end if;
   end;
@@ -315,7 +385,7 @@ begin
   end if;
   ok := ok + 1;
 
-  raise notice 'métricas · avance: %/7 OK', ok;
+  raise notice 'métricas · avance: %/9 OK', ok;
 end $$;
 
 -- ---------------------------------------------------------------------------

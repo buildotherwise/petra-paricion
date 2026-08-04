@@ -40,7 +40,8 @@ const avance = (filas: Partial<FilaAvance>[]): FilaAvance[] =>
     partos_acumulados: 0,
     esperados_acumulados: 0,
     paridas_acumuladas: 0,
-    inseminadas: 503,
+    servidas: 503,
+    esperados_temporada: 460.3,
     ...f,
   }));
 
@@ -53,17 +54,37 @@ describe('resumenAvance: el porcentaje grande', () => {
       ]),
     );
     expect(r.paridas).toBe(96);
-    expect(r.inseminadas).toBe(503);
+    expect(r.servidas).toBe(503);
     expect(r.porcentaje).toBeCloseTo(19.09, 1);
   });
 
   test('sin datos no explota ni divide por cero', () => {
-    expect(resumenAvance([])).toEqual({ paridas: 0, inseminadas: 0, porcentaje: 0 });
+    expect(resumenAvance([])).toEqual({
+      paridas: 0,
+      servidas: 0,
+      porcentaje: 0,
+      esperados: 0,
+    });
   });
 
   test('sin servicios cargados el denominador es cero y el porcentaje también', () => {
-    const r = resumenAvance(avance([{ inseminadas: 0, paridas_acumuladas: 0 }]));
+    const r = resumenAvance(avance([{ servidas: 0, paridas_acumuladas: 0 }]));
     expect(r.porcentaje).toBe(0);
+  });
+
+  // Los esperados van redondeados porque la vista los devuelve con decimales
+  // —son una suma de fracciones de oveja— y «460,3 partos» no es una frase.
+  test('los esperados de la temporada se redondean a partos enteros', () => {
+    const r = resumenAvance(avance([{ esperados_temporada: 460.3 }]));
+    expect(r.esperados).toBe(460);
+  });
+
+  // La aserción que guarda la 0016: la curva ya no supone que toda oveja
+  // servida pare, así que el total esperado tiene que poder ser MENOR que las
+  // servidas. Si alguien volviera a normalizar, estos dos números coincidirían.
+  test('los esperados pueden quedar por debajo de las servidas', () => {
+    const r = resumenAvance(avance([{ servidas: 503, esperados_temporada: 460.3 }]));
+    expect(r.esperados).toBeLessThan(r.servidas);
   });
 
   test('las filas llegan ordenadas, pero no se confía en eso', () => {

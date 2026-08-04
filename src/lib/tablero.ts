@@ -33,7 +33,12 @@ export interface FilaAvance {
   partos_acumulados: number;
   esperados_acumulados: number;
   paridas_acumuladas: number;
-  inseminadas: number;
+  /** Ovejas con algún servicio. NO son las inseminadas: en 2026 hay dieciséis
+   *  que solo fueron al repaso y nunca pasaron por la pipeta. */
+  servidas: number;
+  /** El total de la curva esperada, repetido en cada fila. Desde la 0016 es
+   *  menor que `servidas`: la curva predice la preñez, no la da por hecha. */
+  esperados_temporada: number;
 }
 
 export interface FilaTipoNacimiento {
@@ -101,25 +106,33 @@ function porciento(parte: number, total: number): number {
 
 export interface ResumenAvance {
   paridas: number;
-  inseminadas: number;
+  servidas: number;
   porcentaje: number;
+  /** Cuántos partos predice la curva en toda la temporada, redondeado. */
+  esperados: number;
 }
 
 /**
- * La cifra grande: cuántas de las inseminadas ya parieron.
+ * La cifra grande: cuántas de las servidas ya parieron, y cuántas se esperan.
  *
  * Sale de la ÚLTIMA fila porque los acumulados son de la vista, no de acá. Se
  * busca el máximo día en vez de tomar el último elemento: el orden lo pone la
  * consulta y esto tiene que seguir siendo cierto si alguien la cambia.
+ *
+ * `esperados` y `servidas` son dos números distintos a propósito y la tarjeta
+ * muestra los dos: desde la 0016 la curva predice la preñez —unas 460 de las
+ * 503 servidas— en vez de suponer que toda oveja servida pare. Sin decirlo, la
+ * distancia entre las barras y la línea se lee como un atraso de la parición.
  */
 export function resumenAvance(filas: readonly FilaAvance[]): ResumenAvance {
-  if (filas.length === 0) return { paridas: 0, inseminadas: 0, porcentaje: 0 };
+  if (filas.length === 0) return { paridas: 0, servidas: 0, porcentaje: 0, esperados: 0 };
 
   const ultima = filas.reduce((a, b) => (b.dia > a.dia ? b : a));
   return {
     paridas: ultima.paridas_acumuladas,
-    inseminadas: ultima.inseminadas,
-    porcentaje: porciento(ultima.paridas_acumuladas, ultima.inseminadas),
+    servidas: ultima.servidas,
+    porcentaje: porciento(ultima.paridas_acumuladas, ultima.servidas),
+    esperados: Math.round(ultima.esperados_temporada),
   };
 }
 
@@ -210,8 +223,8 @@ export interface Resumen {
  * Dos aclaraciones sobre los denominadores, que es donde estos números se
  * confunden con otros parecidos:
  *
- *  - `porcentajeParidas` va sobre el RODEO entero, no sobre las inseminadas.
- *    El avance de la parición usa el otro denominador porque compara contra
+ *  - `porcentajeParidas` va sobre el RODEO entero, no sobre las servidas. El
+ *    avance de la parición usa el otro denominador porque compara contra
  *    ventanas de parto, y una oveja sin servicio no tiene ventana. En 2026 los
  *    dos coinciden; el día que no, van a estar diciendo cosas distintas.
  *  - `porcentajeSenalada` va sobre las ovejas PARIDAS y **puede pasar del

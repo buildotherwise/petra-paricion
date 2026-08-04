@@ -334,17 +334,18 @@ function Resumen({ temporada }: { temporada: number }) {
 function Avance({ temporada, c }: { temporada: number; c: Colores }) {
   const estado = useConsultaOnline(avanceParicion(temporada), [temporada], 'el avance');
   const serie = useMemo(() => serieAvance(estado.datos), [estado.datos]);
-  // Solo para saber si ya hay servicios contra los que comparar. El porcentaje
-  // de avance vive en «La temporada»: repetirlo acá era decir el mismo número
-  // dos veces en la misma pantalla, y con denominadores distintos —inseminadas
-  // contra rodeo— dos números casi iguales invitan a buscar la diferencia.
+  // Para saber si ya hay servicios contra los que comparar, y para el nivel que
+  // predice la curva. El porcentaje de avance vive en «La temporada»: repetirlo
+  // acá era decir el mismo número dos veces en la misma pantalla, y con
+  // denominadores distintos —servidas contra rodeo— dos números casi iguales
+  // invitan a buscar la diferencia.
   const resumen = useMemo(() => resumenAvance(estado.datos), [estado.datos]);
 
   return (
     <Tarjeta
       ancha
       titulo="Avance de la parición"
-      porque="Partos por día, contra lo esperado según gestación 145–155"
+      porque="Partos por día, contra lo esperado según los servicios de cada oveja"
       estado={estado}
       vacio={
         serie.length === 0
@@ -383,22 +384,33 @@ function Avance({ temporada, c }: { temporada: number; c: Colores }) {
           y el porcentaje dice «0 de 0» — que sin esta línea se lee como si nadie
           hubiera parido. Es el estado del primer día: los partos entran antes de
           que alguien corra la importación. */}
-      {resumen.inseminadas === 0 ? (
+      {resumen.servidas === 0 ? (
         <p className="pie-tablero">
           Faltan los servicios de la temporada, así que todavía no hay contra qué
           comparar. Se cargan con <b>scripts/importar-servicios.py</b>.
         </p>
       ) : (
-        <div className="leyenda-tablero">
-          <span>
-            <i style={{ background: c.marca }} />
-            Partos por día
-          </span>
-          <span>
-            <i className="raya" style={{ borderTopColor: c.esperado }} />
-            Esperados (gestación 145–155)
-          </span>
-        </div>
+        <>
+          <div className="leyenda-tablero">
+            <span>
+              <i style={{ background: c.marca }} />
+              Partos por día
+            </span>
+            <span>
+              <i className="raya" style={{ borderTopColor: c.esperado }} />
+              Esperados (gestación 140–160)
+            </span>
+          </div>
+          {/* El nivel, dicho en palabras. La curva ya no supone que toda oveja
+              servida pare, así que la suma de la línea punteada queda por debajo
+              de las servidas — y sin esta línea esa distancia se lee como un
+              atraso de la parición en vez de como lo que es: las que no
+              quedaron preñadas. */}
+          <p className="pie-tablero">
+            La curva espera <b>{resumen.esperados} partos</b> sobre {resumen.servidas}{' '}
+            ovejas servidas: no da por hecho que todas queden preñadas.
+          </p>
+        </>
       )}
     </Tarjeta>
   );
