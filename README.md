@@ -285,12 +285,24 @@ en vez de asumir: con 0 o con 2+, el padre queda en `null`. Guardarlo como
 columna lo dejaría viejo apenas alguien corrigiera la fecha del parto, que es
 justamente una de las correcciones para las que existe la web.
 
-**La curva esperada reparte peso 1 por oveja.** Una oveja con tres servicios va a
-parir una vez, no tres. Cada una aporta 1 repartido entre sus días posibles
-deduplicados, y por eso `sum(esperados) = inseminadas` a menos del redondeo por
-día — está como aserción, con su tolerancia, en
-`supabase/tests/metricas.test.sql`. Sin eso la curva diría 1.359 y el porcentaje
-de avance no llegaría nunca a nada.
+**La curva esperada usa los retornos al celo.** Cada oveja aporta exactamente 1,
+repartido entre sus días posibles — una oveja con tres servicios va a parir una
+vez, no tres —, y `sum(esperados) = inseminadas` está como aserción en
+`supabase/tests/metricas.test.sql`.
+
+Pero el reparto no es parejo, y esa es la parte que costó ver. **De las
+inseminaciones de una oveja solo cuenta la última:** que exista una posterior
+prueba que la anterior falló, porque una oveja se reinsemina cuando vuelve al
+celo. La encarnerada, en cambio, cuenta siempre — el carnero anda suelto con el
+lote y expone a todas, preñadas o no, así que su presencia no prueba nada sobre
+la IA. Entre la última IA y el repaso el peso va 38/62, derivado de los propios
+retornos: de las 487 ovejas inseminadas, 313 volvieron al celo, o sea **35,7 %
+de preñez por inseminación**. El modelo entero, con la aritmética y el único
+supuesto que no es una medición, está comentado en
+`supabase/migrations/0014_curva_esperada_con_retornos.sql`.
+
+El modelo anterior repartía parejo entre todos los servicios y predecía 127
+partos para la primera quincena de agosto donde correspondían 78.
 
 **La importación no tiene pantalla.** Es una carga que se hace *una vez*, no una
 por temporada. Una pantalla usada una sola vez cuesta un parser de xlsx en el

@@ -159,14 +159,13 @@ function Seccion({
   return (
     <>
       <h1 className="admin-titulo">{TITULOS[seccion]}</h1>
+      {/* Los tableros son la única sección que no sale de la réplica, así que
+          es la única que no puede prometer «lo sincronizado». Va sin bajada:
+          decirlo cada vez es explicarle la arquitectura a quien vino a mirar
+          cómo viene la parición. */}
       <p className="admin-bajada">
-        Temporada {entorno.temporada} ·{' '}
-        {/* Los tableros son la única sección que no sale de la réplica, así que
-            es la única que no puede prometer «lo sincronizado»: sus números son
-            del servidor y son de ahora. */}
-        {seccion === 'tableros'
-          ? 'calculado en el servidor, ahora'
-          : 'lo que este navegador tiene sincronizado'}
+        Temporada {entorno.temporada}
+        {seccion !== 'tableros' && ' · lo que este navegador tiene sincronizado'}
       </p>
       {seccion === 'partos' && <TablaPartos onAbrir={onAbrirParto} />}
       {seccion === 'corderos' && <TablaCorderos onAbrir={onAbrirCordero} />}

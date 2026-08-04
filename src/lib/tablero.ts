@@ -249,46 +249,45 @@ export function resumenTemporada(filas: readonly FilaResumen[]): Resumen {
 export interface Mortalidad {
   nacidos: number;
   nacidosVivos: number;
-  alNacer: number;
-  antesDeSenalar: number;
-  despuesDeSenalar: number;
-  tasaAlNacer: number;
-  tasaAntesDeSenalar: number;
+  muertos: number;
+  tasaTotal: number;
+  etapas: { etiqueta: string; corderos: number; porcentaje: number }[];
 }
 
 /**
- * Las tres muertes, cada una con el denominador que le corresponde.
+ * Cuántos corderos se murieron, en total y por etapa.
  *
- * La de al nacer va sobre todos los nacidos; la de después va sobre los que
- * NACIERON VIVOS, porque un cordero que nació muerto nunca estuvo en riesgo de
- * morirse en la crianza y meterlo en el denominador diluiría la única tasa que
- * habla del manejo.
+ * La cifra grande es la mortalidad **total sobre los nacidos**, que es lo que
+ * la palabra «mortalidad» quiere decir sin aclaraciones. Las tres etapas la
+ * desarman —el parto, la crianza hasta la señalada, y después— y comparten ese
+ * mismo denominador a propósito: con denominadores distintos las tres barras no
+ * se podrían comparar entre sí ni sumar a la cifra de arriba, y una tarjeta
+ * cuyos números no cierran obliga a desconfiar de todos.
  *
- * Sin corderos la vista no devuelve ninguna fila —no hay `group by` que agrupar—
- * y la tarjeta tiene que mostrarse igual.
+ * Sin corderos la vista no devuelve ninguna fila —no hay `group by` que
+ * agrupar— y la tarjeta tiene que mostrarse igual.
  */
 export function tasasMortalidad(filas: readonly FilaMortalidad[]): Mortalidad {
   const f = filas[0];
-  if (f === undefined) {
-    return {
-      nacidos: 0,
-      nacidosVivos: 0,
-      alNacer: 0,
-      antesDeSenalar: 0,
-      despuesDeSenalar: 0,
-      tasaAlNacer: 0,
-      tasaAntesDeSenalar: 0,
-    };
-  }
+  const nacidos = f?.nacidos ?? 0;
+  const cuenta = [
+    ['Al nacer', f?.muertos_al_nacer ?? 0],
+    ['Antes de señalar', f?.muertos_antes_de_senalar ?? 0],
+    ['Después de señalar', f?.muertos_despues_de_senalar ?? 0],
+  ] as const;
+
+  const muertos = cuenta.reduce((n, [, c]) => n + c, 0);
 
   return {
-    nacidos: f.nacidos,
-    nacidosVivos: f.nacidos_vivos,
-    alNacer: f.muertos_al_nacer,
-    antesDeSenalar: f.muertos_antes_de_senalar,
-    despuesDeSenalar: f.muertos_despues_de_senalar,
-    tasaAlNacer: porciento(f.muertos_al_nacer, f.nacidos),
-    tasaAntesDeSenalar: porciento(f.muertos_antes_de_senalar, f.nacidos_vivos),
+    nacidos,
+    nacidosVivos: f?.nacidos_vivos ?? 0,
+    muertos,
+    tasaTotal: porciento(muertos, nacidos),
+    etapas: cuenta.map(([etiqueta, corderos]) => ({
+      etiqueta,
+      corderos,
+      porcentaje: porciento(corderos, nacidos),
+    })),
   };
 }
 

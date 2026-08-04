@@ -253,6 +253,18 @@ begin
   end if;
   ok := ok + 1;
 
+  -- 2.2.b Una IA superada por otra NO aporta a la curva. La oveja B se
+  --       inseminó el 9 y el 11 de marzo: que exista la segunda prueba que la
+  --       primera falló —volvió al celo—, así que su ventana empieza el 3 de
+  --       agosto y no el 1º. El 1º de agosto solo pueden parir A, C y F.
+  select * into r from v_avance_paricion
+   where temporada = 2026 and dia = date '2026-08-01';
+  if r.en_ventana <> 3 then
+    raise exception 'el 1 de agosto podían parir 3 ovejas, la vista dice % (¿se está contando la IA que falló?)',
+      r.en_ventana;
+  end if;
+  ok := ok + 1;
+
   -- 2.3. Los partos reales del día se cuentan todos —también el de la oveja
   --      de alta manual—, pero las PARIDAS del porcentaje solo cuentan
   --      inseminadas: si no, el avance podría pasar del 100 %.
@@ -274,7 +286,7 @@ begin
   end if;
   ok := ok + 1;
 
-  raise notice 'métricas · avance: %/5 OK', ok;
+  raise notice 'métricas · avance: %/6 OK', ok;
 end $$;
 
 -- ---------------------------------------------------------------------------

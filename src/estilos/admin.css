@@ -731,7 +731,10 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 0.6875rem;
-  align-items: start;
+  /* `stretch` y no `start`: con alturas libres cada tarjeta terminaba donde le
+     tocaba y la grilla quedaba dentada. Igualadas por fila, el ojo compara
+     tarjetas en vez de esquivar escalones. */
+  align-items: stretch;
 }
 
 @media (max-width: 68rem) {
@@ -741,11 +744,20 @@
 }
 
 .admin-tarjeta {
+  display: flex;
+  flex-direction: column;
   background: var(--superficie);
   border-radius: var(--r-grande);
   padding: 0.6875rem 0.875rem;
   box-shadow: var(--sombra);
   min-width: 0;
+}
+
+/* El pie se va al fondo: si la tarjeta creció para igualar a su vecina, el aire
+   sobrante va en el medio y no entre el número y su aclaración. */
+.admin-tarjeta .pie-tablero {
+  margin-top: auto;
+  padding-top: 0.5rem;
 }
 
 .admin-tarjeta--ancha {

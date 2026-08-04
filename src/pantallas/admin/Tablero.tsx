@@ -266,7 +266,7 @@ function Resumen({ temporada }: { temporada: number }) {
   return (
     <Tarjeta
       titulo="La temporada"
-      porque="Sobre el rodeo entero, hayan sido servidas o no"
+      porque="Ovejas paridas y corderos señalados"
       estado={estado}
       vacio={r.ovejas === 0 ? { titulo: 'Sin ovejas', detalle: 'La temporada no tiene madres cargadas.' } : null}
     >
@@ -428,18 +428,7 @@ function Tipos({ temporada, c }: { temporada: number; c: Colores }) {
   return (
     <Tarjeta
       titulo="Tipo de nacimiento"
-      porque="Partos según cuántos corderos dieron, sin anulados"
-      // «50 % · mellizos o más» no decía de qué era la mitad. Con la fracción
-      // al lado —igual que el avance dice «6 de 503»— la cifra se explica sola:
-      // son partos múltiples sobre el total de partos.
-      cifra={
-        <>
-          {pct(d.melliceria)}{' '}
-          <small>
-            · {d.multiples} de {d.partos} partos múltiples
-          </small>
-        </>
-      }
+      porque="Distribución de los tipos de partos"
       estado={estado}
       vacio={d.partos === 0 ? { titulo: 'Ninguno', detalle: 'Todavía no hay partos.' } : null}
     >
@@ -480,40 +469,38 @@ function Mortalidad({ temporada, c }: { temporada: number; c: Colores }) {
   const estado = useConsultaOnline(mortalidad(temporada), [temporada], 'la mortalidad');
   const m = useMemo(() => tasasMortalidad(estado.datos), [estado.datos]);
 
-  const barras = [
-    { etiqueta: 'Al nacer', corderos: m.alNacer },
-    { etiqueta: 'Antes de señalar', corderos: m.antesDeSenalar },
-    { etiqueta: 'Después', corderos: m.despuesDeSenalar },
-  ];
-
   return (
     <Tarjeta
       titulo="Mortalidad"
-      porque="Con fecha de muerte, nunca por estado"
-      cifra={
-        <span className="mala">
-          {pct(m.tasaAlNacer)} <small>· al nacer</small>
-        </span>
-      }
+      porque="Corderos muertos sobre nacidos, por etapa"
+      cifra={<span className="mala">{pct(m.tasaTotal)}</span>}
       estado={estado}
       vacio={
+        // Un gráfico de tres barras en cero se ve roto, no se ve vacío. Y son
+        // dos ceros distintos: «todavía no nació ninguno» y «no se murió
+        // ninguno» — el segundo es una buena noticia y merece decirse.
         m.nacidos === 0
           ? { titulo: 'Ninguna', detalle: 'Sin nacimientos todavía, no hay qué contar.' }
-          : null
+          : m.muertos === 0
+            ? { titulo: 'Ninguna', detalle: `No se murió ningún cordero de los ${m.nacidos} nacidos.` }
+            : null
       }
     >
       <ResponsiveContainer width="100%" height={110}>
-        <BarChart data={barras} layout="vertical" margin={{ top: 4, right: 30, bottom: 0, left: 0 }}>
+        <BarChart
+          data={m.etapas}
+          layout="vertical"
+          margin={{ top: 4, right: 84, bottom: 0, left: 0 }}
+        >
           <XAxis type="number" hide allowDecimals={false} />
-          <YAxis type="category" dataKey="etiqueta" tick={EJE} tickLine={false} axisLine={false} width={104} />
+          <YAxis type="category" dataKey="etiqueta" tick={EJE} tickLine={false} axisLine={false} width={112} />
           <Tooltip {...GLOBO} formatter={contando('Corderos')} />
-          <Bar dataKey="corderos" fill={c.error} radius={[0, 4, 4, 0]} maxBarSize={16} />
+          <Bar dataKey="corderos" fill={c.error} radius={[0, 4, 4, 0]} maxBarSize={16}>
+            <LabelList dataKey="corderos" position="right" content={etiquetaDeBarra(m.etapas)} />
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
-      <p className="pie-tablero">
-        {pct(m.tasaAntesDeSenalar)} entre el nacimiento y la señalada, sobre {m.nacidosVivos} nacidos
-        vivos
-      </p>
+      <p className="pie-tablero">{m.muertos} de {m.nacidos} nacidos</p>
     </Tarjeta>
   );
 }
@@ -529,7 +516,7 @@ function Pesos({ temporada, c }: { temporada: number; c: Colores }) {
   return (
     <Tarjeta
       titulo="Peso al nacer"
-      porque="Promedio de vivos con peso, en kg"
+      porque="Promedios de pesos al nacer en kg"
       estado={estado}
       vacio={
         barras.length === 0
@@ -591,7 +578,7 @@ function Condicion({ temporada, c }: { temporada: number; c: Colores }) {
   return (
     <Tarjeta
       titulo="Condición corporal"
-      porque="De las madres, al parto"
+      porque="Condición corporal de las madres"
       cifra={
         h.mediana === null ? undefined : (
           <>

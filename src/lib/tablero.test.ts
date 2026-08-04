@@ -194,31 +194,44 @@ describe('tasasMortalidad: siempre con fecha de muerte', () => {
     muertos_despues_de_senalar: 1,
   };
 
-  test('cada muerte con su denominador correcto', () => {
+  test('la cifra grande es la mortalidad total sobre los nacidos', () => {
     const m = tasasMortalidad([fila]);
-    expect(m.alNacer).toBe(5);
-    // Al nacer, sobre todos los nacidos.
-    expect(m.tasaAlNacer).toBeCloseTo(3.62, 1);
-    // Entre el nacimiento y la señalada, sobre los que NACIERON VIVOS: un
-    // muerto al nacer nunca estuvo en riesgo de morirse después.
-    expect(m.tasaAntesDeSenalar).toBeCloseTo(2.26, 1);
+    // 5 + 3 + 1 = 9 muertos de 138 nacidos.
+    expect(m.muertos).toBe(9);
+    expect(m.tasaTotal).toBeCloseTo(6.52, 1);
+  });
+
+  test('las tres etapas comparten denominador, así que suman la cifra grande', () => {
+    const m = tasasMortalidad([fila]);
+    expect(m.etapas.map((e) => e.etiqueta)).toEqual([
+      'Al nacer',
+      'Antes de señalar',
+      'Después de señalar',
+    ]);
+    expect(m.etapas.map((e) => e.corderos)).toEqual([5, 3, 1]);
+    const suma = m.etapas.reduce((n, e) => n + e.porcentaje, 0);
+    expect(suma).toBeCloseTo(m.tasaTotal, 5);
   });
 
   test('el señalado que murió después se cuenta aparte, no se pierde', () => {
-    expect(tasasMortalidad([fila]).despuesDeSenalar).toBe(1);
+    expect(tasasMortalidad([fila]).etapas[2]).toMatchObject({ corderos: 1 });
   });
 
   test('sin corderos la vista no devuelve ninguna fila, y aun así hay tarjeta', () => {
     const m = tasasMortalidad([]);
-    expect(m).toEqual({
-      nacidos: 0,
-      nacidosVivos: 0,
-      alNacer: 0,
-      antesDeSenalar: 0,
-      despuesDeSenalar: 0,
-      tasaAlNacer: 0,
-      tasaAntesDeSenalar: 0,
-    });
+    expect(m.nacidos).toBe(0);
+    expect(m.muertos).toBe(0);
+    expect(m.tasaTotal).toBe(0);
+    expect(m.etapas.map((e) => e.corderos)).toEqual([0, 0, 0]);
+  });
+
+  test('con nacidos pero sin muertos, las etapas existen en cero', () => {
+    const m = tasasMortalidad([
+      { ...fila, muertos_al_nacer: 0, muertos_antes_de_senalar: 0, muertos_despues_de_senalar: 0 },
+    ]);
+    expect(m.muertos).toBe(0);
+    expect(m.tasaTotal).toBe(0);
+    expect(m.etapas).toHaveLength(3);
   });
 });
 
