@@ -14,6 +14,7 @@ import { Senalada } from './pantallas/Senalada';
 import { SenalarParto } from './pantallas/SenalarParto';
 import { SenalarCordero } from './pantallas/SenalarCordero';
 import { Rechazados } from './pantallas/Rechazados';
+import { TableroCampo } from './pantallas/TableroCampo';
 import { HistorialDelRegistro } from './componentes/HistorialDelRegistro';
 
 /**
@@ -114,6 +115,11 @@ function Ruteo() {
     case 'rechazados':
       return <Rechazados onVolver={volver} />;
 
+    // Eager a propósito: es un cascarón chico y el peso —Recharts— queda
+    // detrás de su lazy interno, en el mismo chunk que usa la web admin.
+    case 'tablero':
+      return <TableroCampo onVolver={volver} />;
+
     case 'admin':
       return (
         <PuertaAdmin
@@ -139,7 +145,7 @@ function Ruteo() {
           onSenalada={() => ir({ nombre: 'senalada' })}
           onVerPartos={() => ir({ nombre: 'partos' })}
           onAbrirParto={(partoId) => ir({ nombre: 'ficha-parto', partoId })}
-          onAdministracion={() => ir({ nombre: 'admin', seccion: 'partos' })}
+          onTablero={() => ir({ nombre: 'tablero' })}
         />
       );
   }

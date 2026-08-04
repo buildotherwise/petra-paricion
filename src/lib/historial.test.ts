@@ -96,6 +96,13 @@ describe('urlDe: solo tiene URL lo que un F5 puede restaurar', () => {
     );
   });
 
+  // El tablero de campo tampoco tiene URL: la única entrada es el link del
+  // inicio, que solo se dibuja con rol admin. Una URL sería una segunda puerta
+  // que el guard de la pantalla tendría que vigilar igual.
+  test('el tablero de campo vive en la raíz como el resto del campo', () => {
+    expect(urlDe([{ nombre: 'inicio' }, { nombre: 'tablero' }])).toBe('/');
+  });
+
   test('una pila vacía no rompe', () => {
     expect(urlDe([])).toBe('/');
   });
@@ -106,6 +113,7 @@ describe('pilaDesdeUrl: con qué arranca la app según lo que se tipeó', () => 
     expect(pilaDesdeUrl('/')).toBeNull();
     expect(pilaDesdeUrl('')).toBeNull();
     expect(pilaDesdeUrl('/otra-cosa')).toBeNull();
+    expect(pilaDesdeUrl('/tablero')).toBeNull();
   });
 
   test('cada sección', () => {

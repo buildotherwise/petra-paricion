@@ -25,13 +25,13 @@ export function Inicio({
   onSenalada,
   onVerPartos,
   onAbrirParto,
-  onAdministracion,
+  onTablero,
 }: {
   onRegistrarParto: () => void;
   onSenalada: () => void;
   onVerPartos: () => void;
   onAbrirParto: (partoId: string) => void;
-  onAdministracion: () => void;
+  onTablero: () => void;
 }) {
   const hoy = hoyISO();
   const esAdmin = useEsAdmin();
@@ -160,15 +160,18 @@ export function Inicio({
               </span>
             </button>
           </li>
-          {/* La administración entra con la misma forma que la fila de arriba y
-              no como tercer botón grande: el inicio conserva dos objetivos para
-              el pulgar. Solo se dibuja con el rol resuelto — `undefined` es
-              «todavía no sé», y un enlace que aparece y desaparece medio segundo
-              después de arrancar es un reporte de bug, no una demora. */}
+          {/* El tablero entra con la misma forma que la fila de arriba y no
+              como tercer botón grande: el inicio conserva dos objetivos para el
+              pulgar. Acá estuvo el link a la administración, que desde el
+              celular se veía como lo que es —una pantalla de escritorio— y se
+              quitó: a la web admin se entra tipeando /admin desde una PC. Solo
+              se dibuja con el rol resuelto — `undefined` es «todavía no sé», y
+              un enlace que aparece y desaparece medio segundo después de
+              arrancar es un reporte de bug, no una demora. */}
           {esAdmin === true && (
             <li>
-              <button type="button" onClick={onAdministracion}>
-                <span className="ver-todos">Administración</span>
+              <button type="button" onClick={onTablero}>
+                <span className="ver-todos">Cómo viene la parición</span>
                 <span className="nota" aria-hidden="true">
                   ›
                 </span>

@@ -36,6 +36,9 @@ import {
   serieAvance,
   tasasMortalidad,
 } from '../../lib/tablero';
+// Acá y no en admin.css: el tablero se dibuja también en la pantalla de campo,
+// y colgado de este archivo el CSS viaja con el chunk `Tablero-*`.
+import '../../estilos/tablero.css';
 
 /**
  * Cómo viene la temporada, en siete tarjetas.

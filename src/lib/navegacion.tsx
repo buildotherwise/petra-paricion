@@ -50,6 +50,7 @@ export type Pantalla =
   | { nombre: 'senalar-parto'; partoId: string }
   | { nombre: 'senalar-cordero'; corderoId: string }
   | { nombre: 'rechazados' }
+  | { nombre: 'tablero' }
   | { nombre: 'admin'; seccion: SeccionAdmin };
 
 const INICIO: Pantalla = { nombre: 'inicio' };

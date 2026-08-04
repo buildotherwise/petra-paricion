@@ -331,19 +331,26 @@ falte una madre es una pregunta para alguien, no un dato para inventar.
 
 ### El chunk de Recharts
 
-Son ~400 kB que solo sirven en esta pantalla, y la pantalla no funciona sin señal
+Son ~400 kB que solo sirven en el tablero, y el tablero no funciona sin señal
 —lee vistas del servidor—, así que su chunk queda fuera del precache con
 `globIgnores: ['**/assets/Tablero-*.js']`. **Un patrón que no coincide con nada no
 da error**, y la falla es en la dirección cara: los cinco aparatos del campo se
 bajarían el archivo en silencio. Después de cada `pnpm build`:
 
 ```bash
-ls -la dist/assets | grep -i tablero   # existe y pesa ~380 kB
-grep -c Tablero dist/sw.js             # 0
+ls -la dist/assets | grep -i tablero        # el .js existe y pesa ~380 kB
+grep -c 'Tablero-[^"]*\.js' dist/sw.js      # 0
 ```
 
-Si Recharts apareciera en otro chunk, es que algún módulo más lo importó:
-`Tablero.tsx` tiene que seguir siendo el único.
+El `Tablero-*.css` sí aparece en `sw.js` y está bien: el patrón solo excluye el
+`.js`, y precachear el layout no le regala Recharts a nadie.
+
+El chunk tiene dos importadores y los dos son dinámicos: `WebAdmin.tsx` (la
+sección de la web) y `TableroCampo.tsx` (la pantalla de campo) hacen `lazy()`
+del mismo módulo, así que el empaquetador emite un solo `Tablero-*.js`. Si
+Recharts apareciera en otro chunk, es que algún módulo lo importó estático:
+`Tablero.tsx` tiene que seguir siendo el único que importa Recharts, y sus dos
+consumidores tienen que seguir entrando por `import()`.
 
 ## Deploy
 
