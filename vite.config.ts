@@ -38,7 +38,12 @@ export default defineConfig({
           //   grep -c Tablero dist/sw.js             → 0
           // Si Recharts apareciera en otro chunk, es que algún módulo más lo
           // importó y hay que devolverlo a `Tablero.tsx`.
-          '**/assets/Tablero-*.js',
+          //
+          // El `.css` va incluido: son 5 kB y no cambian nada de peso, pero con
+          // el patrón limitado a `.js` la verificación de arriba devolvía 1 y
+          // una guarda que miente es peor que no tenerla — la próxima persona
+          // la corre, la ve fallar y no sabe si es esto o Recharts de verdad.
+          '**/assets/Tablero-*.{js,css}',
         ],
         maximumFileSizeToCacheInBytes: 12 * 1024 * 1024,
         cleanupOutdatedCaches: true,
