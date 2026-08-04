@@ -27,12 +27,23 @@ decir «esa oveja ya tiene parto registrado». Con alta manual (R9) eso no puede
 pasar: las ovejas de prueba son ovejas nuevas, y la limpieza las borra por
 `precargada = false` sin tocar ninguna real.
 
-**2. Collares del 90 para arriba, y no se señala nada.** Un collar usado no
-vuelve a estar libre en la temporada (R3), y el tatuaje que sugiere la app es
-*el mayor usado más uno* (R14): un cordero de prueba con el 001 hace que el
-primer cordero real arranque en el 002. La limpieza los libera, pero mientras
-tanto el número está tomado. El protocolo no necesita señalar nada — si igual
-querés probar ese camino, usá tatuajes del 900 para arriba.
+**2. No se señala nada.** El tatuaje que sugiere la app es *el mayor usado más
+uno* (R14), así que un cordero de prueba con el 001 hace que el primer cordero
+real arranque en el 002. El protocolo no necesita señalar nada — si igual querés
+probar ese camino, usá tatuajes del 900 para arriba, que no mueven el piso de
+los reales.
+
+Los **collares** no tienen ese problema: da lo mismo qué número se use. No hay
+restricción de rango en ningún lado —la app solo exige que no esté vacío y que
+no esté ya usado, y en la base la columna es `text` sin ningún CHECK—, y un
+número usado queda tomado toda la temporada (R3) tenga el valor que tenga. Lo
+único que los libera es la limpieza. Una versión anterior de este documento
+recomendaba «del 90 para arriba» suponiendo que en el campo se reparten desde
+el 1; eso nunca se verificó y no cambia nada, así que se sacó.
+
+Dato aparte que sí conviene saber: los collares se comparan **sin ceros a la
+izquierda**. El `12` y el `012` son el mismo collar — que es lo correcto, porque
+son el mismo objeto colgado del cuello de la misma oveja.
 
 **Y la limpieza va el mismo día.** `scripts/limpiar-datos-de-prueba.sql`, desde
 el SQL Editor de Supabase. Se niega a correr si apareció un parto posterior al
@@ -59,7 +70,8 @@ corte, así que una vez que llegue el primer parto real deja de servir.
 ## 1 · Tres partos en modo avión
 
 **En el aparato:** modo avión → registrar 3 partos con alta manual (`PRUEBA-1`,
-`PRUEBA-2`, `PRUEBA-3`), uno de ellos con mellizos y collar `90`.
+`PRUEBA-2`, `PRUEBA-3`), uno de ellos con mellizos y el número de collar que
+tengas a mano.
 
 - [ ] Después de cada uno, la pastilla del encabezado sube: «1 registro sin
       subir», «2 registros…», «3 registros…». Cuenta **cargas**, no filas: el
