@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="es-UY">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Petra · El padre, en el campo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300..700&family=Manrope:wght@400..800&display=swap" rel="stylesheet">
+<style>
+/* ═══ La página ════════════════════════════════════════════════════════ */
+*{box-sizing:border-box}
+body{margin:0;background:#12110C;color:#E8E2D0;font-family:'Manrope',sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1400px;margin:0 auto;padding:0 24px}
+.intro{padding:72px 0 44px;border-bottom:1px solid #2C2819}
+.kicker{font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:#8C7A2E;font-weight:800;margin:0 0 18px}
+h1{font-family:'Newsreader',serif;font-weight:400;font-size:clamp(32px,5vw,52px);line-height:1.04;margin:0 0 18px;color:#F6F2E4}
+.lede{font-size:16px;max-width:66ch;color:#B3AB92;margin:0 0 12px}
+.lede strong{color:#E8E2D0;font-weight:700}
+.decisiones{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:20px;margin-top:38px}
+.dec{border-top:1px solid #2C2819;padding-top:13px}
+.dec b{display:block;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:#8C7A2E;margin-bottom:6px}
+.dec span{font-size:13.5px;color:#B3AB92}
+.dec span em{color:#E8E2D0;font-style:normal;font-weight:700}
+section{padding:58px 0;border-bottom:1px solid #2C2819}
+.num{font-family:'Newsreader',serif;font-size:12px;letter-spacing:.28em;color:#8C7A2E;font-weight:700}
+h2{font-family:'Newsreader',serif;font-weight:400;font-size:clamp(26px,3.2vw,34px);line-height:1.1;margin:7px 0 13px;color:#F6F2E4}
+section > .intro-sec p{color:#B3AB92;font-size:15px;max-width:66ch;margin:0 0 12px}
+section p strong{color:#E8E2D0}
+.nota{margin:20px 0 0;padding:13px 16px;border-left:2px solid #8C7A2E;background:rgba(140,122,46,.10);font-size:14px;color:#D6CFB8;max-width:66ch}
+.nota b{color:#E8C86A}
+.nota.mal{border-left-color:#A34B00;background:rgba(163,75,0,.10)}
+.nota.mal b{color:#E8A867}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9em;color:#D8C98A}
+.grid{display:flex;gap:30px;overflow-x:auto;padding:26px 0 20px;align-items:flex-start}
+.op{flex:none;width:340px}
+.op .titulo-op{display:block;font-family:'Newsreader',serif;font-size:23px;color:#F6F2E4;margin:0 0 9px}
+.op > p{color:#B3AB92;font-size:13.5px;margin:0 0 9px}
+.pro{font-size:13px;color:#9FD8AE;margin:0 0 3px}
+.con{font-size:13px;color:#E8A867;margin:0 0 12px}
+.costo{font-size:12px;color:#7A7259;margin:0 0 14px;font-weight:700}
+.cap{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:#7A7259;margin:16px 0 10px;font-weight:700}
+.elegida{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
+         color:#12110C;background:#E8C86A;border-radius:99px;padding:3px 10px;margin-left:9px;vertical-align:2px}
+.op.si{border-top:2px solid #E8C86A;padding-top:16px}
+.op.no{border-top:1px solid #2C2819;padding-top:17px}
+.op.no .titulo-op{color:#B3AB92}
+.grid.apilado{flex-direction:column;overflow-x:visible;gap:44px}
+.grid.apilado .op{width:100%;max-width:1180px}
+
+/* ═══ La regla de gestación — la pieza central de este documento ═══════ */
+/* Es una regla graduada, literal: los días de gestación de izquierda a
+   derecha, con las tres franjas pintadas y los casos reales clavados donde
+   caen. Todo el desacuerdo de este documento es «dónde termina cada franja»,
+   así que la discusión se mira, no se lee. */
+.regla{margin:30px 0 8px;max-width:900px}
+.regla-pista{position:relative;height:54px;border-radius:10px;overflow:hidden;
+             background:linear-gradient(90deg,
+               #241F14 0%, #241F14 25%,
+               #4A4028 25%, #4A4028 37.5%,
+               #8C7A2E 37.5%, #8C7A2E 62.5%,
+               #4A4028 62.5%, #4A4028 75%,
+               #241F14 75%, #241F14 100%)}
+.regla-pista i{position:absolute;top:0;bottom:0;width:1px;background:rgba(255,255,255,.14)}
+.regla-etq{position:relative;height:20px;margin-top:7px}
+.regla-etq span{position:absolute;transform:translateX(-50%);font-size:11px;font-weight:800;color:#7A7259}
+/* Sin márgenes entre franjas: cada una tiene que terminar EXACTAMENTE donde
+   termina su banda del degradado, o la regla deja de explicar nada. La
+   separación la da un borde del color del fondo, que no ocupa ancho propio. */
+.franjas{display:flex;margin-top:10px;font-size:11.5px;font-weight:800;letter-spacing:.03em}
+.franjas div{text-align:center;padding:7px 4px;border-right:2px solid #12110C}
+.franjas div:last-child{border-right:none}
+.f-gris{background:rgba(122,114,89,.16);color:#8C846B}
+.f-prob{background:rgba(140,122,46,.22);color:#C9B45E}
+.f-cierto{background:rgba(140,122,46,.42);color:#F0E4B0}
+
+/* La anotación va ARRIBA de la regla y los tres casos van juntos en un
+   corchete: a 2,5 % por día, tres marcas separadas se pisan entre sí y el
+   dibujo pasa a ser el problema en vez de la explicación. */
+.casos{position:relative;height:78px}
+.corchete{position:absolute;bottom:0;height:9px;border:1px solid #E8C86A;border-bottom:none;
+          border-radius:4px 4px 0 0}
+.corchete-etq{position:absolute;bottom:13px;transform:translateX(-50%);text-align:center;width:360px}
+.corchete-etq b{display:block;font-family:'Newsreader',serif;font-size:20px;color:#E8C86A;line-height:1.1}
+.corchete-etq span{display:block;font-size:11px;color:#8C846B;font-weight:700;margin-top:2px}
+
+/* ═══ El teléfono (mismo marco que fase3-pantallas.html) ═══════════════ */
+.tel{width:330px;height:664px;border-radius:32px;overflow:hidden;display:flex;flex-direction:column;flex:none;
+     box-shadow:0 0 0 1px rgba(255,255,255,.10),0 26px 56px -20px rgba(0,0,0,.8);
+     background:#EFEAE0;color:#2B2519}
+.tel *{box-sizing:border-box}
+.top{display:flex;align-items:center;justify-content:space-between;padding:15px 17px 9px;flex:none}
+.volver{font-size:13.5px;font-weight:800;color:#6B5A1E}
+.sync{font-size:10.5px;font-weight:800;color:#2E6B3F;background:#FCFAF6;border-radius:99px;padding:5px 10px;box-shadow:0 1px 3px rgba(43,37,25,.08)}
+.sync.pend{color:#A34B00}
+/* Columna flex para que `.barra` pueda irse al pie con margin-top:auto, como
+   en la app: el botón principal vive abajo, al alcance del pulgar. */
+.body{padding:2px 17px 17px;flex:1;overflow:hidden;display:flex;flex-direction:column}
+.tel h3{font-family:'Newsreader',serif;font-weight:400;font-size:26px;line-height:1.06;margin:0 0 3px}
+.sub{font-size:12px;color:#7C7362;font-weight:600;margin:0 0 14px}
+.lbl{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#9A9182;margin:15px 0 7px}
+.lbl:first-child{margin-top:0}
+.tag{background:#F4C21F;border-radius:99px;padding:2px 10px;font-weight:800;font-size:14px;white-space:nowrap}
+.card{background:#FCFAF6;border-radius:18px;padding:14px;box-shadow:0 1px 2px rgba(43,37,25,.05),0 12px 26px -14px rgba(43,37,25,.22)}
+.dat{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;font-size:13.5px}
+.dat+.dat{border-top:1px solid rgba(43,37,25,.09)}
+.dat b{font-weight:800;text-align:right}
+.btn{padding:14px;text-align:center;border-radius:15px;background:#6B5A1E;color:#fff;font-size:14.5px;font-weight:800;margin-top:9px;box-shadow:0 8px 18px -10px rgba(107,90,30,.6)}
+.btn.mudo{background:#E4DDCE;color:#8B8271;box-shadow:none}
+.aviso{border-radius:14px;padding:12px;font-size:12.5px;font-weight:600;margin-top:11px}
+.aviso.ambar{background:rgba(163,75,0,.10);color:#7d3a00}
+.aviso.calma{background:rgba(43,37,25,.05);color:#5C5342}
+.campo{margin-top:13px}
+.inp{background:#FCFAF6;border-radius:15px;padding:13px;box-shadow:inset 0 0 0 2px rgba(43,37,25,.09);font-family:'Newsreader',serif;font-size:22px;letter-spacing:.03em}
+.inp.texto{font-family:'Manrope',sans-serif;font-size:14px;font-weight:600;color:#2B2519}
+.escala{display:flex;gap:5px}
+.escala i{flex:1;font-style:normal;background:#FCFAF6;border-radius:11px;padding:11px 0;text-align:center;font-family:'Newsreader',serif;font-size:16px;box-shadow:0 1px 3px rgba(43,37,25,.08)}
+.escala i.on{background:#6B5A1E;color:#fff}
+.barra{margin-top:auto;padding-top:11px;display:grid;gap:9px}
+
+/* ═══ El bloque del padre — lo que se está decidiendo ══════════════════ */
+.padre{margin-top:13px;border-radius:15px;padding:12px 13px;background:rgba(140,122,46,.10);
+       box-shadow:inset 0 0 0 1px rgba(140,122,46,.22)}
+.padre .et{font-size:9.5px;font-weight:800;letter-spacing:.11em;text-transform:uppercase;color:#8C7A2E;display:block;margin-bottom:4px}
+.padre .quien{font-family:'Newsreader',serif;font-size:22px;line-height:1.1;color:#2B2519}
+.padre .quien small{font-family:'Manrope',sans-serif;font-size:12px;font-weight:700;color:#7C7362}
+.padre .gest{font-size:11.5px;font-weight:700;color:#7C7362;margin-top:3px}
+.padre.dudoso{background:rgba(163,75,0,.09);box-shadow:inset 0 0 0 1px rgba(163,75,0,.25)}
+.padre.dudoso .et{color:#A34B00}
+.padre.vacio{background:rgba(43,37,25,.05);box-shadow:inset 0 0 0 1px rgba(43,37,25,.08)}
+.padre.vacio .et{color:#9A9182}
+.padre.vacio .quien{color:#7C7362;font-size:15px;font-family:'Manrope',sans-serif;font-weight:700}
+.linea-padre{display:flex;align-items:baseline;gap:7px;font-size:12.5px;color:#7C7362;font-weight:700;margin-top:9px}
+.linea-padre b{font-family:'Newsreader',serif;font-size:17px;color:#2B2519;font-weight:400}
+
+/* ═══ La tarjeta del tablero ═══════════════════════════════════════════ */
+.tablero{background:#FCFAF6;border-radius:20px;padding:20px;width:430px;color:#2B2519;
+         box-shadow:0 1px 2px rgba(43,37,25,.05),0 14px 30px -16px rgba(43,37,25,.3)}
+.tablero h4{font-family:'Newsreader',serif;font-weight:400;font-size:21px;margin:0 0 2px}
+.tablero .porque{font-size:12px;color:#7C7362;font-weight:600;margin:0 0 15px}
+.tablero .cabeza{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}
+.tablero .cifra{font-family:'Newsreader',serif;font-size:34px;line-height:1;white-space:nowrap}
+.tablero .cifra small{font-family:'Manrope',sans-serif;font-size:11.5px;font-weight:700;color:#7C7362}
+.barras-h{display:grid;grid-template-columns:auto 1fr auto;gap:9px 11px;align-items:center}
+.barras-h .et{font-size:12.5px;font-weight:700;white-space:nowrap}
+.barras-h .pista{background:rgba(43,37,25,.07);border-radius:5px;height:17px;overflow:hidden}
+.barras-h .barra{display:block;height:100%;background:#6B5A1E;border-radius:5px}
+.barras-h .val{font-size:12px;color:#7C7362;font-weight:700;white-space:nowrap}
+.barras-h .val b{color:#2B2519;font-size:13.5px}
+.pie-tablero{font-size:11.5px;color:#7C7362;font-weight:600;margin:14px 0 0;line-height:1.45}
+.chip-conf{display:inline-block;font-size:9px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;
+           border-radius:99px;padding:2px 7px;margin-left:6px;vertical-align:1px}
+.chip-conf.c{background:rgba(46,107,63,.14);color:#215030}
+.chip-conf.p{background:rgba(140,122,46,.18);color:#6B5A1E}
+
+.par-tel{display:flex;gap:26px;flex-wrap:wrap}
+.tel-pie{font-size:12.5px;color:#8C846B;font-weight:700;margin:13px 0 0;max-width:330px}
+.tel-pie b{color:#E8E2D0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="intro">
+  <p class="kicker">Petra · Parición 2026</p>
+  <h1>El padre, dicho en el corral</h1>
+  <p class="lede">
+    Hoy <code>v_paternidad</code> deriva el padre solo cuando el parto cae en la ventana
+    <code>[servicio + 145, servicio + 155]</code> de <strong>exactamente un</strong> servicio. Con 0 o con 2+
+    candidatos el padre queda en <code>null</code>. La consecuencia se ve en el tablero: de seis partos, tres
+    sin padre.
+  </p>
+  <p class="lede">
+    No es que falten servicios — <strong>las tres madres tienen los suyos cargados</strong>. Es que sus partos
+    implican gestaciones de <strong>142, 143 y 144 días</strong>, y la ventana empieza en 145. Quedaron afuera
+    por uno, dos y tres días.
+  </p>
+  <p class="lede">
+    Este documento decide tres cosas: con qué regla se elige el padre, dónde se ve mientras se carga el parto,
+    y qué cuesta que eso funcione sin señal.
+  </p>
+
+  <div class="decisiones">
+    <div class="dec"><b>La regla</b><span>Gana el servicio con la gestación <em>más cercana a 150 días</em>, y solo se calla si ninguno entra en 140–160.</span></div>
+    <div class="dec"><b>Dónde</b><span>En el paso de la fecha, que es de donde depende, y otra vez en el resumen.</span></div>
+    <div class="dec"><b>Para qué</b><span>No es un adorno: es <em>el control de la caravana</em>, en el único momento en que la oveja está en la mano.</span></div>
+    <div class="dec"><b>El costo</b><span>Que ande sin señal exige <em>replicar los servicios</em> al aparato. Hoy no se replican.</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<section>
+  <p class="num">01</p>
+  <h2>La regla</h2>
+  <div class="intro-sec">
+    <p>
+      Toda la discusión cabe en una regla graduada: los días de gestación, y dónde se corta cada franja.
+      La gestación del Merino es de unos 150 días; abajo están las tres franjas y los seis partos de prueba
+      clavados donde caen.
+    </p>
+  </div>
+
+  <div class="regla">
+    <!-- 130 a 170 días sobre el ancho completo: 2,5 % por día. -->
+    <div class="casos">
+      <div class="corchete-etq" style="left:32.5%">
+        <b>142 · 143 · 144</b>
+        <span>los tres que hoy quedan sin padre: 0015, 3633 y 1574</span>
+      </div>
+      <div class="corchete" style="left:30%;width:5%"></div>
+    </div>
+    <div class="regla-pista">
+      <i style="left:25%"></i><i style="left:37.5%"></i><i style="left:62.5%"></i><i style="left:75%"></i>
+    </div>
+    <div class="regla-etq">
+      <span style="left:0%">130</span>
+      <span style="left:25%">140</span>
+      <span style="left:37.5%">145</span>
+      <span style="left:50%">150</span>
+      <span style="left:62.5%">155</span>
+      <span style="left:75%">160</span>
+      <span style="left:100%">170</span>
+    </div>
+    <div class="franjas">
+      <div class="f-gris"   style="flex:25">Sin padre — fuera de lo biológico</div>
+      <div class="f-prob"   style="flex:12.5">Probable</div>
+      <div class="f-cierto" style="flex:25">Cierto</div>
+      <div class="f-prob"   style="flex:12.5">Probable</div>
+      <div class="f-gris"   style="flex:25">Sin padre</div>
+    </div>
+  </div>
+
+  <p class="nota">
+    <b>El 140–160 no es un número nuevo.</b> Es exactamente el rango que <code>v_avance_paricion</code> ya usa
+    para la curva esperada desde la migración 0015: normal 140–160 con pico en 150. Usar el mismo acá mantiene
+    una sola definición de «gestación posible» en todo el proyecto, en vez de dos que haya que explicar.
+  </p>
+
+  <div class="grid">
+    <div class="op no">
+      <span class="titulo-op">Ensanchar la ventana</span>
+      <p>Cambiar el <code>[145, 155]</code> de <code>v_paternidad</code> por <code>[140, 160]</code> y dejar
+      el resto igual: sigue exigiendo exactamente un candidato.</p>
+      <p class="pro">✓ Un renglón de SQL. Rescata los tres casos.</p>
+      <p class="con">✗ Ensanchar crea empates: dos IA a 15 días de distancia pasan a tener ventanas que se
+      pisan en una franja de 6 días, y ahí vuelve a haber 2 candidatos y otra vez <code>null</code>. Se cambia
+      un motivo de silencio por otro.</p>
+      <p class="costo">Costo: una migración</p>
+    </div>
+
+    <div class="op si">
+      <span class="titulo-op">El más cercano a 150<span class="elegida">Propuesta</span></span>
+      <p>No se pregunta «¿quién entra en la ventana?» sino <strong>«¿cuál explica mejor esta fecha?»</strong>.
+      Se ordenan los servicios de la madre por qué tan lejos de 150 días queda la gestación que implican, y
+      gana el primero. Con eso <strong>siempre hay uno</strong>, salvo que ni el mejor entre en 140–160.</p>
+      <p class="pro">✓ No puede empatar: hay un único mínimo.</p>
+      <p class="pro">✓ Trae consigo la medida de cuánto confiar — la gestación en días.</p>
+      <p class="pro">✓ Descarta solo lo biológicamente imposible, que es lo que se acordó dejar sin padre.</p>
+      <p class="con">✗ Afirma más que hoy. Se compensa diciendo siempre cuántos días son, para que quien mira
+      pueda desconfiar con fundamento.</p>
+      <p class="costo">Costo: una migración</p>
+    </div>
+
+    <div class="op no">
+      <span class="titulo-op">Guardar el padre en el parto</span>
+      <p>Una columna <code>padre</code> en <code>partos</code>, que se escribe al registrar y queda fija.</p>
+      <p class="pro">✓ El dato viaja con el parto, sin recalcular.</p>
+      <p class="con">✗ Contradice el principio de §9: el padre <strong>se deriva, no se carga</strong>. Un
+      servicio corregido después no arreglaría los partos ya escritos, y quedarían dos verdades.</p>
+      <p class="costo">Costo: una migración y una regla que se contradice</p>
+    </div>
+  </div>
+
+  <p class="nota mal">
+    <b>Lo que no puedo prometerte todavía.</b> No hay un solo parto real cargado, así que no puedo medir cada
+    cuánto la regla va a fallar de verdad — los seis de arriba son de la prueba de la app, con fechas puestas a
+    mano. Lo que sí se puede afirmar es la forma: con dos IA separadas por el ciclo estral (~15 días), la
+    diferencia entre lo que explica una y lo que explica la otra es de 15 días de gestación, así que el mínimo
+    es claro salvo en una franja angosta. Cuando entren los primeros cien partos vale volver a mirarlo.
+  </p>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<section>
+  <p class="num">02</p>
+  <h2>Dónde se ve, mientras se carga el parto</h2>
+  <div class="intro-sec">
+    <p>
+      El padre depende de la oveja <strong>y de la fecha</strong>, así que el lugar natural es el paso donde se
+      elige la fecha: si alguien la corrige, el padre se corrige con ella.
+    </p>
+    <p>
+      Y conviene decir para qué sirve de verdad, porque cambia el diseño: <strong>es el control de la
+      caravana</strong>. El error más caro del sistema es registrar el parto en la oveja equivocada, y hoy nada
+      lo ataja. Un cartel que dice «esta oveja no tiene ningún servicio que explique esta fecha» es la única
+      señal disponible en el corral, con el animal delante y antes de guardar.
+    </p>
+  </div>
+
+  <div class="par-tel">
+    <div>
+      <div class="tel">
+        <div class="top"><span class="volver">‹ Atrás</span><span class="sync pend">2 registros sin subir</span></div>
+        <div class="body">
+          <h3>Datos del parto</h3>
+          <p class="sub">Madre <span class="tag">1574</span></p>
+
+          <p class="lbl">Fecha del parto</p>
+          <div class="inp">4 de agosto de 2026</div>
+
+          <div class="padre">
+            <span class="et">Padre probable</span>
+            <div class="quien">3075 <small>· cabaña Petra</small></div>
+            <div class="gest">Inseminación del 11 de marzo · 146 días de gestación</div>
+          </div>
+
+          <p class="lbl">Condición corporal de la madre</p>
+          <div class="escala"><i>1</i><i>2</i><i class="on">3</i><i>4</i><i>5</i></div>
+
+          <div class="barra"><div class="btn">Seguir</div></div>
+        </div>
+      </div>
+      <p class="tel-pie"><b>A · Siempre a la vista.</b> El bloque está en todos los partos. Se lee de corrido
+      con la fecha, que es de lo que depende.</p>
+    </div>
+
+    <div>
+      <div class="tel">
+        <div class="top"><span class="volver">‹ Atrás</span><span class="sync pend">2 registros sin subir</span></div>
+        <div class="body">
+          <h3>Datos del parto</h3>
+          <p class="sub">Madre <span class="tag">1574</span></p>
+
+          <p class="lbl">Fecha del parto</p>
+          <div class="inp">4 de agosto de 2026</div>
+
+          <div class="linea-padre">Padre probable <b>3075</b> · 146 días</div>
+
+          <p class="lbl">Condición corporal de la madre</p>
+          <div class="escala"><i>1</i><i>2</i><i class="on">3</i><i>4</i><i>5</i></div>
+
+          <div class="barra"><div class="btn">Seguir</div></div>
+        </div>
+      </div>
+      <p class="tel-pie"><b>B · Una línea.</b> Lo mismo sin caja. Ocupa un tercio y no compite con la condición
+      corporal, que es lo que hay que contestar en esa pantalla.</p>
+    </div>
+
+    <div>
+      <div class="tel">
+        <div class="top"><span class="volver">‹ Atrás</span><span class="sync pend">2 registros sin subir</span></div>
+        <div class="body">
+          <h3>Datos del parto</h3>
+          <p class="sub">Madre <span class="tag">1574</span></p>
+
+          <p class="lbl">Fecha del parto</p>
+          <div class="inp">4 de agosto de 2026</div>
+
+          <p class="lbl">Condición corporal de la madre</p>
+          <div class="escala"><i>1</i><i>2</i><i class="on">3</i><i>4</i><i>5</i></div>
+
+          <div class="barra"><div class="btn">Seguir</div></div>
+        </div>
+      </div>
+      <p class="tel-pie"><b>C · Solo habla cuando no cierra.</b> La pantalla queda igual que hoy: en un parto
+      que cierra, del padre no se dice nada.</p>
+    </div>
+  </div>
+
+  <p class="cap">Y el estado que justifica las tres — cuando ningún servicio explica la fecha</p>
+
+  <div class="par-tel">
+    <div>
+      <div class="tel">
+        <div class="top"><span class="volver">‹ Atrás</span><span class="sync pend">2 registros sin subir</span></div>
+        <div class="body">
+          <h3>Datos del parto</h3>
+          <p class="sub">Madre <span class="tag">0015</span></p>
+
+          <p class="lbl">Fecha del parto</p>
+          <div class="inp">4 de agosto de 2026</div>
+
+          <div class="padre dudoso">
+            <span class="et">Ningún servicio explica esta fecha</span>
+            <div class="quien">Revisá la caravana</div>
+            <div class="gest">El más cercano es el 32, del 12 de marzo: serían 138 días. Si la oveja es esta y
+            la fecha es esta, el parto se adelantó — se guarda igual.</div>
+          </div>
+
+          <p class="lbl">Condición corporal de la madre</p>
+          <div class="escala"><i>1</i><i>2</i><i class="on">3</i><i>4</i><i>5</i></div>
+
+          <div class="barra"><div class="btn">Seguir</div></div>
+        </div>
+      </div>
+      <p class="tel-pie"><b>Avisa, no bloquea</b> — igual que el peso fuera de rango (R7) y el aviso de
+      sincronización de la señalada (R14). El parto se guarda: quien está mirando al animal sabe más que la
+      cuenta de días.</p>
+    </div>
+    <div style="max-width:520px">
+      <p style="color:#B3AB92;font-size:14.5px;margin:0 0 12px">
+        Este es el cartel que vuelve útil toda la función. No dice «error»: dice qué esperaba y qué encontró,
+        y deja decidir. Las tres razones posibles, en orden de probabilidad:
+      </p>
+      <p style="color:#B3AB92;font-size:14px;margin:0 0 9px"><strong>1 · La caravana está mal.</strong> Es el
+      error más caro del sistema y hoy nada lo ataja. Acá se atajaría solo, en el corral.</p>
+      <p style="color:#B3AB92;font-size:14px;margin:0 0 9px"><strong>2 · La fecha está mal.</strong> Un parto
+      encontrado días después y fechado hoy por descuido.</p>
+      <p style="color:#B3AB92;font-size:14px;margin:0 0 9px"><strong>3 · El parto se adelantó de verdad.</strong>
+      Pasa, y por eso el aviso no bloquea: se guarda y queda en el panel de revisión de la web.</p>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="op si">
+      <span class="titulo-op">A · Siempre a la vista<span class="elegida">Propuesta</span></span>
+      <p>El bloque aparece en todos los partos, con el padre y los días de gestación.</p>
+      <p class="pro">✓ El operador aprende qué es normal, y entonces lo raro le salta sin que la app se lo diga.</p>
+      <p class="pro">✓ Un dato que solo aparece cuando hay problema se lee como un reto; uno que está siempre se
+      lee como información.</p>
+      <p class="con">✗ Ocupa lugar en una pantalla que hoy tiene dos cosas.</p>
+      <p class="costo">Costo: un bloque nuevo</p>
+    </div>
+    <div class="op no">
+      <span class="titulo-op">B · Una línea</span>
+      <p>El mismo dato en una línea, sin caja.</p>
+      <p class="pro">✓ Mínimo. No cambia el peso visual de la pantalla.</p>
+      <p class="con">✗ El estado de «no cierra» necesita sí o sí más aire; quedarían dos tratamientos muy
+      distintos para la misma cosa.</p>
+      <p class="costo">Costo: una línea</p>
+    </div>
+    <div class="op no">
+      <span class="titulo-op">C · Solo si no cierra</span>
+      <p>Silencio en el caso normal.</p>
+      <p class="pro">✓ Cero ruido. La pantalla queda como está hoy.</p>
+      <p class="con">✗ Sin ver nunca el caso normal, nadie sabe qué significa el aviso la primera vez que
+      aparece — a las seis de la mañana, con una oveja en la mano.</p>
+      <p class="con">✗ Se pierde lo informativo: saber el padre mientras se carga tiene valor propio.</p>
+      <p class="costo">Costo: un aviso</p>
+    </div>
+  </div>
+
+  <p class="nota">
+    <b>Dos apariciones, no una.</b> El bloque va en el paso de la fecha y el dato se repite en una línea del
+    resumen, junto al resto de lo que se está por guardar. El resumen ya existe y es el último lugar donde se
+    puede frenar algo.
+  </p>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<section>
+  <p class="num">03</p>
+  <h2>El costo: que ande sin señal</h2>
+  <div class="intro-sec">
+    <p>
+      Acá está la restricción real. <strong><code>servicios</code> no se replica a los aparatos</strong> —no
+      está en las sync rules ni en la publicación de PowerSync— y su lectura es solo para admin, como
+      <code>cambios</code>. O sea que hoy el teléfono <strong>no tiene con qué</strong> calcular el padre.
+    </p>
+    <p>
+      Y la parición se registra sin señal. Un dato que solo aparece con conexión es un dato que no aparece.
+    </p>
+  </div>
+
+  <div class="grid">
+    <div class="op si">
+      <span class="titulo-op">Replicar los servicios, proyectados<span class="elegida">Propuesta</span></span>
+      <p>Un stream nuevo que baja <strong>solo los hechos reproductivos</strong>, sin metadatos de auditoría:
+      <code>oveja_id, tipo, fecha_inicio, fecha_fin, padre, cabana</code>. Son <strong>1.359 filas</strong> —
+      menos que las 503 ovejas más los partos que ya bajan.</p>
+      <p class="pro">✓ El padre se calcula local y al instante, con o sin señal.</p>
+      <p class="pro">✓ El mismo cálculo sirve después para la ficha del parto.</p>
+      <p class="con">✗ Los datos de padres quedan legibles en los cinco aparatos. La spec los había dejado solo
+      para admin — es una decisión que se estaría cambiando, no un descuido que se corrige.</p>
+      <p class="con">✗ Tocar las sync rules en plena temporada hace que los aparatos vuelvan a checkpointear.</p>
+      <p class="costo">Costo: migración (publicación) + stream + esquema local</p>
+    </div>
+    <div class="op no">
+      <span class="titulo-op">Solo en la web y en la ficha</span>
+      <p>Nada en el alta. El padre se ve después, desde la ficha del parto, con conexión.</p>
+      <p class="pro">✓ Cero cambios de arquitectura. Se hace hoy.</p>
+      <p class="con">✗ Se pierde el único momento que importa: la oveja en la mano, antes de guardar. Como
+      control de la caravana, no sirve.</p>
+      <p class="costo">Costo: una consulta online</p>
+    </div>
+    <div class="op no">
+      <span class="titulo-op">En el alta, pero solo con señal</span>
+      <p>Se consulta al servidor al elegir la oveja; si no hay red, no se muestra.</p>
+      <p class="pro">✓ No cambia la replicación.</p>
+      <p class="con">✗ Es lo peor de las dos: aparece en la oficina y se apaga en el corral, que es donde se
+      usa. Un dato intermitente enseña a no mirarlo.</p>
+      <p class="costo">Costo: una consulta online y una explicación</p>
+    </div>
+  </div>
+
+  <p class="nota mal">
+    <b>Esto es lo único que quiero que mires dos veces.</b> Los servicios en el aparato son datos de cabaña —
+    qué carnero cubrió a qué oveja— en cinco teléfonos que andan por el campo. La spec los había dejado del
+    lado de admin a propósito. Si eso te incomoda, la opción honesta es la del medio: el padre solo en la
+    ficha, con señal, y el control de la caravana se pospone.
+  </p>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<section style="border-bottom:none">
+  <p class="num">04</p>
+  <h2>Y el tablero</h2>
+  <div class="intro-sec">
+    <p>
+      La tarjeta pasa de «3 de 6 con padre» a decir <strong>cuánto se confía en cada uno</strong>. La cifra
+      grande cuenta los que tienen padre; el pie ya no enumera caravanas sin explicar por qué, sino que separa
+      las dos razones de no tenerlo.
+    </p>
+  </div>
+
+  <div class="par-tel" style="padding-top:26px">
+    <div>
+      <div class="tablero">
+        <div class="cabeza">
+          <div>
+            <h4>Paternidad</h4>
+            <p class="porque">Partos por padre, derivado de los servicios — nunca se tipea</p>
+          </div>
+          <div class="cifra">6 <small>de 6 con padre</small></div>
+        </div>
+        <div class="barras-h">
+          <span class="et">3020 · Petra</span>
+          <span class="pista"><span class="barra" style="width:100%"></span></span>
+          <span class="val"><b>2</b> · 33,3 %</span>
+          <span class="et">3050 · Petra</span>
+          <span class="pista"><span class="barra" style="width:50%"></span></span>
+          <span class="val"><b>1</b> · 16,7 %</span>
+          <span class="et">4465 · Petra</span>
+          <span class="pista"><span class="barra" style="width:50%"></span></span>
+          <span class="val"><b>1</b> · 16,7 %</span>
+          <span class="et">3075 · Petra</span>
+          <span class="pista"><span class="barra" style="width:50%"></span></span>
+          <span class="val"><b>1</b> · 16,7 %</span>
+          <span class="et">32 · Petra</span>
+          <span class="pista"><span class="barra" style="width:50%"></span></span>
+          <span class="val"><b>1</b> · 16,7 %</span>
+        </div>
+        <p class="pie-tablero">
+          3 ciertos<span class="chip-conf c">145–155 días</span>
+          y 3 probables<span class="chip-conf p">140–160 días</span>
+        </p>
+      </div>
+      <p class="tel-pie" style="max-width:430px"><b>Con la regla nueva.</b> Los tres que faltaban entran como
+      probables, y el pie dice de dónde sale cada grupo.</p>
+    </div>
+
+    <div>
+      <div class="tablero">
+        <div class="cabeza">
+          <div>
+            <h4>Paternidad</h4>
+            <p class="porque">Partos por padre, derivado de los servicios — nunca se tipea</p>
+          </div>
+          <div class="cifra">4 <small>de 6 con padre</small></div>
+        </div>
+        <div class="barras-h">
+          <span class="et">3020 · Petra</span>
+          <span class="pista"><span class="barra" style="width:100%"></span></span>
+          <span class="val"><b>2</b> · 33,3 %</span>
+          <span class="et">3050 · Petra</span>
+          <span class="pista"><span class="barra" style="width:50%"></span></span>
+          <span class="val"><b>1</b> · 16,7 %</span>
+          <span class="et">4465 · Petra</span>
+          <span class="pista"><span class="barra" style="width:50%"></span></span>
+          <span class="val"><b>1</b> · 16,7 %</span>
+        </div>
+        <p class="pie-tablero">
+          3 ciertos y 1 probable.<br>
+          Sin padre: 2 partos cuya fecha no la explica ningún servicio de la madre — caravanas 0015 y 3633.
+          Se miran a mano.
+        </p>
+      </div>
+      <p class="tel-pie" style="max-width:430px"><b>Cuando alguno igual queda afuera.</b> El pie nombra las
+      caravanas y dice el motivo, que es lo que vuelve accionable la lista.</p>
+    </div>
+  </div>
+
+  <p class="nota">
+    <b>Y una columna más en la exportación.</b> La planilla ya lleva <code>padre</code>, <code>cabana_padre</code>
+    y <code>servicio_tipo</code>. Se agregaría <code>gestacion_dias</code> y <code>padre_confianza</code>
+    (<code>cierto</code> / <code>probable</code>), para que quien analice el plantel pueda quedarse solo con
+    los ciertos si quiere. Es la diferencia entre afirmar y afirmar con reservas.
+  </p>
+</section>
+
+</div>
+</body>
+</html>
