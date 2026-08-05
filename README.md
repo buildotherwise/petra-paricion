@@ -18,7 +18,8 @@ formularios de Zoho. La especificación funcional completa está en
 | ⏳ Protocolo §11 | corrido en Fase 1; falta repetirlo sobre el código final antes del día 1 |
 | ✅ Auditoría por campo | en uso: cada edición deja su diff en `cambios` |
 | ✅ **Fase 3** | señalada — buscador de pendientes, fenotipo, confirmación de sexo y tatuaje correlativo |
-| ⏳ Cuentas del equipo | quedan para el final, a pedido del usuario |
+| ✅ Cuentas del equipo | cuatro, todas admin: Carlos, Juan Martín, Fernando y `Tablet` |
+| ✅ Datos de prueba | borrados el 5-ago-2026; la base quedó en 503 ovejas, 1.359 servicios y nada más |
 | ✅ **Fase 4 · 1.ª tanda** | web admin — tablas con filtros, panel de revisión, historial de cambios y exportación |
 | ✅ **Fase 4 · 2.ª tanda** | servicios, paternidad derivada y tableros (8 vistas SQL + Recharts) |
 

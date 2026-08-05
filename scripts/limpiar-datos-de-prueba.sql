@@ -2,12 +2,22 @@
 --
 --   Supabase → SQL Editor → ajustar `corte` (abajo) → ejecutar.
 --
--- Se corre desde el editor de Supabase y no desde la app ni desde un script,
--- porque el borrado físico está revocado para `authenticated` y para
--- `service_role` a propósito (0002_rls.sql y 0005_service_role.sql): las bajas
--- son lógicas para preservar la trazabilidad. El editor corre como dueño de la
--- base y saltea ese revoke — que es exactamente el único lugar donde debería
--- poder hacerse.
+-- Se corre desde el editor de Supabase y no desde la app, porque el borrado
+-- físico está revocado para `authenticated` y para `service_role` a propósito
+-- (0002_rls.sql y 0005_service_role.sql): las bajas son lógicas para preservar
+-- la trazabilidad. El editor corre como dueño de la base y saltea ese revoke.
+--
+-- La Management API sirve igual y por el mismo motivo: se comprobó que corre
+-- como `postgres`, con DELETE sobre las tres tablas, y que acepta `begin` /
+-- `commit` explícitos y temp tables. O sea que esto también funciona:
+--
+--     python3 -c "import importlib.util, pathlib; \
+--       s=importlib.util.spec_from_file_location('m','scripts/aplicar-migraciones.py'); \
+--       m=importlib.util.module_from_spec(s); s.loader.exec_module(m); \
+--       print(m.sql(pathlib.Path('scripts/limpiar-datos-de-prueba.sql').read_text()))"
+--
+-- Se corrió así el 5 de agosto de 2026: borró 11 partos, 19 corderos y 100
+-- filas de auditoría, y dejó la base en el estado del día 1.
 --
 -- QUÉ BORRA: todos los partos y corderos creados hasta `corte`, sus filas de
 -- auditoría, y las ovejas de alta manual (R9) que se hayan creado al probar.
