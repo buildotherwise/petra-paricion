@@ -27,11 +27,12 @@ decir «esa oveja ya tiene parto registrado». Con alta manual (R9) eso no puede
 pasar: las ovejas de prueba son ovejas nuevas, y la limpieza las borra por
 `precargada = false` sin tocar ninguna real.
 
-**2. No se señala nada.** El tatuaje que sugiere la app es *el mayor usado más
-uno* (R14), así que un cordero de prueba con el 001 hace que el primer cordero
-real arranque en el 002. El protocolo no necesita señalar nada — si igual querés
-probar ese camino, usá tatuajes del 900 para arriba, que no mueven el piso de
-los reales.
+**2. No se señala nada.** El tatuaje que sugiere la app se cuenta *desde el
+último puesto* (R14), así que cualquier tatuaje de prueba —el 001 o el 900, da
+igual— pasa a ser el último y el primer cordero real arranca detrás de él. El
+protocolo no necesita señalar nada. Si igual querés probar ese camino, sabé que
+la primera señalada real va a necesitar que le corrijas el número a mano: una
+sola vez, porque de ahí en adelante la serie se acomoda sola.
 
 Los **collares** no tienen ese problema: da lo mismo qué número se use. No hay
 restricción de rango en ningún lado —la app solo exige que no esté vacío y que

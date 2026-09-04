@@ -207,9 +207,10 @@ export function Senalada({
  * convertiría un riesgo raro en un bloqueo seguro, y el equipo terminaría
  * señalando en papel — que es exactamente lo que este sistema vino a eliminar.
  *
- * El riesgo concreto que se avisa: el tatuaje sugerido sale del mayor usado en
- * la réplica local, así que un aparato atrasado propone números que otro ya
- * gastó, y el rechazo llega cuando el animal ya tiene el tatuaje en la oreja.
+ * El riesgo concreto que se avisa: el tatuaje sugerido sale de la última
+ * señalada que hay en la réplica local, así que un aparato atrasado cuenta
+ * desde un cordero viejo y propone números que otro ya gastó, y el rechazo
+ * llega cuando el animal ya tiene el tatuaje en la oreja.
  */
 function useDatosViejos(): string | null {
   const estado = useStatus();

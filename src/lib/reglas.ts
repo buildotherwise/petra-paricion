@@ -539,26 +539,48 @@ export function normalizarTatuaje(texto: string): string | null {
 /**
  * El siguiente tatuaje libre de la temporada, o null si se agotaron.
  *
- * Es el mayor usado más uno, no el primer hueco: los tatuajes salen
- * correlativos de la pinza y un hueco en el medio casi siempre es un cordero
- * que murió, no un número disponible. Rellenarlo confundiría dos animales
- * distintos en el análisis histórico.
+ * Cuenta desde el ÚLTIMO puesto, no desde el mayor de la temporada. La
+ * diferencia aparece cuando un número queda suelto muy arriba: el 27 de agosto
+ * de 2026 una cordera terminó con el 910 en la oreja —un error al manipular la
+ * tatuadora, no de carga: el número está en el animal y se queda— y el mayor
+ * más uno dejó sugiriendo 911 para siempre, con la persona corrigiendo a mano
+ * cada cordero. Contando desde el último, un número suelto molesta una sola
+ * vez: la primera corrección a mano vuelve a poner la serie en su lugar.
+ *
+ * Sigue sin rellenar huecos hacia atrás —solo mira para adelante, y un hueco
+ * casi siempre es un cordero que murió, no un número disponible— pero sí saltea
+ * los que ya están puestos, así que nunca propone uno ocupado. Eso resuelve el
+ * caso de rellenar un hueco viejo: si el último cargado fue el 009 y del 010 al
+ * 014 ya están puestos, el que sigue es el 015.
+ *
+ * `ultimo` es el tatuaje de la última señalada cargada, no el mayor, y va
+ * aparte de `usados` porque el orden lo decide la consulta —ver
+ * SenalarCordero.tsx— y acá no hay con qué reconstruirlo. En null, la temporada
+ * todavía no tiene señaladas y la cuenta arranca en el 001.
  *
  * Se calcula sobre la réplica local, así que un aparato con días sin
  * sincronizar puede proponer uno ya usado. De ahí el aviso al entrar a la
  * señalada: es la única pantalla de la app que quiere estar al día.
  */
-export function siguienteTatuaje(usados: readonly (string | null)[]): string | null {
-  let mayor = 0;
+export function siguienteTatuaje(
+  usados: readonly (string | null)[],
+  ultimo: string | null,
+): string | null {
+  const tomados = new Set<string>();
   for (const usado of usados) {
     if (usado === null) continue;
     const normalizado = normalizarTatuaje(usado);
-    if (normalizado === null) continue;
-    mayor = Math.max(mayor, Number(normalizado));
+    if (normalizado !== null) tomados.add(normalizado);
   }
 
-  if (mayor >= TATUAJE_MAXIMO) return null;
-  return String(mayor + 1).padStart(TATUAJE_DIGITOS, '0');
+  const ancla = ultimo === null ? null : normalizarTatuaje(ultimo);
+  const desde = ancla === null ? 0 : Number(ancla);
+
+  for (let n = desde + 1; n <= TATUAJE_MAXIMO; n += 1) {
+    const candidato = String(n).padStart(TATUAJE_DIGITOS, '0');
+    if (!tomados.has(candidato)) return candidato;
+  }
+  return null;
 }
 
 /**

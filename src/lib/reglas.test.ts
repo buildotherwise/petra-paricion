@@ -555,27 +555,50 @@ describe('el tatuaje se normaliza a tres dígitos', () => {
 
 describe('el siguiente tatuaje libre', () => {
   test('la temporada arranca en el 001', () => {
-    expect(siguienteTatuaje([])).toBe('001');
+    expect(siguienteTatuaje([], null)).toBe('001');
   });
 
-  test('es el mayor usado más uno', () => {
-    expect(siguienteTatuaje(['001', '041'])).toBe('042');
+  test('es el último puesto más uno', () => {
+    expect(siguienteTatuaje(['001', '041'], '041')).toBe('042');
   });
 
   test('un hueco en el medio no se rellena', () => {
     // Un número salteado casi siempre es un cordero que murió, no un número
-    // libre. Reusarlo confundiría dos animales en el histórico.
-    expect(siguienteTatuaje(['001', '002', '005'])).toBe('006');
+    // libre. Reusarlo confundiría dos animales en el histórico. La cuenta solo
+    // mira para adelante, así que el hueco queda atrás y ahí se queda.
+    expect(siguienteTatuaje(['001', '002', '005'], '005')).toBe('006');
+  });
+
+  test('un número suelto muy arriba no envenena la serie', () => {
+    // El caso que motivó este cambio: el 27 de agosto de 2026 una cordera
+    // terminó con el 910 en la oreja por un error al manipular la tatuadora.
+    // Contando desde el mayor, la app sugirió 911 el resto de la temporada.
+    expect(siguienteTatuaje(['108', '910', '110'], '110')).toBe('111');
+  });
+
+  test('el número suelto molesta una sola vez', () => {
+    // Apenas se carga, sí manda: nada distingue un error de la tatuadora de un
+    // salto deliberado. Pero alcanza con corregir a mano el siguiente para que
+    // la serie vuelva sola a su lugar.
+    expect(siguienteTatuaje(['108', '910'], '910')).toBe('911');
+    expect(siguienteTatuaje(['108', '910', '110'], '110')).toBe('111');
+  });
+
+  test('los ya puestos se saltean', () => {
+    // Pasó el 8 de agosto de 2026: venían el 012, 013 y 014, y después
+    // rellenaron el 009 que había quedado colgado. Desde el 009, el primer
+    // libre es el 015 — que fue exactamente lo que tipearon.
+    expect(siguienteTatuaje(['010', '011', '012', '013', '014', '009'], '009')).toBe('015');
   });
 
   test('los corderos sin señalar no cuentan', () => {
-    expect(siguienteTatuaje([null, '007', null])).toBe('008');
+    expect(siguienteTatuaje([null, '007', null], '007')).toBe('008');
   });
 
   test('agotados los tres dígitos, no hay sugerencia', () => {
     // Remotísimo —en 2025 hubo 468 corderos vivos— pero la app no debería
     // descubrirlo en el corral.
-    expect(siguienteTatuaje(['999'])).toBeNull();
+    expect(siguienteTatuaje(['999'], '999')).toBeNull();
   });
 });
 

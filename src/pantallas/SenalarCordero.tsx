@@ -172,12 +172,22 @@ function Formulario({
   const usuarioId = useUsuarioId();
   const hermanos = useCorderosDelParto(cordero.parto_id);
 
+  /**
+   * Los tatuajes de la temporada, en el orden en que se pusieron.
+   *
+   * El ORDER BY no es cosmético: la sugerencia cuenta desde la ÚLTIMA señalada
+   * cargada (ver siguienteTatuaje), que es la última fila de esta consulta. Va
+   * por `fecha_senalada` antes que por `actualizado_en` para que corregir hoy
+   * una señalada de agosto no la convierta en «la última» y mande la sugerencia
+   * de vuelta a un número de agosto.
+   */
   const { data: usados } = useQuery<TatuajeUsado>(
     `SELECT c.tatuaje, o.caravana
        FROM corderos c
        JOIN partos p ON p.id = c.parto_id
        JOIN ovejas o ON o.id = p.oveja_id
-      WHERE c.temporada = ? AND c.tatuaje IS NOT NULL`,
+      WHERE c.temporada = ? AND c.tatuaje IS NOT NULL
+      ORDER BY c.fecha_senalada, c.actualizado_en`,
     [entorno.temporada],
   );
 
@@ -216,7 +226,10 @@ function Formulario({
   // van apagando solas a medida que se completa.
   const [avisado, setAvisado] = useState(false);
 
-  const sugerido = siguienteTatuaje(usados.map((u) => u.tatuaje));
+  const tatuajesUsados = usados.map((u) => u.tatuaje);
+  // La última fila es la última señalada: de ahí sale la cuenta (ver el ORDER
+  // BY de arriba, que es la otra mitad de esta decisión).
+  const sugerido = siguienteTatuaje(tatuajesUsados, usados.at(-1)?.tatuaje ?? null);
   const tatuaje = tatuajeEscrito ?? sugerido ?? '';
   const nota = observaciones ?? cordero.observaciones ?? '';
 
@@ -233,8 +246,7 @@ function Formulario({
   const normalizado = normalizarTatuaje(tatuaje);
   // El propio tatuaje no se bloquea a sí mismo al corregir.
   const ocupadoPor =
-    normalizado !== null &&
-    !tatuajeDisponible(tatuaje, usados.map((u) => u.tatuaje), cordero.tatuaje)
+    normalizado !== null && !tatuajeDisponible(tatuaje, tatuajesUsados, cordero.tatuaje)
       ? (usados.find((u) => normalizarTatuaje(u.tatuaje) === normalizado)?.caravana ?? null)
       : null;
 
